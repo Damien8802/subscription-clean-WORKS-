@@ -1,0 +1,42 @@
+﻿/* static/css/mobile.css - Mobile-only styles */
+:root {
+    --mobile-primary: #4f46e5;
+    --mobile-secondary: #8b5cf6;
+    --mobile-bg: #f8fafc;
+    --mobile-card: #ffffff;
+    --mobile-text: #1e293b;
+    --mobile-border: #e2e8f0;
+}
+
+/* Только для мобильных устройств */
+@media (max-width: 768px) {
+    .mobile-only { display: block !important; }
+    .desktop-only { display: none !important; }
+}
+
+/* Мобильный body */
+.mobile-body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--mobile-bg);
+    color: var(--mobile-text);
+    overflow-x: hidden;
+}
+
+/* Мобильный header */
+.mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(135deg, var(--mobile-primary), var(--mobile-secondary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}

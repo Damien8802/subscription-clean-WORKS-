@@ -1,0 +1,125 @@
+/* МОБИЛЬНАЯ ВЕРСИЯ */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+        overflow-x: hidden;
+    }
+    
+    .container {
+        width: 100% !important;
+        padding: 10px !important;
+        margin: 0 !important;
+    }
+    
+    nav, .navbar {
+        flex-direction: column !important;
+        padding: 10px !important;
+    }
+    
+    .nav-links {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .btn {
+        width: 100% !important;
+        margin: 5px 0 !important;
+        padding: 12px !important;
+    }
+    
+    table {
+        display: block !important;
+        overflow-x: auto !important;
+    }
+    
+    .card, .panel, .dashboard-item {
+    margin: 5px 0 !important;
+    width: 100% !important;
+    padding: 10px !important;
+    }
+    
+    .col-6, .col-4, .col-3 {
+        width: 100% !important;
+        margin-bottom: 15px !important;
+    }
+    
+    h1 { font-size: 24px !important; }
+    h2 { font-size: 20px !important; }
+    h3 { font-size: 18px !important; }
+    
+    /* Скрываем некоторые элементы на мобильных */
+    .desktop-only, .hide-on-mobile {
+        display: none !important;
+    }
+    
+    /* Показываем мобильные элементы */
+    .mobile-only {
+        display: block !important;
+    }
+    
+    /* Адаптивные таблицы */
+    table.responsive-table {
+        font-size: 12px;
+    }
+    
+    /* Уменьшаем паддинги */
+    .p-4 { padding: 1rem !important; }
+    .p-3 { padding: 0.75rem !important; }
+    
+    /* Адаптивные кнопки */
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 4px !important;
+        margin: 2px 0 !important;
+    }
+}
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+    body { font-size: 13px; }
+    
+    .btn { padding: 10px !important; }
+    
+    .modal-dialog {
+        margin: 10px !important;
+        width: 95% !important;
+    }
+    
+    input, select, textarea {
+        font-size: 16px !important; /* Убираем увеличение в iOS */
+    }
+}
+
+/* Ландшафтная ориентация */
+@media (max-width: 768px) and (orientation: landscape) {
+    .container { max-width: 100% !important; }
+    nav { padding: 5px !important; }
+}
+
+/* Темная тема для мобильных */
+@media (prefers-color-scheme: dark) {
+    body.mobile-dark {
+        background-color: #121212 !important;
+        color: #ffffff !important;
+    }
+}
+
+/* Анимации для мобильных */
+.mobile-menu {
+    transition: all 0.3s ease;
+}
+
+/* Улучшаем скролл на мобильных */
+body {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Исправляем проблему с 100vh на мобильных */
+.mobile-full-height {
+    height: 100vh;
+    height: -webkit-fill-available;
+}
+

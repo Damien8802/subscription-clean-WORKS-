@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.title}}</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        h1 { color: #2c3e50; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        nav { margin: 20px 0; padding: 10px; background: #f8f9fa; }
+        nav a { margin-right: 15px; color: #3498db; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{.title}} РАБОТАЕТ!</h1>
+        <nav>
+            <a href="/">Главная</a> | 
+            <a href="/dashboard">Дашборд</a> | 
+            <a href="/admin">Админка</a> |
+            <a href="/security">Безопасность</a>
+        </nav>
+        <p>Страница subscriptions успешно загружена</p>
+        {{if .username}}<p>Пользователь: {{.username}}</p>{{end}}
+    </div>
+</body>
+</html>

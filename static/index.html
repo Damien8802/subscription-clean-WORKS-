@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Subscription Service UI</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+.card { border: 1px solid #ddd; padding: 20px; margin: 10px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<h1>Subscription Service UI</h1>
+<div class="card">
+<h3>Подписки</h3>
+<div id="subscriptions"></div>
+</div>
+<script>
+async function loadSubscriptions() {
+const response = await fetch('/api/subscriptions');
+const data = await response.json();
+
+let html = '<ul>';
+data.forEach(sub => {
+html += '<li>' + sub.service_name + ' - $' + sub.price + ' (' + sub.status + ')</li>';
+});
+html += '</ul>';
+
+document.getElementById('subscriptions').innerHTML = html;
+}
+loadSubscriptions();
+</script>
+</body>
+</html>

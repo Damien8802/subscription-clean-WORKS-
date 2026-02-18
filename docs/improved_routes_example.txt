@@ -1,0 +1,27 @@
+// Пример улучшенного маршрута с логированием
+router.GET("/", func(c *gin.Context) {
+    utils.Log.WithFields(logrus.Fields{
+        "path":   c.Request.URL.Path,
+        "method": c.Request.Method,
+        "ip":     c.ClientIP(),
+    }).Info("Запрос к главной странице")
+    
+    c.HTML(200, "index.html", gin.H{
+        "title":    "SaaSPro - Главная",
+        "version":  "3.0",
+        "user":     nil,
+    })
+})
+
+// Пример API с rate limiting
+api := router.Group("/api")
+api.Use(middleware.RateLimit(100, time.Minute)) // 100 запросов в минуту
+{
+    api.GET("/health", func(c *gin.Context) {
+        utils.Log.Info("Health check request")
+        c.JSON(200, gin.H{
+            "status": "healthy",
+            "time":   time.Now().Format(time.RFC3339),
+        })
+    })
+}

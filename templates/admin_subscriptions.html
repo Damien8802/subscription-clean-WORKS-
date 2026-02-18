@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>{{ .Title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .admin-header { background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); color: white; padding: 40px 0; margin-bottom: 30px; }
+        .admin-nav { background: white; border-radius: 20px; padding: 15px; margin-bottom: 30px; }
+        .admin-nav .nav-link { border-radius: 12px; color: #4a5568; padding: 12px 20px; margin: 0 5px; }
+        .admin-nav .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .admin-nav .nav-link i { margin-right: 8px; }
+        .filter-box { background: white; border-radius: 20px; padding: 20px; margin-bottom: 25px; }
+        .table-container { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .status-badge-active { background: #c6f6d5; color: #22543d; border-radius: 50px; padding: 4px 14px; }
+        .status-badge-canceled { background: #fed7d7; color: #742a2a; border-radius: 50px; padding: 4px 14px; }
+        .status-badge-expired { background: #e2e8f0; color: #4a5568; border-radius: 50px; padding: 4px 14px; }
+        .status-badge-pending { background: #feebc8; color: #7b4e1e; border-radius: 50px; padding: 4px 14px; }
+        .user-avatar { width: 32px; height: 32px; background: linear-gradient(145deg, #667eea, #5a67d8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; font-weight: bold; }
+        .pagination .page-link { border-radius: 8px; margin: 0 3px; color: #4a5568; }
+        .pagination .active .page-link { background: #667eea; border-color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2"><i class="fas fa-crown me-3"></i>Управление подписками</h1>
+                <a href="/admin" class="btn btn-light rounded-pill"><i class="fas fa-arrow-left me-2"></i>Назад в дашборд</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Навигация -->
+        <div class="admin-nav">
+            <ul class="nav nav-pills justify-content-center">
+                <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-chart-pie"></i>Дашборд</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="fas fa-users"></i>Пользователи</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/admin/subscriptions"><i class="fas fa-crown"></i>Подписки</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/plans"><i class="fas fa-tags"></i>Тарифы</a></li>
+            </ul>
+        </div>
+
+        <!-- Статистика по статусам -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="bg-white p-3 rounded-4 text-center">
+                    <span class="badge status-badge-active mb-2">Активные</span>
+                    <h4 class="mb-0">{{ index .Stats "active" | default 0 }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white p-3 rounded-4 text-center">
+                    <span class="badge status-badge-canceled mb-2">Отменённые</span>
+                    <h4 class="mb-0">{{ index .Stats "canceled" | default 0 }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white p-3 rounded-4 text-center">
+                    <span class="badge status-badge-expired mb-2">Истекшие</span>
+                    <h4 class="mb-0">{{ index .Stats "expired" | default 0 }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="bg-white p-3 rounded-4 text-center">
+                    <span class="badge status-badge-pending mb-2">Пробные</span>
+                    <h4 class="mb-0">{{ index .Stats "trial" | default 0 }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="filter-box">
+            <form method="get" action="/admin/subscriptions">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                            <input type="text" name="search" class="form-control" placeholder="Поиск по email, имени, тарифу" value="{{ .Search }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select">
+                            <option value="">Все статусы</option>
+                            <option value="active" {{ if eq .Status "active" }}selected{{ end }}>Активные</option>
+                            <option value="canceled" {{ if eq .Status "canceled" }}selected{{ end }}>Отменённые</option>
+                            <option value="expired" {{ if eq .Status "expired" }}selected{{ end }}>Истекшие</option>
+                            <option value="trial" {{ if eq .Status "trial" }}selected{{ end }}>Пробные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                            <i class="fas fa-filter me-2"></i>Применить
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="/admin/subscriptions" class="btn btn-outline-secondary w-100 rounded-pill">
+                            <i class="fas fa-times me-2"></i>Сбросить
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Таблица подписок -->
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Всего подписок: <span class="badge bg-primary">{{ .Total }}</span></h5>
+                <span class="text-muted small">Страница {{ .Page }} из {{ .TotalPages }}</span>
+            </div>
+            {{ if .Subs }}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Пользователь</th>
+                            <th>Тариф</th>
+                            <th>Статус</th>
+                            <th>Период</th>
+                            <th>Цена</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .Subs }}
+                        <tr id="sub-{{ .ID }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-2">{{ firstLetter .UserName }}</div>
+                                    <div>
+                                        <div>{{ .UserName }}</div>
+                                        <small class="text-muted">{{ .UserEmail }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="fw-semibold">{{ .PlanName }}</span></td>
+                            <td>
+                                <span class="badge 
+                                    {{ if eq .Status "active" }}status-badge-active{{ else if eq .Status "canceled" }}status-badge-canceled{{ else if eq .Status "expired" }}status-badge-expired{{ else }}status-badge-pending{{ end }}">
+                                    {{ if eq .Status "active" }}Активна{{ else if eq .Status "canceled" }}Отменена{{ else if eq .Status "expired" }}Истекла{{ else }}Пробная{{ end }}
+                                    {{ if .CancelAtPeriodEnd }}<span class="ms-1">(отмена в конце периода)</span>{{ end }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ .CurrentPeriodStart.Format "02.01.2006" }} – {{ .CurrentPeriodEnd.Format "02.01.2006" }}</small>
+                            </td>
+                            <td>{{ .PlanPrice }} ₽/мес</td>
+                            <td>
+                                {{ if eq .Status "active" }}
+                                    {{ if .CancelAtPeriodEnd }}
+                                    <button class="btn btn-sm btn-success reactivate-btn" data-sub-id="{{ .ID }}" title="Отменить отмену">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    {{ else }}
+                                    <button class="btn btn-sm btn-warning cancel-btn" data-sub-id="{{ .ID }}" title="Отменить подписку">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    {{ end }}
+                                {{ end }}
+                                {{ if eq .Status "canceled" }}
+                                    <span class="text-muted">Отменена</span>
+                                {{ end }}
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+            {{ else }}
+            <p class="text-muted text-center py-4">Подписки не найдены</p>
+            {{ end }}
+
+            <!-- Пагинация -->
+            {{ if gt .TotalPages 1 }}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {{ $current := .Page }}
+                    {{ $total := .TotalPages }}
+                    {{ $search := .Search }}
+                    {{ $status := .Status }}
+                    <li class="page-item {{ if eq $current 1 }}disabled{{ end }}">
+                        <a class="page-link" href="/admin/subscriptions?page={{ sub $current 1 }}&search={{ $search }}&status={{ $status }}">←</a>
+                    </li>
+                    {{ range $i := seq $total }}
+                        {{ if or (eq $i $current) (and (ge $i (sub $current 2)) (le $i (add $current 2))) }}
+                        <li class="page-item {{ if eq $i $current }}active{{ end }}">
+                            <a class="page-link" href="/admin/subscriptions?page={{ $i }}&search={{ $search }}&status={{ $status }}">{{ $i }}</a>
+                        </li>
+                        {{ else if eq $i (add $current 3) }}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {{ end }}
+                    {{ end }}
+                    <li class="page-item {{ if eq $current $total }}disabled{{ end }}">
+                        <a class="page-link" href="/admin/subscriptions?page={{ add $current 1 }}&search={{ $search }}&status={{ $status }}">→</a>
+                    </li>
+                </ul>
+            </nav>
+            {{ end }}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Отмена подписки
+        document.querySelectorAll('.cancel-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const subId = this.dataset.subId;
+                const immediate = confirm('Отменить немедленно? (OK - немедленно, Отмена - в конце периода)');
+                try {
+                    const response = await fetch(`/api/admin/subscriptions/${subId}/cancel`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ immediate })
+                    });
+                    if (response.ok) {
+                        showToast('Подписка отменена', 'success');
+                        location.reload();
+                    } else {
+                        showToast('Ошибка при отмене', 'danger');
+                    }
+                } catch (e) {
+                    showToast('Сетевая ошибка', 'danger');
+                }
+            });
+        });
+
+        // Реактивация (отмена отмены)
+        document.querySelectorAll('.reactivate-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const subId = this.dataset.subId;
+                if (!confirm('Отменить запрос на отмену подписки?')) return;
+                try {
+                    const response = await fetch(`/api/admin/subscriptions/${subId}/reactivate`, {
+                        method: 'PUT'
+                    });
+                    if (response.ok) {
+                        showToast('Подписка реактивирована', 'success');
+                        location.reload();
+                    } else {
+                        showToast('Ошибка', 'danger');
+                    }
+                } catch (e) {
+                    showToast('Сетевая ошибка', 'danger');
+                }
+            });
+        });
+
+        function showToast(msg, type) {
+            alert(msg);
+        }
+    </script>
+</body>
+</html>

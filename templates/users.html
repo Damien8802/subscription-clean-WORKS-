@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователи | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <style>
+        .users-container {
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .users-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-inactive { background: #fee2e2; color: #991b1b; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .role-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+        }
+        .role-admin { background: #6366f1; color: white; }
+        .role-user { background: #10b981; color: white; }
+        .role-moderator { background: #f59e0b; color: white; }
+    </style>
+</head>
+<body class="users-container">
+    <div class="container-fluid">
+        <div class="users-card">
+            <!-- Заголовок и действия -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 fw-bold">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    Пользователи
+                </h1>
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary">
+                        <i class="fas fa-download me-2"></i>Экспорт
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus me-2"></i>Добавить пользователя
+                    </button>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <label class="form-label">Поиск</label>
+                    <input type="text" class="form-control" placeholder="Имя, email, компания...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select">
+                        <option value="">Все</option>
+                        <option value="active">Активные</option>
+                        <option value="inactive">Неактивные</option>
+                        <option value="pending">Ожидают</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Роль</label>
+                    <select class="form-select">
+                        <option value="">Все</option>
+                        <option value="admin">Администратор</option>
+                        <option value="user">Пользователь</option>
+                        <option value="moderator">Модератор</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Дата регистрации</label>
+                    <select class="form-select">
+                        <option value="">Все время</option>
+                        <option value="today">Сегодня</option>
+                        <option value="week">Эта неделя</option>
+                        <option value="month">Этот месяц</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Применить фильтры
+                    </button>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h5 class="text-muted">Всего пользователей</h5>
+                            <h2 class="fw-bold text-primary">1,248</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5 class="text-muted">Активные</h5>
+                            <h2 class="fw-bold text-success">845</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h5 class="text-muted">Новые (30 дн.)</h5>
+                            <h2 class="fw-bold text-warning">156</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body">
+                            <h5 class="text-muted">Конверсия</h5>
+                            <h2 class="fw-bold text-info">4.8%</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица пользователей -->
+            <table id="usersTable" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>Email</th>
+                        <th>Роль</th>
+                        <th>Статус</th>
+                        <th>Дата регистрации</th>
+                        <th>Последний вход</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3">ИП</div>
+                                <div>
+                                    <strong>Иван Петров</strong><br>
+                                    <small class="text-muted">ООО "ТехноПро"</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>ivan.petrov@example.com</td>
+                        <td><span class="role-badge role-admin">Администратор</span></td>
+                        <td><span class="status-badge status-active">Активен</span></td>
+                        <td>15.01.2024</td>
+                        <td>Сегодня, 10:30</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" title="Редактировать">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-info" title="Просмотр">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" title="Удалить">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">МС</div>
+                                <div>
+                                    <strong>Мария Сидорова</strong><br>
+                                    <small class="text-muted">ИП Сидорова</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>maria@example.com</td>
+                        <td><span class="role-badge role-user">Пользователь</span></td>
+                        <td><span class="status-badge status-active">Активен</span></td>
+                        <td>20.01.2024</td>
+                        <td>Вчера, 14:45</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Добавьте больше пользователей по аналогии -->
+                </tbody>
+            </table>
+
+            <!-- Пагинация -->
+            <nav>
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#">Предыдущая</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Следующая</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления пользователя -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить пользователя</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Имя</label>
+                                <input type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Фамилия</label>
+                                <input type="text" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Пароль</label>
+                            <input type="password" class="form-control" required>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Роль</label>
+                                <select class="form-select" required>
+                                    <option value="">Выберите роль</option>
+                                    <option value="admin">Администратор</option>
+                                    <option value="moderator">Модератор</option>
+                                    <option value="user" selected>Пользователь</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Статус</label>
+                                <select class="form-select" required>
+                                    <option value="active" selected>Активный</option>
+                                    <option value="inactive">Неактивный</option>
+                                    <option value="pending">Ожидает подтверждения</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Компания (необязательно)</label>
+                            <input type="text" class="form-control">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Дополнительная информация</label>
+                            <textarea class="form-control" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="addUserForm" class="btn btn-primary">Добавить пользователя</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Инициализация DataTable
+        $(document).ready(function() {
+            $('#usersTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json'
+                },
+                pageLength: 10,
+                responsive: true
+            });
+        });
+
+        // Обработка формы добавления пользователя
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Пользователь успешно добавлен!');
+            bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+            this.reset();
+        });
+    </script>
+</body>
+</html>

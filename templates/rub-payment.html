@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{if .Title}}{{.Title}}{{else}}Subscription System{{end}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { background: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        .content { padding: 20px; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        footer { margin-top: 20px; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{if .Title}}{{.Title}}{{else}}Subscription System{{end}}</h1>
+            <nav>
+                <a href="/">Главная</a>
+                <a href="/dashboard">Дашборд</a>
+                <a href="/pricing">Тарифы</a>
+                <a href="/admin">Админка</a>
+                <a href="/health">Мониторинг</a>
+                <a href="/crm">CRM</a>
+            </nav>
+        </header>
+        <div class="content">
+            <h2>Страница: rub-payment.html</h2>
+            <p>Система подписок работает в штатном режиме.</p>
+            <p>Все функции доступны через API.</p>
+        </div>
+        <footer>
+            <p>© 2026 Subscription System v3.0</p>
+        </footer>
+    </div>
+</body>
+</html>

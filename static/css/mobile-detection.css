@@ -1,0 +1,15 @@
+﻿/* static/css/mobile-detection.css - Auto mobile detection */
+@media (max-width: 768px) {
+    .mobile-redirect-banner {
+        display: block !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #4f46e5;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        z-index: 9999;
+    }
+}

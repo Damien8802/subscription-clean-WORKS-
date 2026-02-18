@@ -1,0 +1,257 @@
+﻿/* РљРћРњРџРђРљРўРќР«Р• РљРђР РўРћР§РљР - СѓРјРµРЅСЊС€Р°РµРј СЂР°Р·РјРµСЂ РєРІР°РґСЂР°С‚РёРєРѕРІ */
+.pricing-tier, .plan-card, .tariff-card, .price-card, 
+.card, .subscription-card, .pricing-card {
+    max-width: 220px !important;
+    min-height: 320px !important;
+    padding: 15px !important;
+    margin: 10px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+}
+
+/* РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РєР°СЂС‚РѕС‡РµРє С‚Р°СЂРёС„РѕРІ */
+.pricing-container, .plans-container, .cards-container, 
+.pricing-grid, .plans-grid, .cards-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 15px !important;
+    justify-content: center !important;
+    align-items: start !important;
+}
+
+/* РЈРјРµРЅСЊС€Р°РµРј РєРЅРѕРїРєРё */
+.btn-subscribe, .subscribe-btn, .payment-button,
+.card .btn, .pricing-card button {
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    margin-top: 10px !important;
+    width: 90% !important;
+    max-width: 180px !important;
+}
+
+/* РЈРјРµРЅСЊС€Р°РµРј Р·Р°РіРѕР»РѕРІРєРё */
+.pricing-tier h3, .plan-card h3, .card h3 {
+    font-size: 1.3rem !important;
+    margin: 10px 0 !important;
+}
+
+/* РЈРјРµРЅСЊС€Р°РµРј С†РµРЅС‹ */
+.price, .amount, .cost {
+    font-size: 1.8rem !important;
+    margin: 10px 0 !important;
+    padding: 5px 0 !important;
+}
+
+/* РЈРјРµРЅСЊС€Р°РµРј РѕС‚СЃС‚СѓРїС‹ РґР»СЏ СЃРїРёСЃРєРѕРІ РїСЂРµРёРјСѓС‰РµСЃС‚РІ */
+.feature-list, .benefits-list, .card ul {
+    margin: 10px 0 !important;
+    padding-left: 20px !important;
+    font-size: 0.9rem !important;
+}
+
+/* РњРѕР±РёР»СЊРЅР°СЏ Р°РґР°РїС‚Р°С†РёСЏ */
+@media (max-width: 768px) {
+    .pricing-tier, .plan-card, .tariff-card, .card {
+        max-width: 180px !important;
+        min-height: 300px !important;
+        padding: 12px !important;
+        margin: 8px !important;
+    }
+    
+    .pricing-container, .cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+        gap: 12px !important;
+    }
+    
+    .btn-subscribe, .subscribe-btn {
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* РћС‡РµРЅСЊ РјР°Р»РµРЅСЊРєРёРµ СЌРєСЂР°РЅС‹ */
+@media (max-width: 480px) {
+    .pricing-container, .cards-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .pricing-tier, .plan-card, .card {
+        max-width: 100% !important;
+        min-height: auto !important;
+        margin: 5px 0 !important;
+    }
+}
+
+/* Р”Р»СЏ СЃС‚СЂР°РЅРёС†С‹ pricing_rub.html - СЃРїРµС†РёР°Р»СЊРЅС‹Рµ СЃС‚РёР»Рё */
+.pricing-page .card, .rub-pricing .pricing-tier {
+    max-width: 240px !important;
+    min-height: 350px !important;
+    transition: all 0.3s ease !important;
+}
+
+.pricing-page .card:hover, .rub-pricing .pricing-tier:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+}
+
+/* РЈРјРµРЅСЊС€Р°РµРј РєРЅРѕРїРєСѓ "РћС„РѕСЂРјРёС‚СЊ РїРѕРґРїРёСЃРєСѓ" */
+.subscribe-button-large, .big-subscribe-btn {
+    font-size: 16px !important;
+    padding: 10px 20px !important;
+    max-width: 200px !important;
+    margin: 15px auto !important;
+}
+
+/* РЎРµРјРµР№РЅС‹Р№ С‚Р°СЂРёС„ - РґРµР»Р°РµРј РєРѕРјРїР°РєС‚РЅРµРµ */
+.family-plan, .family-tier {
+    max-width: 220px !important;
+    min-height: 340px !important;
+}
+
+.family-plan .price, .family-tier .price {
+    font-size: 1.9rem !important;
+    color: #e44d26 !important;
+}
+
+/* Стили для страницы с тарифами */
+.pricing-page {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.pricing-header h1 {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.pricing-header p {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Контейнер для карточек тарифов */
+.pricing-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 50px;
+}
+
+/* Компактные карточки тарифов */
+.tariff-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    width: 280px;
+    min-height: 400px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.tariff-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.tariff-popular {
+    border: 2px solid #667eea;
+}
+
+.tariff-badge {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: #f5576c;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.tariff-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.tariff-price {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.tariff-period {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.tariff-features {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+    flex-grow: 1;
+}
+
+.tariff-features li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    color: #555;
+}
+
+.tariff-features li:before {
+    content: "✓";
+    color: #4CAF50;
+    margin-right: 10px;
+}
+
+.tariff-button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+}
+
+.tariff-button:hover {
+    background: linear-gradient(45deg, #764ba2, #667eea);
+    transform: scale(1.02);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .pricing-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .tariff-card {
+        width: 100%;
+        max-width: 320px;
+        min-height: auto;
+    }
+}

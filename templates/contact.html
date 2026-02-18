@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контакты | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <style>
+        .contact-hero {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 80px 0;
+        }
+        .contact-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            transition: transform 0.3s;
+        }
+        .contact-card:hover {
+            transform: translateY(-5px);
+        }
+        .contact-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin: 0 auto 20px;
+        }
+        .map-container {
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-rocket text-primary me-2"></i>SaaSPro
+            </a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/">Главная</a>
+                <a class="nav-link" href="/dashboard">Дашборд</a>
+                <a class="nav-link" href="/pricing">Тарифы</a>
+                <a class="nav-link active" href="/contact">Контакты</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Герой секция -->
+    <section class="contact-hero">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">Свяжитесь с нами</h1>
+            <p class="lead mb-4">Есть вопросы? Мы всегда рады помочь! Свяжитесь с нами любым удобным способом.</p>
+        </div>
+    </section>
+
+    <!-- Контактная информация -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="contact-card text-center">
+                        <div class="contact-icon bg-primary text-white">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Телефон</h4>
+                        <p class="mb-2"><strong>Техническая поддержка:</strong></p>
+                        <p class="h5">+7 (999) 123-45-67</p>
+                        <p class="text-muted small mt-2">Пн-Пт: 9:00-18:00 (МСК)</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="contact-card text-center">
+                        <div class="contact-icon bg-success text-white">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Email</h4>
+                        <p class="mb-2"><strong>Общие вопросы:</strong></p>
+                        <p class="h5">info@saaspro.ru</p>
+                        <p class="mb-2 mt-3"><strong>Техподдержка:</strong></p>
+                        <p class="h5">support@saaspro.ru</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="contact-card text-center">
+                        <div class="contact-icon bg-warning text-white">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Адрес</h4>
+                        <p class="mb-2"><strong>Главный офис:</strong></p>
+                        <p>г. Москва, ул. Примерная, д. 123</p>
+                        <p class="text-muted small mt-2">Бизнес-центр "Технопарк"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Карта и форма -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <h3 class="fw-bold mb-4">Напишите нам</h3>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <form id="contactForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Ваше имя</label>
+                                    <input type="text" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Тема</label>
+                                    <select class="form-select">
+                                        <option>Техническая поддержка</option>
+                                        <option>Коммерческие вопросы</option>
+                                        <option>Партнерская программа</option>
+                                        <option>Другое</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Сообщение</label>
+                                    <textarea class="form-control" rows="5" required></textarea>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>Отправить сообщение
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <h3 class="fw-bold mb-4">Мы на карте</h3>
+                    <div class="map-container">
+                        <!-- Заглушка для карты -->
+                        <div style="width:100%;height:100%;background:#e9ecef;display:flex;align-items:center;justify-content:center;">
+                            <div class="text-center">
+                                <i class="fas fa-map-marked-alt fa-4x text-secondary mb-3"></i>
+                                <h5>Карта</h5>
+                                <p>г. Москва, ул. Примерная, д. 123</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительная информация -->
+                    <div class="mt-4">
+                        <h5 class="fw-bold">Часы работы:</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-clock text-primary me-2"></i>Пн-Пт: 9:00-18:00 (МСК)</li>
+                            <li><i class="fas fa-clock text-primary me-2"></i>Сб: 10:00-16:00 (МСК)</li>
+                            <li><i class="fas fa-clock text-primary me-2"></i>Вс: выходной</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Часто задаваемые вопросы -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5">Часто задаваемые вопросы</h2>
+            
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Как быстро отвечает поддержка?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Среднее время ответа технической поддержки - 15 минут в рабочее время. В нерабочее время вы можете оставить заявку, и мы ответим на следующий рабочий день.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Есть ли бесплатный пробный период?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Да, мы предоставляем 14-дневный бесплатный пробный период для всех тарифов. Вам не нужно указывать данные банковской карты для начала пробного периода.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Какие способы оплаты вы принимаете?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Мы принимаем банковские карты (Visa, MasterCard, МИР), ЮMoney, криптовалюты (USDT, BTC, ETH), а также банковские переводы для юридических лиц.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="fw-bold mb-3">SaaSPro</h5>
+                    <p>Платформа для управления подписками нового поколения. Эффективно, безопасно, масштабируемо.</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h5 class="fw-bold mb-3">Быстрые ссылки</h5>
+                    <a href="/" class="text-white-50 text-decoration-none me-3">Главная</a>
+                    <a href="/pricing" class="text-white-50 text-decoration-none me-3">Тарифы</a>
+                    <a href="/contact" class="text-white-50 text-decoration-none">Контакты</a>
+                </div>
+            </div>
+            <hr class="bg-white-50 my-3">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2024 SaaSPro. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Отправка...';
+            btn.disabled = true;
+            
+            // Имитация отправки
+            setTimeout(() => {
+                alert('Сообщение успешно отправлено! Мы ответим вам в течение 24 часов.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                this.reset();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

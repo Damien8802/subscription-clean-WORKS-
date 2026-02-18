@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Партнерская программа | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <style>
+        .partner-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+        }
+        .partner-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .partner-card:hover {
+            transform: translateY(-10px);
+        }
+        .commission-badge {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tier-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .tier-card:hover {
+            border-color: #4361ee;
+            box-shadow: 0 15px 30px rgba(67, 97, 238, 0.15);
+        }
+        .tier-card.premium {
+            border-color: #4361ee;
+            background: rgba(67, 97, 238, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-rocket text-primary me-2"></i>SaaSPro
+            </a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/">Главная</a>
+                <a class="nav-link" href="/dashboard">Дашборд</a>
+                <a class="nav-link active" href="/partner">Партнеры</a>
+                <a class="nav-link" href="/pricing">Тарифы</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Герой секция -->
+    <section class="partner-hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Зарабатывайте с нашей партнерской программой</h1>
+                    <p class="lead mb-4">Привлекайте клиентов и получайте до 30% от каждого платежа. Пожизненные комиссии, быстрые выплаты, прозрачная статистика.</p>
+                    <a href="#register" class="btn btn-light btn-lg fw-bold">
+                        <i class="fas fa-user-plus me-2"></i>Стать партнером
+                    </a>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="commission-badge mb-3">до 30%</div>
+                    <p class="h4">пожизненная комиссия</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Преимущества -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5">Почему стоит стать партнером?</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="partner-card p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-percentage fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="text-center fw-bold">Высокие комиссии</h4>
+                        <p class="text-center">До 30% от каждого платежа привлеченного клиента. Пожизненные выплаты.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="partner-card p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-bolt fa-3x text-success"></i>
+                        </div>
+                        <h4 class="text-center fw-bold">Мгновенные выплаты</h4>
+                        <p class="text-center">Вывод средств доступен сразу после достижения минимальной суммы в 1000₽.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="partner-card p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-chart-line fa-3x text-warning"></i>
+                        </div>
+                        <h4 class="text-center fw-bold">Подробная аналитика</h4>
+                        <p class="text-center">Детальная статистика по кликам, конверсиям и заработку в реальном времени.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Уровни партнеров -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5">Уровни партнерской программы</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="tier-card">
+                        <h4 class="fw-bold">Начинающий</h4>
+                        <div class="h1 text-primary fw-bold mb-3">15%</div>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Минимальная выплата: 1000₽</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> До 10 привлеченных клиентов</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Базовая статистика</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Выплаты раз в месяц</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="tier-card premium">
+                        <span class="badge bg-primary mb-3">ПОПУЛЯРНЫЙ</span>
+                        <h4 class="fw-bold">Профессионал</h4>
+                        <div class="h1 text-primary fw-bold mb-3">25%</div>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Минимальная выплата: 500₽</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> До 50 привлеченных клиентов</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Расширенная статистика</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Выплаты раз в неделю</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Персональный менеджер</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="tier-card">
+                        <h4 class="fw-bold">Эксперт</h4>
+                        <div class="h1 text-primary fw-bold mb-3">30%</div>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Минимальная выплата: 100₽</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Неограниченное количество клиентов</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Полная аналитика + API доступ</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Выплаты ежедневно</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Персональная поддержка 24/7</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Бонусы за объем</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Форма регистрации -->
+    <section class="py-5" id="register">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-5">
+                            <h2 class="text-center fw-bold mb-4">Стать партнером</h2>
+                            <form id="partnerForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Фамилия</label>
+                                        <input type="text" class="form-control" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Сайт или канал продвижения</label>
+                                    <input type="url" class="form-control" placeholder="https://">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Ожидаемое количество клиентов в месяц</label>
+                                    <select class="form-select">
+                                        <option>1-10</option>
+                                        <option>11-50</option>
+                                        <option>51-100</option>
+                                        <option>100+</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Комментарий (необязательно)</label>
+                                    <textarea class="form-control" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-paper-plane me-2"></i>Отправить заявку
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2024 SaaSPro. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('partnerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Отправка...';
+            btn.disabled = true;
+            
+            // Имитация отправки
+            setTimeout(() => {
+                alert('Заявка успешно отправлена! Мы свяжемся с вами в течение 24 часов.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                this.reset();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

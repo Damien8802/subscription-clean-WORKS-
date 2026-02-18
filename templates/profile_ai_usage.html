@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>{{ .Title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 0; margin-bottom: 30px; }
+        .stat-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); height: 100%; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #2d3748; }
+        .stat-label { color: #718096; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-container { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .key-card { background: #f1f5f9; border-radius: 16px; padding: 16px; margin-bottom: 15px; }
+        .quota-bar { height: 8px; border-radius: 4px; background: #e2e8f0; margin: 8px 0; }
+        .quota-progress { height: 8px; border-radius: 4px; background: #667eea; }
+        @media (max-width: 768px) { .profile-header { padding: 30px 0; } }
+    </style>
+</head>
+<body>
+    <div class="profile-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2"><i class="fas fa-robot me-3"></i>Мои AI-запросы</h1>
+                <a href="/profile" class="btn btn-light rounded-pill"><i class="fas fa-user me-2"></i>Профиль</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Общая статистика -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ .TotalRequests }}</div>
+                    <div class="stat-label">Всего запросов</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ .TotalTokens }}</div>
+                    <div class="stat-label">Всего токенов</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика по моделям -->
+        <div class="table-container mb-5">
+            <h5 class="mb-3"><i class="fas fa-microchip me-2"></i>Использование по моделям</h5>
+            {{ if .ByModel }}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Модель</th>
+                            <th>Запросы</th>
+                            <th>Токены</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .ByModel }}
+                        <tr>
+                            <td><code>{{ .Model }}</code></td>
+                            <td>{{ .Requests }}</td>
+                            <td>{{ .Tokens }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+            {{ else }}
+            <p class="text-muted">Вы ещё не использовали AI-запросы.</p>
+            {{ end }}
+        </div>
+
+        <!-- API-ключи и квоты -->
+        <div class="table-container">
+            <h5 class="mb-3"><i class="fas fa-key me-2"></i>Мои API-ключи</h5>
+            {{ if .Keys }}
+                {{ range .Keys }}
+                <div class="key-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="fw-bold">{{ .Name }}</span>
+                            <span class="badge {{ if .IsActive }}bg-success{{ else }}bg-secondary{{ end }} ms-2">
+                                {{ if .IsActive }}Активен{{ else }}Неактивен{{ end }}
+                            </span>
+                        </div>
+                        <small class="text-muted">Создан: {{ .CreatedAt.Format "02.01.2006" }}</small>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Использовано токенов: {{ .QuotaUsed }} / {{ if eq .QuotaLimit -1 }}∞{{ else }}{{ .QuotaLimit }}{{ end }}</small>
+                        {{ if ne .QuotaLimit -1 }}
+                        <div class="quota-bar">
+                            {{ $percent := div (mul .QuotaUsed 100) .QuotaLimit }}
+                            <div class="quota-progress" style="width: {{ $percent }}%;"></div>
+                        </div>
+                        {{ else }}
+                        <div class="quota-bar">
+                            <div class="quota-progress" style="width: 0%;"></div>
+                        </div>
+                        <small class="text-success">Безлимитный ключ</small>
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+            {{ else }}
+            <p class="text-muted">У вас нет API-ключей. <a href="/api/user/keys">Создайте ключ</a> для доступа к AI.</p>
+            {{ end }}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

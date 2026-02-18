@@ -1,0 +1,152 @@
+<div id="ai-assistant" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <style>
+        .chat-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chat-button:hover {
+            transform: scale(1.1);
+        }
+        .chat-window {
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+        }
+        .chat-input {
+            flex: 1;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 10px 15px;
+            outline: none;
+        }
+        .chat-send {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .message {
+            margin-bottom: 12px;
+            max-width: 80%;
+        }
+        .user-message {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            padding: 8px 14px;
+            border-radius: 18px 18px 0 18px;
+        }
+        .bot-message {
+            background: white;
+            color: #2d3748;
+            border: 1px solid #e2e8f0;
+            align-self: flex-start;
+            padding: 8px 14px;
+            border-radius: 18px 18px 18px 0;
+        }
+        .timestamp {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            margin-top: 4px;
+        }
+    </style>
+
+    <div id="chatButton" class="chat-button" onclick="toggleChat()">
+        <i class="fas fa-robot" style="font-size: 24px;"></i>
+    </div>
+
+    <div id="chatWindow" class="chat-window">
+        <div class="chat-header">
+            <i class="fas fa-robot me-2"></i> AI Ассистент
+            <span style="float: right; cursor: pointer;" onclick="toggleChat()">✕</span>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="message bot-message">
+                Здравствуйте! Я AI-ассистент SaaSPro. Задайте мне вопрос о ваших подписках, платежах или статистике.
+                <div class="timestamp">только что</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Введите ваш вопрос..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="chat-send" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            const chatButton = document.getElementById('chatButton');
+            if (chatWindow.style.display === 'flex') {
+                chatWindow.style.display = 'none';
+                chatButton.style.display = 'flex';
+            } else {
+                chatWindow.style.display = 'flex';
+                chatButton.style.display = 'none';
+            }
+        }
+
+        function appendMessage(text, isUser) {
+            const messages = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + (isUser ? 'user-message' : 'bot-message');
+            msgDiv.innerHTML = text + '<div class="timestamp">' + new Date().toLocaleTimeString() + '</div>';
+            messages.appendChild(msgDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const question = input.value.trim();
+            if (!question) return;
+            appendMessage(question, true);
+            input.value = '';
+
+            fetch('/api/ai/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            })
+            .then(res => res.json())
+            .then(data => {
+                appendMessage(data.answer || 'Не удалось получить ответ', false);
+            })
+            .catch(err => {
+                appendMessage('Ошибка соединения', false);
+            });
+        }
+    </script>
+</div>

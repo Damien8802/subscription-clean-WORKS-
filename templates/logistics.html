@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>Логистика | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f8fafc;
+        }
+        .logistics-header {
+            background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        .shipment-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .status-badge {
+            background: #e6fffa;
+            color: #1e4a4a;
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .progress-custom {
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            margin-top: 12px;
+        }
+        .progress-bar-custom {
+            background: #38b2ac;
+            border-radius: 4px;
+            width: 60%;
+            height: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logistics-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2"><i class="fas fa-truck me-3"></i>Логистика</h1>
+                <a href="/" class="btn btn-light rounded-pill"><i class="fas fa-arrow-left me-2"></i>На главную</a>
+            </div>
+            <p class="lead mb-0 opacity-75">Управление поставками и доставкой</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8">
+                <h5 class="mb-3"><i class="fas fa-boxes me-2"></i>Активные отправления</h5>
+                <div class="shipment-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="fw-bold">#SHP-2026-0421</span>
+                            <span class="status-badge ms-3"><i class="fas fa-check-circle me-1"></i>В пути</span>
+                        </div>
+                        <small class="text-muted">3 дня</small>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Отправитель</small>
+                            <span>ООО "Склад №7"</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Получатель</small>
+                            <span>ИП Смирнов А.В.</span>
+                        </div>
+                    </div>
+                    <div class="progress-custom mt-3">
+                        <div class="progress-bar-custom"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Москва</span>
+                        <span class="fw-bold">Екатеринбург</span>
+                    </div>
+                </div>
+                <div class="shipment-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="fw-bold">#SHP-2026-0398</span>
+                            <span class="status-badge ms-3" style="background:#fed7d7; color:#7b3a3a;"><i class="fas fa-clock me-1"></i>Задержка</span>
+                        </div>
+                        <small class="text-muted">5 дней</small>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Отправитель</small>
+                            <span>ПАО "МеталлИнвест"</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Получатель</small>
+                            <span>ЗАО "СтройТех"</span>
+                        </div>
+                    </div>
+                    <div class="progress-custom mt-3">
+                        <div class="progress-bar-custom" style="width: 30%; background: #f59e0b;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Новосибирск</span>
+                        <span>Красноярск</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="bg-white p-4 rounded-4 shadow-sm">
+                    <h5 class="mb-3"><i class="fas fa-chart-line me-2"></i>Статистика</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Доставлено сегодня</span>
+                        <span class="fw-bold">14</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>В пути</span>
+                        <span class="fw-bold">27</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Среднее время</span>
+                        <span class="fw-bold">2.4 дня</span>
+                    </div>
+                    <hr>
+                    <div class="d-grid">
+                        <a href="/delivery" class="btn btn-outline-primary rounded-pill">
+                            <i class="fas fa-search me-2"></i>Отследить доставку
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

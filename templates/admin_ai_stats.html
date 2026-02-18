@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>{{ .Title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .admin-header { background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); color: white; padding: 40px 0; margin-bottom: 30px; }
+        .admin-nav { background: white; border-radius: 20px; padding: 15px; margin-bottom: 30px; }
+        .admin-nav .nav-link { border-radius: 12px; color: #4a5568; padding: 12px 20px; margin: 0 5px; }
+        .admin-nav .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .admin-nav .nav-link i { margin-right: 8px; }
+        .stat-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); height: 100%; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #2d3748; }
+        .stat-label { color: #718096; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .period-selector { background: white; border-radius: 20px; padding: 15px 20px; margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2"><i class="fas fa-chart-line me-3"></i>Статистика AI-запросов</h1>
+                <a href="/admin" class="btn btn-light rounded-pill"><i class="fas fa-arrow-left me-2"></i>Назад в дашборд</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="admin-nav">
+            <ul class="nav nav-pills justify-content-center">
+                <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-chart-pie"></i>Дашборд</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/users"><i class="fas fa-users"></i>Пользователи</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/subscriptions"><i class="fas fa-crown"></i>Подписки</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/plans"><i class="fas fa-tags"></i>Тарифы</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/api-keys"><i class="fas fa-key"></i>API-ключи</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/admin/ai-stats"><i class="fas fa-chart-line"></i>AI статистика</a></li>
+            </ul>
+        </div>
+
+        <!-- Выбор периода -->
+        <div class="period-selector">
+            <form method="get" action="/admin/ai-stats">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <label class="fw-semibold mb-1">Период:</label>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="btn-group" role="group">
+                            <button type="submit" name="period" value="day" class="btn {{ if eq .Period "day" }}btn-primary{{ else }}btn-outline-secondary{{ end }}">День</button>
+                            <button type="submit" name="period" value="week" class="btn {{ if eq .Period "week" }}btn-primary{{ else }}btn-outline-secondary{{ end }}">Неделя</button>
+                            <button type="submit" name="period" value="month" class="btn {{ if eq .Period "month" }}btn-primary{{ else }}btn-outline-secondary{{ end }}">Месяц</button>
+                            <button type="submit" name="period" value="all" class="btn {{ if eq .Period "all" }}btn-primary{{ else }}btn-outline-secondary{{ end }}">Всё время</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Общая статистика -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ .Stats.total_requests }}</div>
+                    <div class="stat-label">Всего запросов</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ .Stats.total_tokens }}</div>
+                    <div class="stat-label">Всего токенов</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ printf "%.0f" .Stats.avg_duration_ms }} мс</div>
+                    <div class="stat-label">Среднее время</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-value">{{ .Stats.total_errors }}</div>
+                    <div class="stat-label">Ошибок</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Топ пользователей -->
+            <div class="col-lg-6 mb-4">
+                <div class="bg-white p-4 rounded-4 shadow-sm h-100">
+                    <h5 class="mb-3"><i class="fas fa-users me-2"></i>Топ пользователей</h5>
+                    {{ if .Stats.top_users }}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Пользователь</th>
+                                    <th>Запросы</th>
+                                    <th>Токены</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{ range .Stats.top_users }}
+                                <tr>
+                                    <td>{{ .name }}<br><small class="text-muted">{{ .email }}</small></td>
+                                    <td>{{ .requests }}</td>
+                                    <td>{{ .tokens }}</td>
+                                </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ else }}
+                    <p class="text-muted">Нет данных</p>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Топ моделей -->
+            <div class="col-lg-6 mb-4">
+                <div class="bg-white p-4 rounded-4 shadow-sm h-100">
+                    <h5 class="mb-3"><i class="fas fa-microchip me-2"></i>Топ моделей</h5>
+                    {{ if .Stats.top_models }}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Модель</th>
+                                    <th>Запросы</th>
+                                    <th>Токены</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{ range .Stats.top_models }}
+                                <tr>
+                                    <td><code>{{ .model }}</code></td>
+                                    <td>{{ .requests }}</td>
+                                    <td>{{ .tokens }}</td>
+                                </tr>
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ else }}
+                    <p class="text-muted">Нет данных</p>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

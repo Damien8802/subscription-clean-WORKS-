@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <style>
+        .settings-container {
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .settings-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .settings-nav {
+            border-right: 1px solid #e2e8f0;
+        }
+        .settings-nav .nav-link {
+            padding: 12px 15px;
+            color: #64748b;
+            border-radius: 10px;
+            margin-bottom: 5px;
+        }
+        .settings-nav .nav-link:hover,
+        .settings-nav .nav-link.active {
+            background: #f1f5f9;
+            color: #4361ee;
+        }
+        .form-check-input:checked {
+            background-color: #4361ee;
+            border-color: #4361ee;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4361ee;
+        }
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+    </style>
+</head>
+<body class="settings-container">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Боковая навигация -->
+            <div class="col-lg-3">
+                <div class="settings-card sticky-top" style="top: 20px;">
+                    <h5 class="fw-bold mb-4">Настройки</h5>
+                    <div class="settings-nav">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="#profile">
+                                    <i class="fas fa-user me-2"></i>Профиль
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#security">
+                                    <i class="fas fa-shield-alt me-2"></i>Безопасность
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#notifications">
+                                    <i class="fas fa-bell me-2"></i>Уведомления
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#billing">
+                                    <i class="fas fa-credit-card me-2"></i>Платежи
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#integrations">
+                                    <i class="fas fa-plug me-2"></i>Интеграции
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#api">
+                                    <i class="fas fa-code me-2"></i>API ключи
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#team">
+                                    <i class="fas fa-users me-2"></i>Команда
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Основной контент -->
+            <div class="col-lg-9">
+                <!-- Профиль -->
+                <div class="settings-card" id="profile">
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-user me-2"></i>Профиль
+                    </h5>
+                    
+                    <div class="row align-items-center mb-4">
+                        <div class="col-auto">
+                            <div class="position-relative">
+                                <img src="https://ui-avatars.com/api/?name=Иван+Петров&background=4361ee&color=fff&size=100" 
+                                     class="rounded-circle" width="100" height="100" alt="Аватар">
+                                <button class="btn btn-sm btn-outline-primary position-absolute bottom-0 end-0">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h4>Иван Петров</h4>
+                            <p class="text-muted">ivan.petrov@example.com</p>
+                            <button class="btn btn-outline-primary btn-sm">Изменить фото</button>
+                        </div>
+                    </div>
+
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Имя</label>
+                                <input type="text" class="form-control" value="Иван">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Фамилия</label>
+                                <input type="text" class="form-control" value="Петров">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" value="ivan.petrov@example.com">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Телефон</label>
+                            <input type="tel" class="form-control" value="+7 (999) 123-45-67">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Компания</label>
+                            <input type="text" class="form-control" value="ООО 'ТехноПро'">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Должность</label>
+                            <input type="text" class="form-control" value="Менеджер по развитию">
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Сохранить изменения
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Безопасность -->
+                <div class="settings-card" id="security">
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>Безопасность
+                    </h5>
+                    
+                    <div class="mb-4">
+                        <h6>Пароль</h6>
+                        <p class="text-muted">Последнее изменение: 2 недели назад</p>
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <i class="fas fa-key me-2"></i>Изменить пароль
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6>Двухфакторная аутентификация</h6>
+                                <p class="text-muted">Добавьте дополнительный уровень безопасности</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6>Активные сессии</h6>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Chrome, Windows</strong>
+                                        <p class="text-muted mb-0">Москва, Россия • Сейчас активна</p>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger">Завершить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Уведомления -->
+                <div class="settings-card" id="notifications">
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-bell me-2"></i>Уведомления
+                    </h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                            <label class="form-check-label" for="emailNotifications">
+                                Email уведомления
+                            </label>
+                            <p class="text-muted small">Получать уведомления на email</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="pushNotifications" checked>
+                            <label class="form-check-label" for="pushNotifications">
+                                Push уведомления
+                            </label>
+                            <p class="text-muted small">Показывать уведомления в браузере</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="smsNotifications">
+                            <label class="form-check-label" for="smsNotifications">
+                                SMS уведомления
+                            </label>
+                            <p class="text-muted small">Получать SMS на телефон</p>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-4 mb-3">Типы уведомлений</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="newUsers" checked>
+                                <label class="form-check-label" for="newUsers">
+                                    Новые пользователи
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="payments" checked>
+                                <label class="form-check-label" for="payments">
+                                    Платежи
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="system" checked>
+                                <label class="form-check-label" for="system">
+                                    Системные уведомления
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="marketing">
+                                <label class="form-check-label" for="marketing">
+                                    Маркетинговые рассылки
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="updates" checked>
+                                <label class="form-check-label" for="updates">
+                                    Обновления системы
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="securityAlerts" checked>
+                                <label class="form-check-label" for="securityAlerts">
+                                    Оповещения безопасности
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно смены пароля -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменить пароль</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label class="form-label">Текущий пароль</label>
+                            <input type="password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Новый пароль</label>
+                            <input type="password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Повторите новый пароль</label>
+                            <input type="password" class="form-control" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="passwordForm" class="btn btn-primary">Изменить пароль</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Обработка формы пароля
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Пароль успешно изменен!');
+            bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+        });
+
+        // Плавная прокрутка к разделам
+        document.querySelectorAll('.settings-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                // Убираем активный класс у всех ссылок
+                document.querySelectorAll('.settings-nav .nav-link').forEach(l => {
+                    l.classList.remove('active');
+                });
+                
+                // Добавляем активный класс текущей ссылке
+                this.classList.add('active');
+                
+                // Прокручиваем к элементу
+                targetElement.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

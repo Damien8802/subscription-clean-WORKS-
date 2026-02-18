@@ -1,0 +1,126 @@
+﻿/* Основные стили для кнопок */
+.button-fix {
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.button-fix:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Стили для сообщений */
+.message-box {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.message {
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    color: white;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.message-success {
+    background-color: #28a745;
+    border-left: 5px solid #1e7e34;
+}
+
+.message-error {
+    background-color: #dc3545;
+    border-left: 5px solid #bd2130;
+}
+
+.message-info {
+    background-color: #17a2b8;
+    border-left: 5px solid #117a8b;
+}
+
+.message-warning {
+    background-color: #ffc107;
+    border-left: 5px solid #d39e00;
+    color: #212529 !important;
+}
+
+/* Стили для fallback кнопок */
+.fallback-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+}
+
+.fallback-button {
+    display: block;
+    margin: 10px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.fallback-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.fallback-button-start {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.fallback-button-api {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.5s ease;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .message-box {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+    
+    .fallback-buttons {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+    
+    .fallback-button {
+        min-width: auto;
+        width: calc(100% - 20px);
+    }
+}

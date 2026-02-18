@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚚 Логистика Pro - Управление доставками</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary-color: #7209b7;
+            --success-color: #4cc9f0;
+            --warning-color: #f8961e;
+            --danger-color: #f72585;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --gray-color: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            padding: 20px;
+        }
+        
+        .logistics-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+        }
+        
+        .header-content h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-content p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 30px;
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header-stat {
+            text-align: center;
+        }
+        
+        .header-stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: block;
+        }
+        
+        .header-stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .card-title i {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .action-btn {
+            background: var(--light-color);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+        
+        .action-btn i {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .action-btn span {
+            font-weight: 500;
+        }
+        
+        /* Orders Table */
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .orders-table th {
+            text-align: left;
+            padding: 15px;
+            font-weight: 600;
+            color: var(--gray-color);
+            border-bottom: 2px solid var(--border-color);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .orders-table td {
+            padding: 18px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .order-id {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .customer-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .customer-name {
+            font-weight: 500;
+        }
+        
+        .customer-phone {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-processing {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-shipped {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .status-delivered {
+            background: #f1f8e9;
+            color: #689f38;
+        }
+        
+        .status-pending {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+        
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Recent Activity */
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--light-color);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+        
+        .activity-item:hover {
+            background: #e8f4ff;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .activity-icon.new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .activity-icon.delivery {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+        
+        .activity-icon.payment {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-time {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--light-color);
+            color: var(--dark-color);
+            border: 2px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        /* Badge */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .header-stats {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logistics-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-shipping-fast"></i> Логистика Pro</h1>
+                <p>Управление доставками в реальном времени • Интегрировано с CRM системой</p>
+            </div>
+            <div class="header-stats">
+                <div class="header-stat">
+                    <span class="header-stat-value" id="totalOrders">142</span>
+                    <span class="header-stat-label">Всего заказов</span>
+                </div>
+                <div class="header-stat">
+                    <span class="header-stat-value" id="activeDeliveries">28</span>
+                    <span class="header-stat-label">В доставке</span>
+                </div>
+                <div class="header-stat">
+                    <span class="header-stat-value" id="todayRevenue">156.8k</span>
+                    <span class="header-stat-label">Выручка сегодня</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div>
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-bolt"></i> Быстрые действия</h2>
+                    </div>
+                    <div class="quick-actions">
+                        <div class="action-btn" onclick="createNewOrder()">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Новый заказ</span>
+                        </div>
+                        <div class="action-btn" onclick="trackDelivery()">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Отследить доставку</span>
+                        </div>
+                        <div class="action-btn" onclick="generateReport()">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Отчет за день</span>
+                        </div>
+                        <div class="action-btn" onclick="manageCouriers()">
+                            <i class="fas fa-users"></i>
+                            <span>Курьеры</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="card" style="margin-top: 30px;">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-history"></i> Последняя активность</h2>
+                    </div>
+                    <div class="activity-list">
+                        <div class="activity-item">
+                            <div class="activity-icon new">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div class="activity-content">
+                                <strong>Новый заказ #ORD-8472</strong>
+                                <p>Иванов Иван • 12,400 ₽</p>
+                                <span class="activity-time">2 минуты назад</span>
+                            </div>
+                            <span class="badge badge-success">Новый</span>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon delivery">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="activity-content">
+                                <strong>Доставлен заказ #ORD-8468</strong>
+                                <p>Петрова Мария • Курьер: Алексей С.</p>
+                                <span class="activity-time">15 минут назад</span>
+                            </div>
+                            <span class="badge badge-success">Завершено</span>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon payment">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="activity-content">
+                                <strong>Оплачен заказ #ORD-8465</strong>
+                                <p>Сидоров Алексей • Картой онлайн</p>
+                                <span class="activity-time">1 час назад</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Orders Table -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-clipboard-list"></i> Активные заказы</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="refreshOrders()">
+                                <i class="fas fa-sync-alt"></i> Обновить
+                            </button>
+                            <button class="btn btn-primary" onclick="exportOrders()">
+                                <i class="fas fa-download"></i> Экспорт
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="overflow-x: auto;">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Заказа</th>
+                                    <th>Клиент</th>
+                                    <th>Сумма</th>
+                                    <th>Статус</th>
+                                    <th>Доставка</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTable">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn btn-secondary" onclick="loadMoreOrders()">
+                            <i class="fas fa-chevron-down"></i> Показать еще
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3 class="chart-title"><i class="fas fa-chart-line"></i> Статистика заказов</h3>
+                <canvas id="ordersChart" width="400" height="250"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title"><i class="fas fa-chart-pie"></i> Распределение по статусам</h3>
+                <canvas id="statusChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="card" style="margin-top: 30px;">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-tachometer-alt"></i> Показатели эффективности</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px;">
+                <div>
+                    <h4 style="margin-bottom: 10px;">Среднее время доставки</h4>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--primary-color);">2.4</div>
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: var(--gray-color);">
+                                <span>часа</span>
+                                <span style="float: right;">-0.3ч с прошлой недели</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="margin-bottom: 10px;">Удовлетворенность клиентов</h4>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--success-color);">4.8</div>
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: var(--gray-color);">
+                                <span>из 5.0</span>
+                                <span style="float: right;">+0.2 с прошлого месяца</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 96%; background: var(--success-color);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="margin-bottom: 10px;">Заказов доставлено вовремя</h4>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #7209b7;">94%</div>
+                        <div style="flex: 1;">
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: var(--gray-color);">
+                                <span>этой недели</span>
+                                <span style="float: right;">+3% с прошлой недели</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 94%; background: #7209b7;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Demo orders data
+        const demoOrders = [
+            {
+                id: 'ORD-8472',
+                customer: 'Иванов Иван',
+                phone: '+7 (999) 123-45-67',
+                amount: '12,400 ₽',
+                status: 'new',
+                statusText: 'Новый',
+                delivery: 'Сегодня, 18:00',
+                address: 'Москва, ул. Ленина, 15'
+            },
+            {
+                id: 'ORD-8471',
+                customer: 'Петрова Мария',
+                phone: '+7 (999) 234-56-78',
+                amount: '8,900 ₽',
+                status: 'processing',
+                statusText: 'В обработке',
+                delivery: 'Завтра, 12:00',
+                address: 'Москва, пр. Мира, 42'
+            },
+            {
+                id: 'ORD-8470',
+                customer: 'Сидоров Алексей',
+                phone: '+7 (999) 345-67-89',
+                amount: '23,500 ₽',
+                status: 'shipped',
+                statusText: 'В пути',
+                delivery: 'Сегодня, 15:30',
+                address: 'Москва, ул. Пушкина, 10'
+            },
+            {
+                id: 'ORD-8469',
+                customer: 'Кузнецова Анна',
+                phone: '+7 (999) 456-78-90',
+                amount: '5,600 ₽',
+                status: 'delivered',
+                statusText: 'Доставлен',
+                delivery: 'Вчера, 14:15',
+                address: 'Москва, ул. Гагарина, 5'
+            },
+            {
+                id: 'ORD-8468',
+                customer: 'Васильев Дмитрий',
+                phone: '+7 (999) 567-89-01',
+                amount: '15,800 ₽',
+                status: 'pending',
+                statusText: 'Ожидает',
+                delivery: 'Завтра, 16:45',
+                address: 'Москва, ул. Советская, 33'
+            }
+        ];
+        
+        // Initialize charts
+        let ordersChart, statusChart;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            initCharts();
+            updateStats();
+        });
+        
+        function loadOrders() {
+            const table = document.getElementById('ordersTable');
+            table.innerHTML = '';
+            
+            demoOrders.forEach(order => {
+                const row = document.createElement('tr');
+                
+                // Get status class
+                let statusClass = 'status-' + order.status;
+                
+                // Create action buttons HTML
+                const actionsHTML = `
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="viewOrder('${order.id}')" style="background: #4361ee; color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editOrder('${order.id}')" style="background: #4cc9f0; color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="trackOrder('${order.id}')" style="background: #7209b7; color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </button>
+                    </div>
+                `;
+                
+                row.innerHTML = `
+                    <td><span class="order-id">${order.id}</span></td>
+                    <td>
+                        <div class="customer-info">
+                            <span class="customer-name">${order.customer}</span>
+                            <span class="customer-phone">${order.phone}</span>
+                        </div>
+                    </td>
+                    <td><strong>${order.amount}</strong></td>
+                    <td><span class="status-badge ${statusClass}">${order.statusText}</span></td>
+                    <td>${order.delivery}</td>
+                    <td>${actionsHTML}</td>
+                `;
+                
+                table.appendChild(row);
+            });
+        }
+        
+        function initCharts() {
+            // Orders Chart
+            const ordersCtx = document.getElementById('ordersChart').getContext('2d');
+            ordersChart = new Chart(ordersCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [{
+                        label: 'Заказы',
+                        data: [45, 52, 48, 65, 72, 58, 40],
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Новые', 'В обработке', 'В пути', 'Доставлены', 'Ожидают'],
+                    datasets: [{
+                        data: [12, 8, 6, 42, 5],
+                        backgroundColor: [
+                            '#4361ee',
+                            '#4cc9f0',
+                            '#7209b7',
+                            '#27ae60',
+                            '#f8961e'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateStats() {
+            // Simulate real-time updates
+            setInterval(() => {
+                const total = 142 + Math.floor(Math.random() * 3);
+                const active = 28 + Math.floor(Math.random() * 3);
+                const revenue = (156.8 + Math.random() * 2).toFixed(1);
+                
+                document.getElementById('totalOrders').textContent = total;
+                document.getElementById('activeDeliveries').textContent = active;
+                document.getElementById('todayRevenue').textContent = revenue + 'k';
+            }, 5000);
+        }
+        
+        // Action functions
+        function createNewOrder() {
+            alert('Создание нового заказа...\nВ реальном приложении здесь будет форма создания заказа.');
+        }
+        
+        function trackDelivery() {
+            alert('Отслеживание доставки...\nВ реальном приложении здесь будет карта с отслеживанием.');
+        }
+        
+        function generateReport() {
+            alert('Генерация отчета...\nОтчет будет сгенерирован и отправлен на email.');
+        }
+        
+        function manageCouriers() {
+            alert('Управление курьерами...\nСписок всех курьеров и их статусов.');
+        }
+        
+        function refreshOrders() {
+            alert('Обновление списка заказов...');
+            loadOrders();
+        }
+        
+        function exportOrders() {
+            alert('Экспорт данных...\nДанные будут экспортированы в Excel файл.');
+        }
+        
+        function loadMoreOrders() {
+            alert('Загрузка дополнительных заказов...');
+        }
+        
+        function viewOrder(orderId) {
+            alert(`Просмотр заказа ${orderId}\nДетальная информация о заказе.`);
+        }
+        
+        function editOrder(orderId) {
+            alert(`Редактирование заказа ${orderId}\nФорма редактирования.`);
+        }
+        
+        function trackOrder(orderId) {
+            alert(`Отслеживание заказа ${orderId}\nКарта с маршрутом доставки.`);
+        }
+        
+        // Real-time updates simulation
+        setInterval(() => {
+            // Randomly update some stats
+            const randomOrder = demoOrders[Math.floor(Math.random() * demoOrders.length)];
+            randomOrder.amount = (parseInt(randomOrder.amount.replace(/[^\d]/g, '')) + Math.floor(Math.random() * 1000))
+                .toLocaleString('ru-RU') + ' ₽';
+            
+            // Update one row
+            loadOrders();
+        }, 10000);
+        
+        // Test API connection
+        function testAPI() {
+            fetch('/api/logistics/health')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API Response:', data);
+                    alert('API подключен успешно!\nМодуль: ' + data.module + '\nСтатус: ' + data.status);
+                })
+                .catch(error => {
+                    console.error('API Error:', error);
+                    alert('Ошибка подключения к API');
+                });
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            console.log('Auto-refreshing data...');
+        }, 30000);
+    </script>
+</body>
+</html>

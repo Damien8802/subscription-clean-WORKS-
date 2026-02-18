@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>Мои подписки - SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+        .sub-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        .subscription-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .status-badge-active {
+            background: #c6f6d5;
+            color: #22543d;
+            border-radius: 50px;
+            padding: 4px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-badge-canceled {
+            background: #fed7d7;
+            color: #742a2a;
+            border-radius: 50px;
+            padding: 4px 14px;
+        }
+        .status-badge-expired {
+            background: #e2e8f0;
+            color: #4a5568;
+            border-radius: 50px;
+            padding: 4px 14px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 24px;
+        }
+        .btn-subscribe-now {
+            background: #667eea;
+            color: white;
+            border-radius: 50px;
+            padding: 12px 30px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="sub-header">
+        <div class="container">
+            <h1 class="h2"><i class="fas fa-crown me-3"></i>Мои подписки</h1>
+            <p class="lead mb-0">Управление активными и прошлыми подписками</p>
+        </div>
+    </div>
+
+    <div class="container">
+        {{ if .Subscriptions }}
+            {{ range .Subscriptions }}
+            <div class="subscription-card">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="fw-bold mb-1">{{ .PlanName }}</h4>
+                        <div class="d-flex align-items-center">
+                            <span class="badge {{ if eq .Status "active" }}status-badge-active{{ else if eq .Status "canceled" }}status-badge-canceled{{ else }}status-badge-expired{{ end }} me-3">
+                                {{ if eq .Status "active" }}Активна{{ else if eq .Status "canceled" }}Отменена{{ else }}Истекла{{ end }}
+                            </span>
+                            <span class="text-muted small">
+                                <i class="fas fa-calendar me-1"></i> до {{ .CurrentPeriodEnd.Format "02.01.2006" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="fs-4 fw-bold">{{ .PlanPriceMonthly }} {{ .PlanCurrency }}</span>
+                        <span class="text-muted">/мес</span>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        {{ if eq .Status "active" }}
+                        <button class="btn btn-outline-danger rounded-pill btn-sm">
+                            <i class="fas fa-ban me-1"></i>Отменить
+                        </button>
+                        {{ else }}
+                        <button class="btn btn-outline-primary rounded-pill btn-sm" onclick="location.href='/pricing'">
+                            <i class="fas fa-sync me-1"></i>Возобновить
+                        </button>
+                        {{ end }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <div class="row text-muted small">
+                    <div class="col-md-6">
+                        <i class="fas fa-hashtag me-1"></i> ID: {{ .ID }}
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <i class="fas fa-clock me-1"></i> Начало: {{ .CurrentPeriodStart.Format "02.01.2006" }}
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+        {{ else }}
+            <div class="empty-state">
+                <i class="fas fa-crown fa-4x text-muted mb-3"></i>
+                <h4>У вас ещё нет подписок</h4>
+                <p class="text-muted mb-4">Выберите подходящий тариф и начните пользоваться всеми преимуществами SaaSPro</p>
+                <button class="btn-subscribe-now" onclick="location.href='/pricing'">
+                    <i class="fas fa-arrow-right me-2"></i>Выбрать тариф
+                </button>
+            </div>
+        {{ end }}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

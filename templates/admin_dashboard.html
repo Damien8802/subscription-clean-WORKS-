@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <title>{{ .Title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            height: 100%;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+        .stat-icon {
+            font-size: 2rem;
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2d3748;
+            line-height: 1.2;
+        }
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .admin-nav {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 30px;
+        }
+        .admin-nav .nav-link {
+            border-radius: 12px;
+            color: #4a5568;
+            padding: 12px 20px;
+            margin: 0 5px;
+        }
+        .admin-nav .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .admin-nav .nav-link i {
+            margin-right: 8px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        @media (max-width: 768px) {
+            .admin-header { padding: 30px 0; }
+            .stat-card { margin-bottom: 15px; }
+            .admin-nav .nav-link { margin: 5px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h2"><i class="fas fa-crown me-3"></i>Панель администратора</h1>
+                <a href="/" class="btn btn-light rounded-pill"><i class="fas fa-arrow-left me-2"></i>На главную</a>
+            </div>
+            <p class="lead mb-0 opacity-75">Управление пользователями, подписками и тарифами</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Навигация админки -->
+        <div class="admin-nav">
+            <ul class="nav nav-pills justify-content-center">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin">
+                        <i class="fas fa-chart-pie"></i>Дашборд
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/users">
+                        <i class="fas fa-users"></i>Пользователи
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/subscriptions">
+                        <i class="fas fa-crown"></i>Подписки
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/plans">
+                        <i class="fas fa-tags"></i>Тарифы
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Статистика -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-user"></i></div>
+                    <div class="stat-value">{{ .Stats.TotalUsers }}</div>
+                    <div class="stat-label">Всего пользователей</div>
+                    <small class="text-success mt-2 d-block">
+                        <i class="fas fa-arrow-up me-1"></i>{{ .Stats.NewUsersToday }} сегодня
+                    </small>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-crown"></i></div>
+                    <div class="stat-value">{{ .Stats.ActiveSubscriptions }}</div>
+                    <div class="stat-label">Активных подписок</div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-chart-line me-1"></i>всего
+                    </small>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ruble-sign"></i></div>
+                    <div class="stat-value">{{ printf "%.0f" .Stats.MRR }}</div>
+                    <div class="stat-label">MRR (месяц)</div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-calendar me-1"></i>регулярный доход
+                    </small>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-value">{{ if .Stats.PopularPlan }}{{ .Stats.PopularPlan }}{{ else }}—{{ end }}</div>
+                    <div class="stat-label">Популярный тариф</div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-users me-1"></i>по количеству
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Распределение по тарифам -->
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h5 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Подписки по тарифам</h5>
+                    {{ if .Stats.PlanCounts }}
+                        {{ range .Stats.PlanCounts }}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{{ .PlanName }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ .Count }}</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ if gt $.Stats.ActiveSubscriptions 0 }}{{ mul 100 (div (float .Count) (float $.Stats.ActiveSubscriptions)) }}%{{ else }}0%{{ end }}"></div>
+                        </div>
+                        {{ end }}
+                    {{ else }}
+                        <p class="text-muted">Нет данных о подписках</p>
+                    {{ end }}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="chart-container">
+                    <h5 class="mb-4"><i class="fas fa-info-circle me-2"></i>Информация</h5>
+                    <p class="text-muted">Общая выручка: <strong>{{ printf "%.2f" .Stats.TotalRevenue }} ₽</strong></p>
+                    <p class="text-muted">Средний чек: 
+                        <strong>
+                            {{ if gt .Stats.ActiveSubscriptions 0 }}
+                                {{ printf "%.2f" (div .Stats.TotalRevenue (float .Stats.ActiveSubscriptions)) }} ₽
+                            {{ else }}0.00 ₽{{ end }}
+                        </strong>
+                    </p>
+                    <hr>
+                    <p class="text-muted small">* MRR – Monthly Recurring Revenue, ежемесячный регулярный доход от активных подписок.</p>
+                    {{ if .Error }}
+                        <div class="alert alert-warning mt-3">{{ .Error }}</div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
