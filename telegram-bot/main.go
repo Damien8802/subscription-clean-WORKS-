@@ -284,14 +284,14 @@ func handleCallback(bot *tgbotapi.BotAPI, callback *tgbotapi.CallbackQuery) {
     }
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ START – использует прямой HTTP-запрос к Telegram API
 func start(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
     miniAppURL := os.Getenv("MINI_APP_URL")
     if miniAppURL == "" {
         miniAppURL = "https://default-url.com"
     }
-    // Используем URL-кнопку (работает с любой версией библиотеки)
-    urlButton := tgbotapi.NewInlineKeyboardButtonURL("🚀 Открыть мини-приложение", miniAppURL)
-    keyboard := tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(urlButton))
+
+    // 1. Формируем приветственный текст
     welcome := fmt.Sprintf(
         "👋 Привет, %s!\n\n"+
             "Я бот SaaS-платформы. Я автоматически создам для вас аккаунт и API-ключ при первом запросе.\n\n"+
@@ -309,9 +309,41 @@ func start(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
             "/adminplans – управление тарифами (админ)\n"+
             "/help – справка",
         user.FirstName)
-    msg := tgbotapi.NewMessage(chatID, welcome)
-    msg.ReplyMarkup = keyboard
-    bot.Send(msg)
+
+    // 2. Создаём структуру для inline-клавиатуры с WebApp-кнопкой
+    keyboard := map[string]interface{}{
+        "inline_keyboard": [][]map[string]interface{}{
+            {
+                {
+                    "text": "🚀 Открыть мини-приложение",
+                    "web_app": map[string]string{
+                        "url": miniAppURL,
+                    },
+                },
+            },
+        },
+    }
+
+    // 3. Преобразуем в JSON
+    payload := map[string]interface{}{
+        "chat_id":      chatID,
+        "text":         welcome,
+        "reply_markup": keyboard,
+    }
+    jsonPayload, _ := json.Marshal(payload)
+
+    // 4. Отправляем POST-запрос к Telegram API
+    apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", bot.Token)
+    resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonPayload))
+    if err != nil {
+        log.Printf("Ошибка отправки сообщения: %v", err)
+        return
+    }
+    defer resp.Body.Close()
+
+    // Если хотите проверить ответ, можно прочитать:
+    // body, _ := io.ReadAll(resp.Body)
+    // log.Printf("Ответ Telegram: %s", body)
 }
 
 func setKey(bot *tgbotapi.BotAPI, chatID int64, key string) {
