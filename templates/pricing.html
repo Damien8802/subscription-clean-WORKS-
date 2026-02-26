@@ -2,102 +2,122 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
-    <title>Тарифы - SaaSPro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тарифы | SaaSPro</title>
     <style>
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .pricing-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 0 80px; }
-        .pricing-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); transition: all 0.3s; height: 100%; }
-        .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 20px 60px rgba(102,126,234,0.1); }
-        .pricing-card.popular { border: 2px solid #667eea; position: relative; }
-        .popular-badge { position: absolute; top: -12px; left: 20px; background: #667eea; color: white; padding: 6px 20px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
-        .price { font-size: 2.5rem; font-weight: 700; color: #2d3748; }
-        .currency { font-size: 1rem; color: #a0aec0; }
-        .period { font-size: 0.9rem; color: #718096; }
-        .feature-list { list-style: none; padding: 0; margin-top: 20px; }
-        .feature-list li { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
-        .feature-list li:last-child { border-bottom: none; }
-        .btn-subscribe { background: #667eea; color: white; border-radius: 50px; padding: 12px 30px; border: none; width: 100%; font-weight: 600; margin-top: 20px; }
-        .btn-subscribe:hover { background: #5a67d8; }
-        @media (max-width: 768px) { .pricing-header { padding: 40px 0 60px; } .pricing-card { margin-bottom: 20px; } }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 48px;
+            margin-bottom: 50px;
+        }
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        .plan {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .plan:hover {
+            transform: translateY(-10px);
+        }
+        .plan-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .plan-price {
+            font-size: 48px;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .plan-price span {
+            font-size: 16px;
+            color: #999;
+        }
+        .features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .features li {
+            padding: 10px 0;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
     </style>
 </head>
 <body>
-    <div class="pricing-header">
-        <div class="container">
-            <h1 class="display-4 fw-bold text-center">Тарифы для любого бизнеса</h1>
-            <p class="lead text-center opacity-75">Выберите подходящий план и начните прямо сейчас</p>
-        </div>
-    </div>
-
-    <div class="container" style="margin-top: -40px;">
-        {{ if .Plans }}
-        <div class="row g-4">
-            {{ range .Plans }}
-            <div class="col-lg-3 col-md-6">
-                <div class="pricing-card {{ if eq .Code "pro" }}popular{{ end }}">
-                    {{ if eq .Code "pro" }}<span class="popular-badge">🔥 Самый популярный</span>{{ end }}
-                    <h3 class="fw-bold">{{ .Name }}</h3>
-                    <p class="text-muted small">{{ .Description }}</p>
-                    <div class="price mt-3">
-                        {{ .PriceMonthly }} <span class="currency">{{ .Currency }}</span>
-                        <span class="period">/мес</span>
-                    </div>
-                    <div class="small text-muted mb-3">
-                        или {{ .PriceYearly }} {{ .Currency }}/год (скидка 17%)
-                    </div>
-                    <ul class="feature-list">
-                        {{ $features := .Features | jsonParse }}
-                        {{ range $features }}
-                        <li><i class="fas fa-check text-success me-2"></i>{{ . }}</li>
-                        {{ else }}
-                        <li><i class="fas fa-check text-success me-2"></i>Базовый функционал</li>
-                        {{ end }}
-                        <li><i class="fas fa-users me-2"></i>До {{ .MaxUsers }} пользователей</li>
-                    </ul>
-                    <button class="btn-subscribe" onclick="subscribe({{ .ID }})">
-                        Выбрать тариф
-                    </button>
-                </div>
+    <div class="container">
+        <h1>Выберите тариф</h1>
+        <div class="plans">
+            <div class="plan" onclick="location.href='/payment?plan=basic&price=990'">
+                <div class="plan-name">Базовый</div>
+                <div class="plan-price">990 <span>₽/мес</span></div>
+                <ul class="features">
+                    <li>До 100 пользователей</li>
+                    <li>Базовая аналитика</li>
+                    <li>Email поддержка</li>
+                </ul>
+                <div class="btn">Выбрать</div>
             </div>
-            {{ end }}
-        </div>
-        {{ else }}
-        <div class="text-center py-5">
-            <div class="alert alert-info">
-                <h4 class="alert-heading">Тарифы временно недоступны</h4>
-                <p class="mb-0">Пожалуйста, попробуйте позже или свяжитесь с поддержкой.</p>
+            <div class="plan" onclick="location.href='/payment?plan=pro&price=2990'">
+                <div class="plan-name">Профессиональный</div>
+                <div class="plan-price">2 990 <span>₽/мес</span></div>
+                <ul class="features">
+                    <li>До 1000 пользователей</li>
+                    <li>Продвинутая аналитика</li>
+                    <li>Приоритетная поддержка</li>
+                    <li>CRM</li>
+                </ul>
+                <div class="btn">Выбрать</div>
+            </div>
+            <div class="plan" onclick="location.href='/payment?plan=enterprise&price=9990'">
+                <div class="plan-name">Корпоративный</div>
+                <div class="plan-price">9 990 <span>₽/мес</span></div>
+                <ul class="features">
+                    <li>Неограниченно</li>
+                    <li>Полная аналитика</li>
+                    <li>24/7 поддержка</li>
+                    <li>Все интеграции</li>
+                </ul>
+                <div class="btn">Выбрать</div>
             </div>
         </div>
-        {{ end }}
     </div>
-
-    <div class="container mt-5 text-center">
-        <p class="text-muted">Все цены указаны с НДС. Возможна помесячная и годовая оплата.</p>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function subscribe(planId) {
-            const period = confirm('Оплатить ежемесячно? (OK - месяц, Отмена - год)') ? 1 : 12;
-            fetch('/api/subscriptions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan_id: planId, period_month: period })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.subscription) {
-                    alert('Подписка успешно оформлена!');
-                    window.location.href = '/my-subscriptions';
-                } else {
-                    alert('Ошибка: ' + (data.error || 'неизвестная ошибка'));
-                }
-            })
-            .catch(err => alert('Сетевая ошибка'));
-        }
-    </script>
 </body>
 </html>
