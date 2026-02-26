@@ -1,0 +1,88 @@
+<svg width="900" height="500" viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg">
+    <!-- Темный фон -->
+    <rect width="900" height="500" fill="#0f1219"/>
+    
+    <!-- Заголовок SAAS PRO (исправлено) -->
+    <text x="30" y="40" fill="#4ade80" font-size="24" font-weight="bold">SAAS PRO</text>
+    <text x="30" y="65" fill="#60a5fa" font-size="14">Dashboard > Сервер мониторинг</text>
+    
+    <!-- Карточки статистики -->
+    <rect x="30" y="90" width="160" height="70" rx="8" fill="#1e293b" stroke="#2d3748"/>
+    <text x="45" y="115" fill="#94a3b8" font-size="12">ВСЕГО ПОЛЬЗОВАТЕЛЕЙ</text>
+    <text x="45" y="140" fill="white" font-size="24" font-weight="bold">1,234</text>
+    
+    <rect x="200" y="90" width="160" height="70" rx="8" fill="#1e293b" stroke="#2d3748"/>
+    <text x="215" y="115" fill="#94a3b8" font-size="12">ВРЕМЯ В ОЧЕРЕДИ</text>
+    <text x="215" y="140" fill="white" font-size="24" font-weight="bold">08:32</text>
+    
+    <rect x="370" y="90" width="160" height="70" rx="8" fill="#1e293b" stroke="#2d3748"/>
+    <text x="385" y="115" fill="#94a3b8" font-size="12">ВРЕМЯ ОБРАБОТКИ</text>
+    <text x="385" y="140" fill="white" font-size="24" font-weight="bold">05:20</text>
+    
+    <rect x="540" y="90" width="160" height="70" rx="8" fill="#1e293b" stroke="#2d3748"/>
+    <text x="555" y="115" fill="#94a3b8" font-size="12">АКТИВНО</text>
+    <text x="555" y="140" fill="white" font-size="24" font-weight="bold">19</text>
+    
+    <!-- Основной дашборд -->
+    <rect x="30" y="180" width="670" height="2" fill="#2d3748"/>
+    <text x="30" y="210" fill="#4ade80" font-size="14" font-weight="bold">Основной дашборд</text>
+    <text x="180" y="210" fill="#94a3b8" font-size="12">Недельные тренды</text>
+    <text x="280" y="210" fill="#94a3b8" font-size="12">Отчеты</text>
+    
+    <!-- График -->
+    <text x="30" y="250" fill="white" font-size="14">Недельные тренды</text>
+    <path d="M50 320 L100 290 L150 300 L200 270 L250 280 L300 250 L350 260 L400 230 L450 240 L500 210 L550 220 L600 200" 
+          stroke="#4ade80" stroke-width="2" fill="none"/>
+    
+    <line x1="50" y1="330" x2="650" y2="330" stroke="#2d3748" stroke-width="1"/>
+    <line x1="50" y1="180" x2="50" y2="330" stroke="#2d3748" stroke-width="1"/>
+    
+    <!-- Подписи времени -->
+    <text x="50" y="350" fill="#94a3b8" font-size="8">10:00</text>
+    <text x="150" y="350" fill="#94a3b8" font-size="8">12:00</text>
+    <text x="250" y="350" fill="#94a3b8" font-size="8">14:00</text>
+    <text x="350" y="350" fill="#94a3b8" font-size="8">16:00</text>
+    <text x="450" y="350" fill="#94a3b8" font-size="8">18:00</text>
+    <text x="550" y="350" fill="#94a3b8" font-size="8">20:00</text>
+    <text x="630" y="350" fill="#94a3b8" font-size="8">22:00</text>
+    
+    <!-- Легенда -->
+    <rect x="500" y="240" width="10" height="10" fill="#4ade80" rx="2"/>
+    <text x="515" y="250" fill="#94a3b8" font-size="10">Обслужено</text>
+    
+    <rect x="570" y="240" width="10" height="10" fill="#f59e0b" rx="2"/>
+    <text x="585" y="250" fill="#94a3b8" font-size="10">LWOS</text>
+    
+    <!-- Правый блок -->
+    <rect x="680" y="180" width="190" height="140" rx="8" fill="#1e293b"/>
+    <text x="700" y="205" fill="white" font-size="12" font-weight="bold">НЕДЕЛЬНЫЕ ТРЕНДЫ</text>
+    <text x="700" y="225" fill="#94a3b8" font-size="9">СРЕДНИЕ ПОКАЗАТЕЛИ</text>
+    
+    <!-- График столбцы -->
+    <rect x="700" y="250" width="15" height="40" fill="#4ade80" rx="2"/>
+    <rect x="720" y="230" width="15" height="60" fill="#4ade80" rx="2"/>
+    <rect x="740" y="210" width="15" height="80" fill="#4ade80" rx="2"/>
+    <rect x="760" y="190" width="15" height="100" fill="#4ade80" rx="2"/>
+    <rect x="780" y="220" width="15" height="70" fill="#4ade80" rx="2"/>
+    <rect x="800" y="240" width="15" height="50" fill="#4ade80" rx="2"/>
+    <rect x="820" y="260" width="15" height="30" fill="#4ade80" rx="2"/>
+    
+    <!-- Нижние блоки -->
+    <rect x="30" y="370" width="200" height="60" rx="8" fill="#1e293b"/>
+    <text x="45" y="395" fill="#94a3b8" font-size="10">Расписание</text>
+    <text x="45" y="415" fill="white" font-size="14">Обслужено: 1,234</text>
+    
+    <rect x="240" y="370" width="200" height="60" rx="8" fill="#1e293b"/>
+    <text x="255" y="395" fill="#94a3b8" font-size="10">Обслужено</text>
+    <text x="255" y="415" fill="white" font-size="14">LWOS: 19</text>
+    
+    <rect x="450" y="370" width="200" height="60" rx="8" fill="#1e293b"/>
+    <text x="465" y="395" fill="#94a3b8" font-size="10">Email уведомления</text>
+    <text x="465" y="415" fill="white" font-size="14">SMS оповещения</text>
+    
+    <!-- Итог -->
+    <text x="30" y="460" fill="#4ade80" font-size="12" font-weight="bold">НЕДЕЛЬНЫЕ ТРЕНДЫ</text>
+    <text x="30" y="480" fill="#94a3b8" font-size="10">На основе данных за 6 месяцев</text>
+    <text x="250" y="460" fill="white" font-size="14">155K</text>
+    <text x="250" y="480" fill="#94a3b8" font-size="10">Количество клиентов</text>
+</svg>
