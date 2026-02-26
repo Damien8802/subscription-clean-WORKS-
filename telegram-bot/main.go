@@ -1,1475 +1,694 @@
 package main
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io"
     "log"
-    "net/http"
     "os"
-    "strconv"
+    "fmt"
+    "net/http"
     "strings"
-    "sync"
-    "time"
-
-    tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+    "encoding/json"
+    "io"
     "github.com/joho/godotenv"
+    tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type UserData struct {
-    Token string
-    Model string
+// Хранилище состояний пользователей
+var userStates = make(map[int64]string)
+var userPayments = make(map[int64]PaymentData)
+
+type PaymentData struct {
+    PlanName   string
+    Price      string
+    Method     string
+    CardNumber string
+    CardExpiry string
+    CardCVC    string
 }
 
-var (
-    userData = make(map[int64]UserData)
-    mu       sync.RWMutex
-    apiBase  = "http://localhost:8080"
-
-    availableModels = []string{
-        "yandex/yandexgpt-lite",
-        "deepseek/deepseek-chat",
-        "openai/gpt-4.1-mini",
-        "gigachat/gigachat-max",
-        "ollama/llama3.2",
-    }
-
-    newPlanTemp = make(map[int64]*newPlanData)
-)
-
-type newPlanData struct {
-    Step         int
-    Name         string
-    Code         string
-    Description  string
-    PriceMonthly float64
-    PriceYearly  float64
-    Currency     string
-    AIQuota      int64
-    AIModels     string
-    IsActive     bool
-    Features     []string
-    MaxUsers     int
-    SortOrder    int
+// Структура для ответа от Crypto Pay
+type CryptoInvoice struct {
+    InvoiceID int64  `json:"invoice_id"`
+    PayURL    string `json:"pay_url"`
+    Status    string `json:"status"`
 }
+
+type CryptoResponse struct {
+    OK     bool          `json:"ok"`
+    Result CryptoInvoice `json:"result"`
+}
+
+// Хранилище созданных счетов
+var invoices = make(map[int64]int64) // chatID -> invoiceID
 
 func main() {
-    if err := godotenv.Load(); err != nil {
-        log.Println("⚠️ .env file not loaded, using environment variables")
-    } else {
-        fmt.Println("✅ .env file loaded")
-    }
-
+    godotenv.Load("../.env")
     token := os.Getenv("TELEGRAM_BOT_TOKEN")
-    if token == "" {
-        log.Fatal("TELEGRAM_BOT_TOKEN not set")
-    }
-
-    bot, err := tgbotapi.NewBotAPI(token)
-    if err != nil {
-        log.Fatal(err)
-    }
-
+    
+    bot, _ := tgbotapi.NewBotAPI(token)
     bot.Debug = true
-    log.Printf("✅ Бот запущен: @%s", bot.Self.UserName)
+    log.Printf("Бот запущен: @%s", bot.Self.UserName)
 
     u := tgbotapi.NewUpdate(0)
-    u.Timeout = 30
-
+    u.Timeout = 60
     updates := bot.GetUpdatesChan(u)
 
     for update := range updates {
-        if update.Message != nil {
-            chatID := update.Message.Chat.ID
-            text := update.Message.Text
-
-            if strings.HasPrefix(text, "/") {
-                handleCommand(bot, chatID, text, update.Message.From)
-            } else {
-                if data, ok := newPlanTemp[chatID]; ok {
-                    handleCreatePlanStep(bot, chatID, text, data)
-                    continue
-                }
-                msg := tgbotapi.NewMessage(chatID, "Используйте команды: /start, /setkey, /ask, /plans, /usage, /setmodel, /profile, /history, /feedback, /support, /admin, /stats, /users, /broadcast, /block, /unblock, /menu, /adminplans, /help")
-                bot.Send(msg)
-            }
-        } else if update.CallbackQuery != nil {
+        if update.CallbackQuery != nil {
             handleCallback(bot, update.CallbackQuery)
+        } else if update.Message != nil {
+            handleMessage(bot, update.Message)
         }
     }
 }
 
-func isAdmin(userID int64) bool {
-    adminID, err := strconv.ParseInt(os.Getenv("ADMIN_CHAT_ID"), 10, 64)
-    if err != nil {
-        return false
+func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+    if state, exists := userStates[message.Chat.ID]; exists {
+        switch state {
+        case "waiting_card_number":
+            data := userPayments[message.Chat.ID]
+            data.CardNumber = message.Text
+            userPayments[message.Chat.ID] = data
+            
+            msg := tgbotapi.NewMessage(message.Chat.ID, "📅 Введите срок действия (ММ/ГГ):")
+            bot.Send(msg)
+            userStates[message.Chat.ID] = "waiting_card_expiry"
+            
+        case "waiting_card_expiry":
+            data := userPayments[message.Chat.ID]
+            data.CardExpiry = message.Text
+            userPayments[message.Chat.ID] = data
+            
+            msg := tgbotapi.NewMessage(message.Chat.ID, "🔐 Введите CVC код (3 цифры):")
+            bot.Send(msg)
+            userStates[message.Chat.ID] = "waiting_card_cvc"
+            
+        case "waiting_card_cvc":
+            data := userPayments[message.Chat.ID]
+            data.CardCVC = message.Text
+            userPayments[message.Chat.ID] = data
+            
+            msg := tgbotapi.NewMessage(message.Chat.ID, "🔄 Обработка платежа...")
+            bot.Send(msg)
+            
+            result := fmt.Sprintf("✅ Оплата успешно выполнена!\n\n"+
+                "Тариф: *%s*\n"+
+                "Сумма: *%s ₽*\n"+
+                "Карта: *%s*\n\n"+
+                "Подписка активирована!",
+                data.PlanName, data.Price, maskCardNumber(data.CardNumber))
+            
+            msg2 := tgbotapi.NewMessage(message.Chat.ID, result)
+            msg2.ParseMode = "Markdown"
+            bot.Send(msg2)
+            
+            delete(userStates, message.Chat.ID)
+            delete(userPayments, message.Chat.ID)
+        }
+        return
     }
-    return userID == adminID
-}
 
-func handleCommand(bot *tgbotapi.BotAPI, chatID int64, text string, user *tgbotapi.User) {
-    parts := strings.Fields(text)
-    cmd := parts[0]
-
-    switch cmd {
+    switch message.Text {
     case "/start":
-        start(bot, chatID, user)
-    case "/setkey":
-        if len(parts) < 2 {
-            msg := tgbotapi.NewMessage(chatID, "Использование: /setkey ВАШ_API_КЛЮЧ")
-            bot.Send(msg)
-            return
-        }
-        setKey(bot, chatID, parts[1])
-    case "/ask":
-        if len(parts) < 2 {
-            msg := tgbotapi.NewMessage(chatID, "Использование: /ask ваш вопрос")
-            bot.Send(msg)
-            return
-        }
-        question := strings.Join(parts[1:], " ")
-        askAI(bot, chatID, question, user)
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "👋 Привет, DamieN!\n\n"+
+                "Я бот SaaS-платформы. Я автоматически создам для вас аккаунт и API-ключ при первом запросе.\n\n"+
+                "После этого вы сможете:\n"+
+                "/ask – задать вопрос AI\n"+
+                "/plans – посмотреть тарифы\n"+
+                "/usage – узнать остаток токенов\n"+
+                "/setmodel – выбрать модель AI\n"+
+                "/profile – информация о вашем профиле\n"+
+                "/history – история AI-запросов\n"+
+                "/feedback – отправить отзыв\n"+
+                "/support – контакты поддержки\n"+
+                "/admin – админ-панель (для администратора)\n"+
+                "/menu – главное меню\n"+
+                "/adminplans – управление тарифами (админ)\n"+
+                "/help – справка")
+        bot.Send(msg)
+
     case "/plans":
-        showPlans(bot, chatID, user)
-    case "/usage":
-        showUsage(bot, chatID, user)
-    case "/setmodel":
-        showModelSelection(bot, chatID, user)
-    case "/profile":
-        showProfile(bot, chatID, user)
-    case "/history":
-        showHistory(bot, chatID, user)
-    case "/feedback":
-        if len(parts) < 2 {
-            msg := tgbotapi.NewMessage(chatID, "Использование: /feedback ваш текст")
-            bot.Send(msg)
-            return
-        }
-        feedbackText := strings.Join(parts[1:], " ")
-        feedback(bot, chatID, feedbackText, user)
-    case "/support":
-        support(bot, chatID)
-    case "/admin":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        showAdminHelp(bot, chatID)
-    case "/stats":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        adminStats(bot, chatID, user)
-    case "/users":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        adminUsers(bot, chatID, user)
-    case "/block", "/unblock":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        if len(parts) < 2 {
-            msg := tgbotapi.NewMessage(chatID, "Использование: /block <user_id>  или  /unblock <user_id>")
-            bot.Send(msg)
-            return
-        }
-        targetUserID := parts[1]
-        isActive := cmd == "/unblock"
-        adminToggleBlock(bot, chatID, targetUserID, isActive, user)
-    case "/broadcast":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        if len(parts) < 2 {
-            msg := tgbotapi.NewMessage(chatID, "Использование: /broadcast <текст сообщения>")
-            bot.Send(msg)
-            return
-        }
-        broadcastText := strings.Join(parts[1:], " ")
-        adminBroadcast(bot, chatID, broadcastText, user)
-    case "/menu":
-        showMainMenu(bot, chatID)
-    case "/adminplans":
-        if !isAdmin(chatID) {
-            msg := tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён")
-            bot.Send(msg)
-            return
-        }
-        adminListPlans(bot, chatID, user)
-    case "/help":
-        showHelp(bot, chatID)
-    default:
-        msg := tgbotapi.NewMessage(chatID, "Неизвестная команда. Доступно: /start, /setkey, /ask, /plans, /usage, /setmodel, /profile, /history, /feedback, /support, /admin, /stats, /users, /broadcast, /block, /unblock, /menu, /adminplans, /help")
-        bot.Send(msg)
+        showPlans(bot, message.Chat.ID)
     }
 }
 
-func handleCallback(bot *tgbotapi.BotAPI, callback *tgbotapi.CallbackQuery) {
-    chatID := callback.Message.Chat.ID
-    data := callback.Data
+func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
+    callback := tgbotapi.NewCallback(query.ID, "")
+    bot.Request(callback)
+    
+    log.Printf("Нажата кнопка: %s", query.Data)
 
-    callbackCfg := tgbotapi.NewCallback(callback.ID, "")
-    bot.Send(callbackCfg)
-
-    switch {
-    case strings.HasPrefix(data, "buy_plan_"):
-        planID := strings.TrimPrefix(data, "buy_plan_")
-        buyPlan(bot, chatID, planID, callback.Message.From)
-    case strings.HasPrefix(data, "setmodel_"):
-        model := strings.TrimPrefix(data, "setmodel_")
-        setModel(bot, chatID, model)
-    case strings.HasPrefix(data, "menu_"):
-        action := strings.TrimPrefix(data, "menu_")
-        switch action {
-        case "ask":
-            bot.Send(tgbotapi.NewMessage(chatID, "Отправьте команду /ask <вопрос>"))
-        case "plans":
-            showPlans(bot, chatID, callback.Message.From)
-        case "usage":
-            showUsage(bot, chatID, callback.Message.From)
-        case "model":
-            showModelSelection(bot, chatID, callback.Message.From)
-        case "profile":
-            showProfile(bot, chatID, callback.Message.From)
-        case "history":
-            showHistory(bot, chatID, callback.Message.From)
-        case "support":
-            support(bot, chatID)
-        case "help":
-            showHelp(bot, chatID)
-        case "admin":
-            if !isAdmin(chatID) {
-                bot.Send(tgbotapi.NewMessage(chatID, "⛔ Доступ запрещён"))
-                return
-            }
-            showAdminHelp(bot, chatID)
-        }
-    case strings.HasPrefix(data, "edit_plan_"):
-        bot.Send(tgbotapi.NewMessage(chatID, "Редактирование плана пока не реализовано. Используйте /adminplans для списка."))
-    case strings.HasPrefix(data, "delete_plan_"):
-        planID := strings.TrimPrefix(data, "delete_plan_")
-        adminDeletePlan(bot, chatID, planID, callback.Message.From)
-    case data == "create_plan":
-        newPlanTemp[chatID] = &newPlanData{Step: 0}
-        msg := tgbotapi.NewMessage(chatID, "Введите название нового плана:")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case data == "plan_active_true":
-        d, ok := newPlanTemp[chatID]
-        if !ok {
-            bot.Send(tgbotapi.NewMessage(chatID, "❌ Ошибка: данные не найдены. Начните заново."))
-            return
-        }
-        d.IsActive = true
-        createPlanFinal(bot, chatID, d)
-    case data == "plan_active_false":
-        d, ok := newPlanTemp[chatID]
-        if !ok {
-            bot.Send(tgbotapi.NewMessage(chatID, "❌ Ошибка: данные не найдены. Начните заново."))
-            return
-        }
-        d.IsActive = false
-        createPlanFinal(bot, chatID, d)
-    }
-}
-
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ START – использует прямой HTTP-запрос к Telegram API
-func start(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    miniAppURL := os.Getenv("MINI_APP_URL")
-    if miniAppURL == "" {
-        miniAppURL = "https://default-url.com"
-    }
-
-    // 1. Формируем приветственный текст
-    welcome := fmt.Sprintf(
-        "👋 Привет, %s!\n\n"+
-            "Я бот SaaS-платформы. Я автоматически создам для вас аккаунт и API-ключ при первом запросе.\n\n"+
-            "После этого вы сможете:\n"+
-            "/ask – задать вопрос AI\n"+
-            "/plans – посмотреть тарифы\n"+
-            "/usage – узнать остаток токенов\n"+
-            "/setmodel – выбрать модель AI\n"+
-            "/profile – информация о вашем профиле\n"+
-            "/history – история AI-запросов\n"+
-            "/feedback – отправить отзыв\n"+
-            "/support – контакты поддержки\n"+
-            "/admin – админ-панель (для администратора)\n"+
-            "/menu – главное меню\n"+
-            "/adminplans – управление тарифами (админ)\n"+
-            "/help – справка",
-        user.FirstName)
-
-    // 2. Создаём структуру для inline-клавиатуры с WebApp-кнопкой
-    keyboard := map[string]interface{}{
-        "inline_keyboard": [][]map[string]interface{}{
-            {
-                {
-                    "text": "🚀 Открыть мини-приложение",
-                    "web_app": map[string]string{
-                        "url": miniAppURL,
-                    },
-                },
-            },
-        },
-    }
-
-    // 3. Преобразуем в JSON
-    payload := map[string]interface{}{
-        "chat_id":      chatID,
-        "text":         welcome,
-        "reply_markup": keyboard,
-    }
-    jsonPayload, _ := json.Marshal(payload)
-
-    // 4. Отправляем POST-запрос к Telegram API
-    apiURL := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", bot.Token)
-    resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonPayload))
-    if err != nil {
-        log.Printf("Ошибка отправки сообщения: %v", err)
+    if strings.HasPrefix(query.Data, "pay_crypto_") {
+        planClean := strings.TrimPrefix(query.Data, "pay_crypto_")
+        log.Printf("✅ КРИПТА: выбран тариф %s", planClean)
+        startCryptoPayment(bot, query.Message.Chat.ID, planClean)
         return
     }
-    defer resp.Body.Close()
 
-    // Если хотите проверить ответ, можно прочитать:
-    // body, _ := io.ReadAll(resp.Body)
-    // log.Printf("Ответ Telegram: %s", body)
+    if query.Data == "check_crypto_status" {
+        checkCryptoPayment(bot, query.Message.Chat.ID)
+        return
+    }
+
+    if query.Data == "back_to_plans" {
+        showPlans(bot, query.Message.Chat.ID)
+        return
+    }
+
+    if len(query.Data) > 9 && query.Data[:9] == "pay_card_" {
+        planClean := query.Data[9:]
+        startCardPayment(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 9 && query.Data[:9] == "pay_usdt_" {
+        planClean := query.Data[9:]
+        startUSDTPayment(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 8 && query.Data[:8] == "pay_btc_" {
+        planClean := query.Data[8:]
+        startBTCPayment(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 8 && query.Data[:8] == "pay_sbp_" {
+        planClean := query.Data[8:]
+        startSBPPayment(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 11 && query.Data[:11] == "copy_usdt_" {
+        planClean := query.Data[11:]
+        copyUSDTAddress(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 10 && query.Data[:10] == "copy_btc_" {
+        planClean := query.Data[10:]
+        copyBTCAddress(bot, query.Message.Chat.ID, planClean)
+        return
+    }
+
+    if len(query.Data) > 12 && query.Data[:12] == "confirm_usdt_" {
+        planClean := query.Data[12:]
+        confirmPayment(bot, query.Message.Chat.ID, "USDT", planClean)
+        return
+    }
+
+    if len(query.Data) > 11 && query.Data[:11] == "confirm_btc_" {
+        planClean := query.Data[11:]
+        confirmPayment(bot, query.Message.Chat.ID, "Bitcoin", planClean)
+        return
+    }
+
+    if len(query.Data) > 11 && query.Data[:11] == "confirm_sbp_" {
+        planClean := query.Data[11:]
+        confirmPayment(bot, query.Message.Chat.ID, "СБП", planClean)
+        return
+    }
+
+    if len(query.Data) > 13 && query.Data[:13] == "confirm_crypto_" {
+        planClean := query.Data[13:]
+        confirmPayment(bot, query.Message.Chat.ID, "Crypto", planClean)
+        return
+    }
+
+    if len(query.Data) > 5 && query.Data[:5] == "plan_" {
+        showPaymentMethods(bot, query.Message.Chat.ID, query.Data)
+        return
+    }
+
+    log.Printf("⚠️ Неизвестная кнопка: %s", query.Data)
 }
 
-func setKey(bot *tgbotapi.BotAPI, chatID int64, key string) {
-    mu.Lock()
-    userData[chatID] = UserData{Token: key, Model: "yandex/yandexgpt-lite"}
-    mu.Unlock()
-    msg := tgbotapi.NewMessage(chatID, "✅ Ключ сохранён! Модель по умолчанию: YandexGPT. Используйте /setmodel для смены.")
+func showPlans(bot *tgbotapi.BotAPI, chatID int64) {
+    plansText := "*Базовый*\nДля небольших команд и стартапов\n💰 2990.00 ₽/мес\n\n" +
+        "*Профессиональный*\nДля растущего бизнеса\n💰 29900.00 ₽/мес\n\n" +
+        "*Корпоративный*\nДля крупных компаний\n💰 49000.00 ₽/мес\n\n" +
+        "*Семейный*\nДля всей семьи\n💰 9900.00 ₽/мес"
+
+    msg := tgbotapi.NewMessage(chatID, plansText)
+    msg.ParseMode = "Markdown"
+    bot.Send(msg)
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💰 Купить Базовый", "plan_basic"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💰 Купить Профессиональный", "plan_pro"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💰 Купить Корпоративный", "plan_enterprise"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💰 Купить Семейный", "plan_family"),
+        ),
+    )
+
+    msg2 := tgbotapi.NewMessage(chatID, "👇 Нажмите для оплаты:")
+    msg2.ReplyMarkup = keyboard
+    bot.Send(msg2)
+}
+
+func showPaymentMethods(bot *tgbotapi.BotAPI, chatID int64, planType string) {
+    var planName, price string
+
+    switch planType {
+    case "plan_basic":
+        planName = "Базовый"
+        price = "2990"
+    case "plan_pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "plan_enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "plan_family":
+        planName = "Семейный"
+        price = "9900"
+    }
+
+    planClean := planType[5:]
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💳 Карта", "pay_card_"+planClean),
+            tgbotapi.NewInlineKeyboardButtonData("₮ USDT", "pay_usdt_"+planClean),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("₿ Bitcoin", "pay_btc_"+planClean),
+            tgbotapi.NewInlineKeyboardButtonData("📱 СБП", "pay_sbp_"+planClean),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🪙 Крипта", "pay_crypto_"+planClean),
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
+        ),
+    )
+
+    text := fmt.Sprintf("✅ *%s*\n", planName) +
+        fmt.Sprintf("💰 Сумма: *%s ₽*\n\n", price) +
+        "Выберите способ оплаты:"
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = keyboard
     bot.Send(msg)
 }
 
-func ensureUserKey(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) (string, error) {
-    mu.RLock()
-    data, ok := userData[chatID]
-    mu.RUnlock()
-    if ok && data.Token != "" {
-        return data.Token, nil
+func startCardPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    var planName, price string
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "family":
+        planName = "Семейный"
+        price = "9900"
     }
 
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    reqBody := map[string]interface{}{
-        "telegram_id":   chatID,
-        "telegram_name": user.UserName,
-    }
-    jsonBody, _ := json.Marshal(reqBody)
-
-    resp, err := http.Post(apiBase+"/api/telegram/ensure-key", "application/json", bytes.NewBuffer(jsonBody))
-    if err != nil {
-        return "", err
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        return "", fmt.Errorf("server returned %d", resp.StatusCode)
+    userPayments[chatID] = PaymentData{
+        PlanName: planName,
+        Price:    price,
+        Method:   "card",
     }
 
-    var keyResp struct {
-        Token string `json:"token"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&keyResp); err != nil {
-        return "", err
-    }
+    msg := tgbotapi.NewMessage(chatID, "💳 Введите номер карты (16 цифр):")
+    bot.Send(msg)
 
-    mu.Lock()
-    userData[chatID] = UserData{Token: keyResp.Token, Model: "yandex/yandexgpt-lite"}
-    mu.Unlock()
-
-    return keyResp.Token, nil
+    userStates[chatID] = "waiting_card_number"
 }
 
-func askAI(bot *tgbotapi.BotAPI, chatID int64, question string, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
+func startUSDTPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    var planName, price string
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "family":
+        planName = "Семейный"
+        price = "9900"
+    }
+
+    address := "TXmRt1UqWqfJ1XxqZQk3yL7vFhKpDnA2jB"
+    usdtAmount := fmt.Sprintf("%.2f", float64(atoi(price))/90)
+
+    text := fmt.Sprintf("💰 *Оплата USDT (TRC-20)*\n\n") +
+        fmt.Sprintf("Тариф: *%s*\n", planName) +
+        fmt.Sprintf("Сумма: *%s ₽* = *%s USDT*\n\n", price, usdtAmount) +
+        "📤 **Адрес для перевода:**\n" +
+        fmt.Sprintf("`%s`\n\n", address) +
+        "1️⃣ Нажмите 'Копировать адрес'\n" +
+        "2️⃣ Отправьте USDT\n" +
+        "3️⃣ После отправки нажмите '✅ Я оплатил'"
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📋 Копировать адрес", "copy_usdt_"+planClean),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_usdt_"+planClean),
+        ),
+    )
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = keyboard
+    bot.Send(msg)
+}
+
+func startBTCPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    var planName, price string
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "family":
+        planName = "Семейный"
+        price = "9900"
+    }
+
+    address := "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+    btcAmount := fmt.Sprintf("%.6f", float64(atoi(price))/4500000)
+
+    text := fmt.Sprintf("₿ *Оплата Bitcoin*\n\n") +
+        fmt.Sprintf("Тариф: *%s*\n", planName) +
+        fmt.Sprintf("Сумма: *%s ₽* = *%s BTC*\n\n", price, btcAmount) +
+        "📤 **Адрес для перевода:**\n" +
+        fmt.Sprintf("`%s`\n\n", address) +
+        "1️⃣ Нажмите 'Копировать адрес'\n" +
+        "2️⃣ Отправьте Bitcoin\n" +
+        "3️⃣ После отправки нажмите '✅ Я оплатил'"
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📋 Копировать адрес", "copy_btc_"+planClean),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_btc_"+planClean),
+        ),
+    )
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = keyboard
+    bot.Send(msg)
+}
+
+func startSBPPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    var planName, price string
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "family":
+        planName = "Семейный"
+        price = "9900"
+    }
+
+    qrData := fmt.Sprintf("СБП оплата %s %s руб", planName, price)
+    qrURL := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=%s", qrData)
+
+    text := fmt.Sprintf("📱 *Оплата по СБП*\n\n") +
+        fmt.Sprintf("Тариф: *%s*\n", planName) +
+        fmt.Sprintf("Сумма: *%s ₽*\n\n", price) +
+        "1️⃣ Нажмите кнопку 'Показать QR-код'\n" +
+        "2️⃣ Отсканируйте код в приложении банка\n" +
+        "3️⃣ После оплаты нажмите '✅ Я оплатил'"
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonURL("📱 Показать QR-код", qrURL),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_sbp_"+planClean),
+        ),
+    )
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = keyboard
+    bot.Send(msg)
+}
+
+// ==================== CRYPTO PAY (ИСПРАВЛЕНО) ====================
+
+func startCryptoPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    var planName, price string
+    var usdtAmount float64
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+        usdtAmount = 33.22
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+        usdtAmount = 332.22
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+        usdtAmount = 544.44
+    case "family":
+        planName = "Семейный"
+        price = "9900"
+        usdtAmount = 110.00
+    }
+
+    log.Printf("🪙 CRYPTO PAY: создание счета для %s на %s RUB (%.2f USDT)", planName, price, usdtAmount)
+
+    cryptoToken := os.Getenv("CRYPTO_PAY_TOKEN")
+    if cryptoToken == "" {
+        cryptoToken = "539564:AA31bHY40rT3NI0Fhw6no5BHCwWmftxquGM"
+    }
+
+    invoice, err := createCryptoInvoice(cryptoToken, usdtAmount, planName)
     if err != nil {
-        log.Printf("Ошибка получения ключа: %v", err)
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
+        log.Printf("Ошибка создания счета: %v", err)
+        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка создания счета. Попробуйте позже.")
         bot.Send(msg)
         return
     }
 
-    mu.RLock()
-    model := userData[chatID].Model
-    mu.RUnlock()
+    invoices[chatID] = invoice.InvoiceID
 
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
+    text := fmt.Sprintf("🪙 *Оплата через Crypto Bot*\n\n") +
+        fmt.Sprintf("Тариф: *%s*\n", planName) +
+        fmt.Sprintf("Сумма: *%s ₽* = *%.2f USDT*\n", price, usdtAmount) +
+        fmt.Sprintf("ID счета: `%d`\n\n", invoice.InvoiceID) +
+        "🔗 **Ссылка для оплаты:**\n" +
+        fmt.Sprintf("[Перейти к оплате](%s)\n\n", invoice.PayURL) +
+        "1️⃣ Нажмите на ссылку выше\n" +
+        "2️⃣ Оплатите в @CryptoBot\n" +
+        "3️⃣ Нажмите 'Проверить оплату'"
 
-    body := map[string]interface{}{
-        "model": model,
-        "messages": []map[string]string{
-            {"role": "user", "content": question},
-        },
-        "stream": false,
-    }
-    jsonBody, _ := json.Marshal(body)
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonURL("🪙 Перейти к оплате", invoice.PayURL),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔄 Проверить оплату", "check_crypto_status"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "back_to_plans"),
+        ),
+    )
 
-    req, _ := http.NewRequest("POST", apiBase+"/api/v1/chat/completions", bytes.NewBuffer(jsonBody))
-    req.Header.Set("Authorization", "Bearer "+token)
-    req.Header.Set("Content-Type", "application/json")
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = keyboard
+    bot.Send(msg)
+}
 
+func createCryptoInvoice(token string, amount float64, description string) (*CryptoInvoice, error) {
+    url := "https://pay.crypt.bot/api/createInvoice"
+    
+    amountStr := fmt.Sprintf("%.2f", amount)
+    
     client := &http.Client{}
+    reqBody := fmt.Sprintf("asset=USDT&amount=%s&description=%s", amountStr, description)
+    
+    req, err := http.NewRequest("POST", url, strings.NewReader(reqBody))
+    if err != nil {
+        return nil, err
+    }
+    
+    req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+    req.Header.Set("Crypto-Pay-API-Token", token)
+    
     resp, err := client.Do(req)
     if err != nil {
-        log.Printf("❌ Ошибка вызова AI Gateway: %v", err)
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка связи с сервером.")
-        bot.Send(msg)
-        return
+        return nil, err
     }
     defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    log.Printf("Crypto Pay response: %s", string(body))
+    
+    var result CryptoResponse
+    if err := json.Unmarshal(body, &result); err != nil {
+        return nil, err
+    }
+    
+    if !result.OK {
+        return nil, fmt.Errorf("API error: %s", string(body))
+    }
+    
+    return &result.Result, nil
+}
 
-    bodyBytes, _ := io.ReadAll(resp.Body)
-    log.Printf("📥 Полный ответ от провайдера: %s", string(bodyBytes))
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка: сервер вернул код %d", resp.StatusCode))
+func checkCryptoPayment(bot *tgbotapi.BotAPI, chatID int64) {
+    invoiceID, exists := invoices[chatID]
+    if !exists {
+        msg := tgbotapi.NewMessage(chatID, "❌ Счет не найден. Создайте новый платеж.")
         bot.Send(msg)
         return
     }
 
+    cryptoToken := os.Getenv("CRYPTO_PAY_TOKEN")
+    if cryptoToken == "" {
+        cryptoToken = "539564:AA31bHY40rT3NI0Fhw6no5BHCwWmftxquGM"
+    }
+
+    status, err := getInvoiceStatus(cryptoToken, invoiceID)
+    if err != nil {
+        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка проверки статуса. Попробуйте позже.")
+        bot.Send(msg)
+        return
+    }
+
+    if status == "paid" {
+        msg := tgbotapi.NewMessage(chatID,
+            "✅ *Платеж подтвержден!*\n\n"+
+                "Подписка активирована!")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+        delete(invoices, chatID)
+    } else {
+        msg := tgbotapi.NewMessage(chatID, "⏳ Платеж еще не получен. Ожидайте подтверждения сети.")
+        bot.Send(msg)
+    }
+}
+
+func getInvoiceStatus(token string, invoiceID int64) (string, error) {
+    url := fmt.Sprintf("https://pay.crypt.bot/api/getInvoice?invoice_id=%d", invoiceID)
+    
+    client := &http.Client{}
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return "", err
+    }
+    
+    req.Header.Set("Crypto-Pay-API-Token", token)
+    
+    resp, err := client.Do(req)
+    if err != nil {
+        return "", err
+    }
+    defer resp.Body.Close()
+    
     var result struct {
-        Choices []struct {
-            Message struct {
-                Content string `json:"content"`
-            } `json:"message"`
-        } `json:"choices"`
+        OK     bool `json:"ok"`
+        Result struct {
+            Status string `json:"status"`
+        } `json:"result"`
     }
-    if err := json.Unmarshal(bodyBytes, &result); err != nil {
-        log.Printf("❌ Ошибка парсинга ответа: %v", err)
-        msg := tgbotapi.NewMessage(chatID, "❌ Неверный ответ от сервера.")
-        bot.Send(msg)
-        return
+    
+    body, _ := io.ReadAll(resp.Body)
+    json.Unmarshal(body, &result)
+    
+    if !result.OK {
+        return "unknown", nil
     }
-
-    if len(result.Choices) == 0 {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить ответ от AI.")
-        bot.Send(msg)
-        return
-    }
-
-    answer := result.Choices[0].Message.Content
-    for _, chunk := range splitString(answer, 4000) {
-        bot.Send(tgbotapi.NewMessage(chatID, chunk))
-    }
+    
+    return result.Result.Status, nil
 }
 
-func showPlans(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
-    }
+// ==================== КОПИРОВАНИЕ АДРЕСОВ ====================
 
-    req, _ := http.NewRequest("GET", apiBase+"/api/plans", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при загрузке тарифов.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var plansResp struct {
-        Plans []struct {
-            ID           int     `json:"id"`
-            Name         string  `json:"name"`
-            Description  string  `json:"description"`
-            PriceMonthly float64 `json:"price_monthly"`
-        } `json:"plans"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&plansResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(plansResp.Plans) == 0 {
-        msg := tgbotapi.NewMessage(chatID, "Нет доступных тарифов.")
-        bot.Send(msg)
-        return
-    }
-
-    var text string
-    var keyboardRows [][]tgbotapi.InlineKeyboardButton
-
-    for _, p := range plansResp.Plans {
-        text += fmt.Sprintf("*%s*\n%s\n💰 %.2f ₽/мес\n\n", p.Name, p.Description, p.PriceMonthly)
-        btn := tgbotapi.NewInlineKeyboardButtonData(
-            fmt.Sprintf("💰 Купить %s", p.Name),
-            fmt.Sprintf("buy_plan_%d", p.ID),
-        )
-        keyboardRows = append(keyboardRows, tgbotapi.NewInlineKeyboardRow(btn))
-    }
-
-    msg := tgbotapi.NewMessage(chatID, text)
-    if len(keyboardRows) > 0 {
-        msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRows...)
-    }
-    bot.Send(msg)
-}
-
-func buyPlan(bot *tgbotapi.BotAPI, chatID int64, planID string, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
-    }
-
-    id, err := strconv.Atoi(planID)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Неверный идентификатор тарифа.")
-        bot.Send(msg)
-        return
-    }
-
-    body := map[string]interface{}{
-        "plan_id":      id,
-        "period_month": 1,
-    }
-    jsonBody, _ := json.Marshal(body)
-
-    req, _ := http.NewRequest("POST", apiBase+"/api/subscriptions", bytes.NewBuffer(jsonBody))
-    req.Header.Set("Authorization", "Bearer "+token)
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        log.Printf("❌ Ошибка вызова API подписок: %v", err)
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка связи с сервером при оформлении подписки.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusCreated {
-        bodyBytes, _ := io.ReadAll(resp.Body)
-        log.Printf("❌ Ошибка создания подписки: %d %s", resp.StatusCode, string(bodyBytes))
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Не удалось оформить подписку (код %d). Возможно, у вас уже есть активная подписка.", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    msg := tgbotapi.NewMessage(chatID, "✅ Подписка успешно оформлена! Спасибо за покупку.")
-    bot.Send(msg)
-}
-
-func showUsage(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
-    }
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/user/keys", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе данных.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var keysResp struct {
-        Keys []struct {
-            QuotaLimit int64 `json:"quota_limit"`
-            QuotaUsed  int64 `json:"quota_used"`
-        } `json:"keys"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&keysResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(keysResp.Keys) == 0 {
-        msg := tgbotapi.NewMessage(chatID, "У вас нет активных ключей.")
-        bot.Send(msg)
-        return
-    }
-
-    keyInfo := keysResp.Keys[0]
-    quotaText := fmt.Sprintf("📊 *Использование токенов*\n\nИспользовано: %d", keyInfo.QuotaUsed)
-    if keyInfo.QuotaLimit == -1 {
-        quotaText += "\nЛимит: безлимит"
-    } else {
-        quotaText += fmt.Sprintf(" из %d", keyInfo.QuotaLimit)
-        percent := float64(keyInfo.QuotaUsed) / float64(keyInfo.QuotaLimit) * 100
-        quotaText += fmt.Sprintf("\nИзрасходовано: %.1f%%", percent)
-    }
-    msg := tgbotapi.NewMessage(chatID, quotaText)
+func copyUSDTAddress(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    address := "TXmRt1UqWqfJ1XxqZQk3yL7vFhKpDnA2jB"
+    msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ Адрес скопирован:\n`%s`", address))
     msg.ParseMode = "Markdown"
     bot.Send(msg)
 }
 
-func showModelSelection(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
-    }
-
-    _ = token
-
-    var keyboardRows [][]tgbotapi.InlineKeyboardButton
-    for _, model := range availableModels {
-        btn := tgbotapi.NewInlineKeyboardButtonData(model, "setmodel_"+model)
-        keyboardRows = append(keyboardRows, tgbotapi.NewInlineKeyboardRow(btn))
-    }
-
-    msg := tgbotapi.NewMessage(chatID, "Выберите модель AI:")
-    msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRows...)
-    bot.Send(msg)
-}
-
-func setModel(bot *tgbotapi.BotAPI, chatID int64, model string) {
-    mu.Lock()
-    data, ok := userData[chatID]
-    if ok {
-        data.Model = model
-        userData[chatID] = data
-    }
-    mu.Unlock()
-
-    if ok {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ Модель изменена на: %s", model))
-        bot.Send(msg)
-    } else {
-        msg := tgbotapi.NewMessage(chatID, "❌ Сначала добавьте API-ключ командой /setkey")
-        bot.Send(msg)
-    }
-}
-
-func showProfile(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/user/profile", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе профиля.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var profileResp struct {
-        User struct {
-            ID        string  `json:"id"`
-            Email     string  `json:"email"`
-            Name      *string `json:"name"`
-            Role      string  `json:"role"`
-            CreatedAt string  `json:"created_at"`
-            UpdatedAt string  `json:"updated_at"`
-        } `json:"user"`
-        AIRequestsCount int `json:"ai_requests_count"`
-        Subscription    *struct {
-            ID                int     `json:"id"`
-            PlanID            int     `json:"plan_id"`
-            PlanName          *string `json:"plan_name"`
-            Status            string  `json:"status"`
-            CurrentPeriodStart *string `json:"current_period_start"`
-            CurrentPeriodEnd   *string `json:"current_period_end"`
-            CancelAtPeriodEnd  bool    `json:"cancel_at_period_end"`
-            TrialEnd           *string `json:"trial_end"`
-            PaymentMethod      *string `json:"payment_method"`
-            AITokensUsed       *int64  `json:"ai_tokens_used"`
-            CreatedAt          string  `json:"created_at"`
-            UpdatedAt          string  `json:"updated_at"`
-        } `json:"subscription"`
-    }
-
-    if err := json.NewDecoder(resp.Body).Decode(&profileResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    text := fmt.Sprintf("👤 *Ваш профиль*\n\n")
-    if profileResp.User.Name != nil {
-        text += fmt.Sprintf("Имя: %s\n", *profileResp.User.Name)
-    }
-    text += fmt.Sprintf("Email: %s\n", profileResp.User.Email)
-    text += fmt.Sprintf("Роль: %s\n", profileResp.User.Role)
-    text += fmt.Sprintf("ID: %s\n", profileResp.User.ID)
-    text += fmt.Sprintf("Дата регистрации: %s\n", profileResp.User.CreatedAt[:10])
-    text += fmt.Sprintf("AI-запросов: %d\n", profileResp.AIRequestsCount)
-
-    if profileResp.Subscription != nil {
-        sub := profileResp.Subscription
-        text += "\n📋 *Активная подписка*\n"
-        if sub.PlanName != nil {
-            text += fmt.Sprintf("Тариф: %s\n", *sub.PlanName)
-        } else {
-            text += fmt.Sprintf("ID тарифа: %d\n", sub.PlanID)
-        }
-        text += fmt.Sprintf("Статус: %s\n", sub.Status)
-        if sub.CurrentPeriodStart != nil && sub.CurrentPeriodEnd != nil {
-            text += fmt.Sprintf("Период: %s – %s\n", (*sub.CurrentPeriodStart)[:10], (*sub.CurrentPeriodEnd)[:10])
-        }
-        if sub.CancelAtPeriodEnd {
-            text += "⚠️ Подписка будет отменена в конце периода\n"
-        }
-        if sub.AITokensUsed != nil {
-            text += fmt.Sprintf("Использовано токенов AI: %d\n", *sub.AITokensUsed)
-        }
-        if sub.PaymentMethod != nil {
-            text += fmt.Sprintf("Метод оплаты: %s\n", *sub.PaymentMethod)
-        }
-    } else {
-        text += "\n*Подписка*: нет активной подписки"
-    }
-
-    msg := tgbotapi.NewMessage(chatID, text)
+func copyBTCAddress(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
+    address := "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+    msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ Адрес скопирован:\n`%s`", address))
     msg.ParseMode = "Markdown"
     bot.Send(msg)
 }
 
-func showHistory(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ. Попробуйте позже или введите вручную командой /setkey")
-        bot.Send(msg)
-        return
+func confirmPayment(bot *tgbotapi.BotAPI, chatID int64, method, planClean string) {
+    var planName, price string
+
+    switch planClean {
+    case "basic":
+        planName = "Базовый"
+        price = "2990"
+    case "pro":
+        planName = "Профессиональный"
+        price = "29900"
+    case "enterprise":
+        planName = "Корпоративный"
+        price = "49000"
+    case "family":
+        planName = "Семейный"
+        price = "9900"
     }
 
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/user/ai-history", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе истории.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var historyResp struct {
-        History []struct {
-            ID        int    `json:"id"`
-            Question  string `json:"question"`
-            Answer    string `json:"answer"`
-            CreatedAt string `json:"created_at"`
-        } `json:"history"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&historyResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(historyResp.History) == 0 {
-        msg := tgbotapi.NewMessage(chatID, "📭 У вас пока нет AI-запросов.")
-        bot.Send(msg)
-        return
-    }
-
-    text := "📜 *Последние AI-запросы:*\n\n"
-    for i, req := range historyResp.History {
-        if i >= 10 {
-            break
-        }
-        date := req.CreatedAt[:10] // YYYY-MM-DD
-        question := req.Question
-        if len(question) > 50 {
-            question = question[:50] + "..."
-        }
-        text += fmt.Sprintf("%d. *%s*\n   Вопрос: %s\n   Ответ: %s\n\n",
-            i+1, date, question, req.Answer)
-    }
-
-    msg := tgbotapi.NewMessage(chatID, text)
+    msg := tgbotapi.NewMessage(chatID,
+        fmt.Sprintf("✅ *Платеж подтвержден!*\n\n")+
+            fmt.Sprintf("Способ: %s\n", method)+
+            fmt.Sprintf("Тариф: %s\n", planName)+
+            fmt.Sprintf("Сумма: %s ₽\n\n", price)+
+            "Подписка активирована!")
     msg.ParseMode = "Markdown"
     bot.Send(msg)
 }
 
-func feedback(bot *tgbotapi.BotAPI, chatID int64, text string, user *tgbotapi.User) {
-    adminID, err := strconv.ParseInt(os.Getenv("ADMIN_CHAT_ID"), 10, 64)
-    if err != nil {
-        log.Printf("ADMIN_CHAT_ID not set or invalid")
-        msg := tgbotapi.NewMessage(chatID, "❌ Функция обратной связи временно недоступна.")
-        bot.Send(msg)
-        return
+func maskCardNumber(card string) string {
+    if len(card) >= 16 {
+        return card[:4] + " **** **** " + card[12:]
     }
-
-    feedbackText := fmt.Sprintf("📬 *Новый отзыв от %s (@%s):*\n\n%s",
-        user.FirstName, user.UserName, text)
-    msg := tgbotapi.NewMessage(adminID, feedbackText)
-    msg.ParseMode = "Markdown"
-    if _, err := bot.Send(msg); err != nil {
-        log.Printf("Ошибка отправки отзыва админу: %v", err)
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось отправить отзыв. Попробуйте позже.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewMessage(chatID, "✅ Спасибо за ваш отзыв!"))
+    return "****"
 }
 
-func support(bot *tgbotapi.BotAPI, chatID int64) {
-    keyboard := tgbotapi.NewInlineKeyboardMarkup(
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonURL("💬 Чат поддержки", "https://t.me/your_support_chat"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonURL("🌐 Сайт", "https://example.com/support"),
-        ),
-    )
-    msg := tgbotapi.NewMessage(chatID, "📞 *Поддержка*\n\nВыберите способ связи:")
-    msg.ParseMode = "Markdown"
-    msg.ReplyMarkup = keyboard
-    bot.Send(msg)
-}
-
-func showMainMenu(bot *tgbotapi.BotAPI, chatID int64) {
-    keyboard := tgbotapi.NewInlineKeyboardMarkup(
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("🤖 Задать вопрос", "menu_ask"),
-            tgbotapi.NewInlineKeyboardButtonData("📋 Тарифы", "menu_plans"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("📊 Использование", "menu_usage"),
-            tgbotapi.NewInlineKeyboardButtonData("⚙️ Модель", "menu_model"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("👤 Профиль", "menu_profile"),
-            tgbotapi.NewInlineKeyboardButtonData("📜 История", "menu_history"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("📞 Поддержка", "menu_support"),
-            tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "menu_help"),
-        ),
-    )
-    if isAdmin(chatID) {
-        adminRow := tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("👑 Админка", "menu_admin"),
-            tgbotapi.NewInlineKeyboardButtonData("📦 Управление тарифами", "adminplans"),
-        )
-        keyboard.InlineKeyboard = append(keyboard.InlineKeyboard, adminRow)
-    }
-
-    msg := tgbotapi.NewMessage(chatID, "📱 *Главное меню*\nВыберите действие:")
-    msg.ParseMode = "Markdown"
-    msg.ReplyMarkup = keyboard
-    bot.Send(msg)
-}
-
-func showAdminHelp(bot *tgbotapi.BotAPI, chatID int64) {
-    text := `👑 *Админ-панель*
-
-/stats – статистика
-/users – список пользователей
-/broadcast <текст> – рассылка
-/block <user_id> – заблокировать пользователя
-/unblock <user_id> – разблокировать
-/adminplans – управление тарифами
-
-*Внимание:* команды доступны только администратору.`
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "Markdown"
-    bot.Send(msg)
-}
-
-func adminStats(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/admin/stats", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе статистики.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var stats struct {
-        TotalUsers         int `json:"total_users"`
-        ActiveSubscriptions int `json:"active_subscriptions"`
-        TotalAIRequests    int `json:"total_ai_requests"`
-        TotalAPIKeys       int `json:"total_api_keys"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    text := fmt.Sprintf(`📊 *Статистика системы*
-
-👥 Всего пользователей: %d
-✅ Активных подписок: %d
-🤖 AI-запросов: %d
-🔑 API-ключей: %d`,
-        stats.TotalUsers, stats.ActiveSubscriptions, stats.TotalAIRequests, stats.TotalAPIKeys)
-
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "Markdown"
-    bot.Send(msg)
-}
-
-func adminUsers(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/admin/users", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе списка пользователей.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var data struct {
-        Users []struct {
-            ID               string  `json:"id"`
-            Email            string  `json:"email"`
-            Name             *string `json:"name"`
-            Role             string  `json:"role"`
-            TelegramID       *int64  `json:"telegram_id"`
-            TelegramUsername *string `json:"telegram_username"`
-            IsActive         bool    `json:"is_active"`
-            CreatedAt        string  `json:"created_at"`
-        } `json:"users"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(data.Users) == 0 {
-        bot.Send(tgbotapi.NewMessage(chatID, "Нет пользователей."))
-        return
-    }
-
-    escapeHTML := func(s string) string {
-        s = strings.ReplaceAll(s, "&", "&amp;")
-        s = strings.ReplaceAll(s, "<", "&lt;")
-        s = strings.ReplaceAll(s, ">", "&gt;")
-        return s
-    }
-
-    text := "<b>👥 Последние пользователи</b>\n\n"
-    for i, u := range data.Users {
-        if i >= 10 {
-            break
-        }
-        status := "✅"
-        if !u.IsActive {
-            status = "❌"
-        }
-        name := ""
-        if u.Name != nil {
-            name = escapeHTML(*u.Name)
-        }
-        email := escapeHTML(u.Email)
-        role := escapeHTML(u.Role)
-        tg := ""
-        if u.TelegramUsername != nil {
-            tg = "@" + escapeHTML(*u.TelegramUsername)
-        } else if u.TelegramID != nil {
-            tg = fmt.Sprintf("id%d", *u.TelegramID)
-        }
-        text += fmt.Sprintf("%s <b>%s</b> (%s) %s\n   Роль: %s, создан: %s\n\n",
-            status, name, email, tg, role, u.CreatedAt[:10])
-    }
-
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "HTML"
-    bot.Send(msg)
-}
-
-func adminToggleBlock(bot *tgbotapi.BotAPI, chatID int64, targetUserID string, isActive bool, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    body := map[string]bool{"is_active": isActive}
-    jsonBody, _ := json.Marshal(body)
-
-    req, _ := http.NewRequest("PUT", apiBase+"/api/admin/users/"+targetUserID+"/block", bytes.NewBuffer(jsonBody))
-    req.Header.Set("Authorization", "Bearer "+token)
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при выполнении операции.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    action := "разблокирован"
-    if !isActive {
-        action = "заблокирован"
-    }
-    bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ Пользователь %s %s.", targetUserID, action)))
-}
-
-func adminBroadcast(bot *tgbotapi.BotAPI, chatID int64, message string, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    body := map[string]string{"message": message}
-    jsonBody, _ := json.Marshal(body)
-
-    req, _ := http.NewRequest("POST", apiBase+"/api/admin/broadcast", bytes.NewBuffer(jsonBody))
-    req.Header.Set("Authorization", "Bearer "+token)
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе рассылки.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var broadcastResp struct {
-        Recipients []int64 `json:"recipients"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&broadcastResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(broadcastResp.Recipients) == 0 {
-        bot.Send(tgbotapi.NewMessage(chatID, "Нет получателей для рассылки."))
-        return
-    }
-
-    bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("⏳ Начинаю рассылку %d пользователям...", len(broadcastResp.Recipients))))
-
-    go func() {
-        sent := 0
-        failed := 0
-        for _, tid := range broadcastResp.Recipients {
-            msg := tgbotapi.NewMessage(tid, "📢 *Рассылка от администратора*\n\n"+message)
-            msg.ParseMode = "Markdown"
-            _, err := bot.Send(msg)
-            if err != nil {
-                failed++
-                log.Printf("Ошибка отправки пользователю %d: %v", tid, err)
-            } else {
-                sent++
-            }
-            time.Sleep(50 * time.Millisecond)
-        }
-        bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ Рассылка завершена. Отправлено: %d, ошибок: %d", sent, failed)))
-    }()
-}
-
-func adminListPlans(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("GET", apiBase+"/api/admin/plans", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при запросе планов.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d", resp.StatusCode))
-        bot.Send(msg)
-        return
-    }
-
-    var plansResp struct {
-        Plans []struct {
-            ID           int      `json:"id"`
-            Name         string   `json:"name"`
-            Code         string   `json:"code"`
-            Description  string   `json:"description"`
-            PriceMonthly float64  `json:"price_monthly"`
-            PriceYearly  float64  `json:"price_yearly"`
-            Currency     string   `json:"currency"`
-            AIQuota      int64    `json:"ai_quota"`
-            AIModels     []string `json:"ai_models"`
-            IsActive     bool     `json:"is_active"`
-        } `json:"plans"`
-    }
-    if err := json.NewDecoder(resp.Body).Decode(&plansResp); err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось обработать ответ.")
-        bot.Send(msg)
-        return
-    }
-
-    if len(plansResp.Plans) == 0 {
-        bot.Send(tgbotapi.NewMessage(chatID, "Нет доступных тарифов."))
-        return
-    }
-
-    var text string
-    var keyboardRows [][]tgbotapi.InlineKeyboardButton
-
-    for _, p := range plansResp.Plans {
-        status := "✅"
-        if !p.IsActive {
-            status = "❌"
-        }
-        text += fmt.Sprintf("*%s* %s (ID: %d)\n", status, p.Name, p.ID)
-        text += fmt.Sprintf("Код: `%s`\n", p.Code)
-        text += fmt.Sprintf("Описание: %s\n", p.Description)
-        text += fmt.Sprintf("💰 Месяц: %.2f %s\n", p.PriceMonthly, p.Currency)
-        text += fmt.Sprintf("💰 Год: %.2f %s\n", p.PriceYearly, p.Currency)
-        text += fmt.Sprintf("🤖 Квота AI: %d\n", p.AIQuota)
-        text += fmt.Sprintf("📋 Модели: %v\n\n", p.AIModels)
-
-        row := tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("✏️ Ред. %d", p.ID), fmt.Sprintf("edit_plan_%d", p.ID)),
-            tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("🗑️ Удалить %d", p.ID), fmt.Sprintf("delete_plan_%d", p.ID)),
-        )
-        keyboardRows = append(keyboardRows, row)
-    }
-
-    keyboardRows = append(keyboardRows, tgbotapi.NewInlineKeyboardRow(
-        tgbotapi.NewInlineKeyboardButtonData("➕ Создать план", "create_plan"),
-    ))
-
-    msg := tgbotapi.NewMessage(chatID, text)
-    msg.ParseMode = "Markdown"
-    if len(keyboardRows) > 0 {
-        msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboardRows...)
-    }
-    bot.Send(msg)
-}
-
-func adminDeletePlan(bot *tgbotapi.BotAPI, chatID int64, planID string, user *tgbotapi.User) {
-    token, err := ensureUserKey(bot, chatID, user)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ.")
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewChatAction(chatID, tgbotapi.ChatTyping))
-
-    req, _ := http.NewRequest("DELETE", apiBase+"/api/admin/plans/"+planID, nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        msg := tgbotapi.NewMessage(chatID, "❌ Ошибка при удалении плана.")
-        bot.Send(msg)
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        bodyBytes, _ := io.ReadAll(resp.Body)
-        msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d\n%s", resp.StatusCode, string(bodyBytes)))
-        bot.Send(msg)
-        return
-    }
-
-    bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("✅ План %s успешно удалён.", planID)))
-    adminListPlans(bot, chatID, user)
-}
-
-func handleCreatePlanStep(bot *tgbotapi.BotAPI, chatID int64, text string, data *newPlanData) {
-    switch data.Step {
-    case 0:
-        data.Name = text
-        data.Step = 1
-        msg := tgbotapi.NewMessage(chatID, "Введите код плана (уникальный идентификатор, например 'basic'):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 1:
-        data.Code = text
-        data.Step = 2
-        msg := tgbotapi.NewMessage(chatID, "Введите описание плана:")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 2:
-        data.Description = text
-        data.Step = 3
-        msg := tgbotapi.NewMessage(chatID, "Введите цену за месяц (число, например 990):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 3:
-        price, err := strconv.ParseFloat(text, 64)
-        if err != nil {
-            bot.Send(tgbotapi.NewMessage(chatID, "❌ Неверное число. Попробуйте ещё раз:"))
-            return
-        }
-        data.PriceMonthly = price
-        data.Step = 4
-        msg := tgbotapi.NewMessage(chatID, "Введите цену за год (число, например 9900):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 4:
-        price, err := strconv.ParseFloat(text, 64)
-        if err != nil {
-            bot.Send(tgbotapi.NewMessage(chatID, "❌ Неверное число. Попробуйте ещё раз:"))
-            return
-        }
-        data.PriceYearly = price
-        data.Step = 5
-        msg := tgbotapi.NewMessage(chatID, "Введите валюту (например, RUB):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 5:
-        data.Currency = text
-        data.Step = 6
-        msg := tgbotapi.NewMessage(chatID, "Введите AI-квоту (количество токенов, например 1000000):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 6:
-        quota, err := strconv.ParseInt(text, 10, 64)
-        if err != nil {
-            bot.Send(tgbotapi.NewMessage(chatID, "❌ Неверное число. Попробуйте ещё раз:"))
-            return
-        }
-        data.AIQuota = quota
-        data.Step = 7
-        msg := tgbotapi.NewMessage(chatID, "Введите разрешённые модели через запятую (или * для всех):")
-        msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true, Selective: true}
-        bot.Send(msg)
-    case 7:
-        data.AIModels = text
-        data.Step = 8
-        keyboard := tgbotapi.NewInlineKeyboardMarkup(
-            tgbotapi.NewInlineKeyboardRow(
-                tgbotapi.NewInlineKeyboardButtonData("✅ Да", "plan_active_true"),
-                tgbotapi.NewInlineKeyboardButtonData("❌ Нет", "plan_active_false"),
-            ),
-        )
-        msg := tgbotapi.NewMessage(chatID, "Активировать план сейчас?")
-        msg.ReplyMarkup = keyboard
-        bot.Send(msg)
-    }
-}
-
-func createPlanFinal(bot *tgbotapi.BotAPI, chatID int64, data *newPlanData) {
-    defer delete(newPlanTemp, chatID)
-
-    token, err := ensureUserKey(bot, chatID, &tgbotapi.User{ID: chatID})
-    if err != nil {
-        bot.Send(tgbotapi.NewMessage(chatID, "❌ Не удалось получить API-ключ."))
-        return
-    }
-
-    var models []string
-    if data.AIModels == "*" {
-        models = []string{"*"}
-    } else {
-        for _, m := range strings.Split(data.AIModels, ",") {
-            models = append(models, strings.TrimSpace(m))
-        }
-    }
-
-    reqBody := map[string]interface{}{
-        "name":          data.Name,
-        "code":          data.Code,
-        "description":   data.Description,
-        "price_monthly": data.PriceMonthly,
-        "price_yearly":  data.PriceYearly,
-        "currency":      data.Currency,
-        "ai_quota":      data.AIQuota,
-        "ai_models":     models,
-        "is_active":     data.IsActive,
-        "max_users":     1,
-        "features":      []string{},
-        "sort_order":    0,
-    }
-    jsonBody, _ := json.Marshal(reqBody)
-
-    req, _ := http.NewRequest("POST", apiBase+"/api/admin/plans", bytes.NewBuffer(jsonBody))
-    req.Header.Set("Authorization", "Bearer "+token)
-    req.Header.Set("Content-Type", "application/json")
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        bot.Send(tgbotapi.NewMessage(chatID, "❌ Ошибка при создании плана."))
-        return
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusCreated {
-        bodyBytes, _ := io.ReadAll(resp.Body)
-        bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Ошибка сервера: %d\n%s", resp.StatusCode, string(bodyBytes))))
-        return
-    }
-
-    bot.Send(tgbotapi.NewMessage(chatID, "✅ План успешно создан!"))
-    adminListPlans(bot, chatID, &tgbotapi.User{ID: chatID})
-}
-
-func showHelp(bot *tgbotapi.BotAPI, chatID int64) {
-    helpText := `🤖 *Доступные команды:*
-
-/start – приветствие
-/setkey <ключ> – установить API-ключ (если хотите свой)
-/ask <вопрос> – задать вопрос AI
-/plans – показать тарифы
-/usage – узнать остаток токенов
-/setmodel – выбрать модель AI
-/profile – информация о вашем профиле
-/history – история AI-запросов
-/feedback <текст> – отправить отзыв
-/support – контакты поддержки
-/admin – админ-панель (доступно администратору)
-/menu – главное меню
-/adminplans – управление тарифами (админ)
-/help – эта справка
-
-*Доступные модели:*
-• yandex/yandexgpt-lite
-• deepseek/deepseek-chat
-• openai/gpt-4.1-mini
-• gigachat/gigachat-max
-• ollama/llama3.2
-`
-    msg := tgbotapi.NewMessage(chatID, helpText)
-    msg.ParseMode = "Markdown"
-    bot.Send(msg)
-}
-
-func splitString(s string, maxLen int) []string {
-    var chunks []string
-    for len(s) > maxLen {
-        idx := strings.LastIndex(s[:maxLen], "\n")
-        if idx == -1 {
-            idx = maxLen
-        }
-        chunks = append(chunks, s[:idx])
-        s = s[idx:]
-    }
-    if len(s) > 0 {
-        chunks = append(chunks, s)
-    }
-    return chunks
+func atoi(s string) int {
+    var result int
+    fmt.Sscanf(s, "%d", &result)
+    return result
 }

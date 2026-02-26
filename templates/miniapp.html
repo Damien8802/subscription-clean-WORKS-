@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Оплата Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px; 
+            background: var(--tg-theme-bg-color); 
+            color: var(--tg-theme-text-color);
+            margin: 0;
+        }
+        h2 { text-align: center; margin-bottom: 30px; }
+        .plan { 
+            border: 2px solid var(--tg-theme-button-color); 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 12px;
+            background: var(--tg-theme-secondary-bg-color);
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color);
+            margin: 10px 0;
+        }
+        button { 
+            background: var(--tg-theme-button-color); 
+            color: var(--tg-theme-button-text-color); 
+            border: none; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>Выберите тариф</h2>
+    
+    <div class="plan">
+        <h3>Базовый</h3>
+        <p class="price">990 ₽/мес</p>
+        <button onclick="buy('basic', 990)">Выбрать</button>
+    </div>
+    
+    <div class="plan">
+        <h3>Профессиональный</h3>
+        <p class="price">2 990 ₽/мес</p>
+        <button onclick="buy('pro', 2990)">Выбрать</button>
+    </div>
+    
+    <div class="plan">
+        <h3>Корпоративный</h3>
+        <p class="price">9 990 ₽/мес</p>
+        <button onclick="buy('enterprise', 9990)">Выбрать</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        function buy(plan, price) {
+            // Открываем ссылку на оплату в браузере
+            tg.openLink(`http://localhost:8080/payment?plan=${plan}&price=${price}`);
+            tg.close();
+        }
+    </script>
+</body>
+</html>
