@@ -8,6 +8,7 @@ import (
     "strings"
     "encoding/json"
     "io"
+    "time"
     "github.com/joho/godotenv"
     tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -15,6 +16,23 @@ import (
 // Хранилище состояний пользователей
 var userStates = make(map[int64]string)
 var userPayments = make(map[int64]PaymentData)
+
+// Хранилище AI истории и токенов
+var userAIUsage = make(map[int64]int)      // chatID -> использовано токенов
+var userAIModel = make(map[int64]string)   // chatID -> выбранная модель
+var userHistory = make(map[int64][]string) // chatID -> история запросов
+
+// Хранилище обращений в поддержку
+var supportTickets = make(map[int64]SupportTicket)
+
+type SupportTicket struct {
+    ID        string
+    UserID    int64
+    UserName  string
+    Question  string
+    Status    string // "open", "answered", "closed"
+    CreatedAt time.Time
+}
 
 type PaymentData struct {
     PlanName   string
@@ -62,6 +80,7 @@ func main() {
 }
 
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+    // Проверяем состояние пользователя
     if state, exists := userStates[message.Chat.ID]; exists {
         switch state {
         case "waiting_card_number":
@@ -103,10 +122,50 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
             
             delete(userStates, message.Chat.ID)
             delete(userPayments, message.Chat.ID)
+            
+        case "waiting_question":
+            answer := askAI(message.Text)
+            userAIUsage[message.Chat.ID] += len(message.Text) / 2
+            
+            history := userHistory[message.Chat.ID]
+            history = append(history, fmt.Sprintf("Вопрос: %s", message.Text))
+            history = append(history, fmt.Sprintf("Ответ: %s", answer))
+            if len(history) > 20 {
+                history = history[len(history)-20:]
+            }
+            userHistory[message.Chat.ID] = history
+            
+            msg := tgbotapi.NewMessage(message.Chat.ID, answer)
+            bot.Send(msg)
+            delete(userStates, message.Chat.ID)
+            
+        case "waiting_feedback":
+            msg := tgbotapi.NewMessage(message.Chat.ID, 
+                "✅ Спасибо за отзыв! Мы обязательно его учтем.")
+            bot.Send(msg)
+            delete(userStates, message.Chat.ID)
+            
+        case "waiting_ticket_description":
+            ticket := supportTickets[message.Chat.ID]
+            ticket.Question = message.Text
+            supportTickets[message.Chat.ID] = ticket
+            
+            confirmText := fmt.Sprintf("✅ Обращение принято!\n\n"+
+                "Номер: %s\n"+
+                "Ваш вопрос: %s\n\n"+
+                "Мы ответим вам в ближайшее время.",
+                ticket.ID, message.Text)
+            
+            msg := tgbotapi.NewMessage(message.Chat.ID, confirmText)
+            bot.Send(msg)
+            
+            log.Printf("Новое обращение %s от %d: %s", ticket.ID, message.Chat.ID, message.Text)
+            delete(userStates, message.Chat.ID)
         }
         return
     }
 
+    // Обычные команды
     switch message.Text {
     case "/start":
         msg := tgbotapi.NewMessage(message.Chat.ID,
@@ -129,6 +188,130 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 
     case "/plans":
         showPlans(bot, message.Chat.ID)
+        
+    case "/ask":
+        userStates[message.Chat.ID] = "waiting_question"
+        msg := tgbotapi.NewMessage(message.Chat.ID, 
+            "🤖 Задайте ваш вопрос, и я отвечу с помощью AI:")
+        bot.Send(msg)
+        
+    case "/usage":
+        usage := userAIUsage[message.Chat.ID]
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            fmt.Sprintf("📊 *Использование токенов*\n\n"+
+                "Использовано: *%d* токенов\n"+
+                "Доступно: *100000* токенов\n\n"+
+                "Модель: *%s*", 
+                usage, getUserModel(message.Chat.ID)))
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "/setmodel":
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🤖 GPT-3.5", "model_gpt35"),
+                tgbotapi.NewInlineKeyboardButtonData("🚀 GPT-4", "model_gpt4"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("📚 Claude", "model_claude"),
+                tgbotapi.NewInlineKeyboardButtonData("✨ Gemini", "model_gemini"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+            ),
+        )
+        msg := tgbotapi.NewMessage(message.Chat.ID, "Выберите модель AI:")
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+        
+    case "/profile":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            fmt.Sprintf("👤 *Ваш профиль*\n\n"+
+                "ID: `%d`\n"+
+                "Имя: %s\n"+
+                "Дата регистрации: %s\n\n"+
+                "Подписка: *Активна*\n"+
+                "Тариф: *Базовый*",
+                message.From.ID, message.From.FirstName, time.Now().Format("02.01.2006")))
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "/history":
+        history := userHistory[message.Chat.ID]
+        if len(history) == 0 {
+            msg := tgbotapi.NewMessage(message.Chat.ID, "📜 История пуста")
+            bot.Send(msg)
+            return
+        }
+        
+        text := "📜 *История запросов:*\n\n"
+        for i, entry := range history {
+            if i >= 10 {
+                break
+            }
+            text += entry + "\n\n"
+        }
+        
+        msg := tgbotapi.NewMessage(message.Chat.ID, text)
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "/feedback":
+        userStates[message.Chat.ID] = "waiting_feedback"
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "📝 Напишите ваш отзыв или предложение:")
+        bot.Send(msg)
+        
+    case "/support":
+        handleSupport(bot, message.Chat.ID, message.From)
+        
+    case "/admin":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "👑 *Админ-панель*\n\n"+
+                "/adminplans - управление тарифами\n"+
+                "/users - список пользователей\n"+
+                "/stats - статистика")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "/menu":
+        showMenu(bot, message.Chat.ID, message.From)
+        
+    case "/adminplans":
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("➕ Добавить тариф", "admin_add_plan"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("✏️ Редактировать", "admin_edit_plan"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("❌ Удалить", "admin_delete_plan"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+            ),
+        )
+        msg := tgbotapi.NewMessage(message.Chat.ID, "📦 *Управление тарифами*\nВыберите действие:")
+        msg.ParseMode = "Markdown"
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+        
+    case "/help":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "ℹ️ *Справка*\n\n"+
+                "Основные команды:\n"+
+                "/ask – задать вопрос AI\n"+
+                "/plans – посмотреть тарифы\n"+
+                "/usage – узнать остаток токенов\n"+
+                "/setmodel – выбрать модель AI\n"+
+                "/profile – информация о профиле\n"+
+                "/history – история запросов\n"+
+                "/feedback – отправить отзыв\n"+
+                "/support – контакты поддержки\n"+
+                "/menu – главное меню")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
     }
 }
 
@@ -138,6 +321,31 @@ func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
     
     log.Printf("Нажата кнопка: %s", query.Data)
 
+    // Меню
+    if strings.HasPrefix(query.Data, "menu_") {
+        handleMenuCallback(bot, query)
+        return
+    }
+
+    // Модели AI
+    if strings.HasPrefix(query.Data, "model_") {
+        handleModelCallback(bot, query)
+        return
+    }
+
+    // Админка
+    if strings.HasPrefix(query.Data, "admin_") {
+        handleAdminCallback(bot, query)
+        return
+    }
+
+    // Поддержка
+    if strings.HasPrefix(query.Data, "support_") {
+        handleSupportCallback(bot, query)
+        return
+    }
+
+    // Крипта
     if strings.HasPrefix(query.Data, "pay_crypto_") {
         planClean := strings.TrimPrefix(query.Data, "pay_crypto_")
         log.Printf("✅ КРИПТА: выбран тариф %s", planClean)
@@ -145,13 +353,25 @@ func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
         return
     }
 
+    // Проверка статуса оплаты
     if query.Data == "check_crypto_status" {
         checkCryptoPayment(bot, query.Message.Chat.ID)
         return
     }
 
+    // НАЗАД
     if query.Data == "back_to_plans" {
         showPlans(bot, query.Message.Chat.ID)
+        return
+    }
+
+    if query.Data == "back_to_support" {
+        handleSupport(bot, query.Message.Chat.ID, query.From)
+        return
+    }
+
+    if query.Data == "back_to_menu" {
+        showMenu(bot, query.Message.Chat.ID, query.From)
         return
     }
 
@@ -223,6 +443,247 @@ func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
     log.Printf("⚠️ Неизвестная кнопка: %s", query.Data)
 }
 
+func handleMenuCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
+    switch query.Data {
+    case "menu_ask":
+        userStates[query.Message.Chat.ID] = "waiting_question"
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, "🤖 Задайте ваш вопрос:")
+        bot.Send(msg)
+        
+    case "menu_plans":
+        showPlans(bot, query.Message.Chat.ID)
+        
+    case "menu_usage":
+        usage := userAIUsage[query.Message.Chat.ID]
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID,
+            fmt.Sprintf("📊 *Использование*\n\nТокены: %d/100000", usage))
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "menu_model":
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("GPT-3.5", "model_gpt35"),
+                tgbotapi.NewInlineKeyboardButtonData("GPT-4", "model_gpt4"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+            ),
+        )
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, "Выберите модель:")
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+        
+    case "menu_profile":
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID,
+            fmt.Sprintf("👤 Профиль: %s", query.From.FirstName))
+        bot.Send(msg)
+        
+    case "menu_history":
+        history := userHistory[query.Message.Chat.ID]
+        if len(history) == 0 {
+            msg := tgbotapi.NewMessage(query.Message.Chat.ID, "📜 История пуста")
+            bot.Send(msg)
+            return
+        }
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, 
+            fmt.Sprintf("📜 Последний запрос:\n%s", history[len(history)-1]))
+        bot.Send(msg)
+        
+    case "menu_support":
+        handleSupport(bot, query.Message.Chat.ID, query.From)
+        
+    case "menu_help":
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID,
+            "/ask - спросить AI\n/plans - тарифы")
+        bot.Send(msg)
+    }
+}
+
+func handleSupportCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
+    switch query.Data {
+    case "support_chat":
+        text := "💬 Чат с поддержкой\n\n" +
+            "Нажмите кнопку ниже, чтобы написать @IDamieN66I\n\n" +
+            "Мы онлайн 24/7 и ответим в течение нескольких минут!"
+
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonURL("💬 Написать", "https://t.me/IDamieN66I"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_support"),
+            ),
+        )
+
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+
+    case "support_faq":
+        text := "❓ Часто задаваемые вопросы\n\n" +
+            "1️⃣ Как оформить подписку?\n" +
+            "   Нажмите /plans, выберите тариф и следуйте инструкциям.\n\n" +
+            "2️⃣ Какие способы оплаты?\n" +
+            "   Карта, USDT, Bitcoin, СБП, Crypto Bot.\n\n" +
+            "3️⃣ Как сменить тариф?\n" +
+            "   В разделе /profile есть кнопка 'Сменить тариф'.\n\n" +
+            "4️⃣ Как отменить подписку?\n" +
+            "   Напишите в поддержку, мы поможем.\n\n" +
+            "5️⃣ Сколько токенов в день?\n" +
+            "   100 000 токенов в месяц на всех тарифах."
+
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_support"),
+            ),
+        )
+
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+
+    case "support_ticket":
+        ticketID := fmt.Sprintf("TICKET-%d", time.Now().UnixNano()%10000)
+        supportTickets[query.Message.Chat.ID] = SupportTicket{
+            ID:        ticketID,
+            UserID:    query.From.ID,
+            UserName:  query.From.FirstName,
+            Status:    "open",
+            CreatedAt: time.Now(),
+        }
+
+        text := fmt.Sprintf("📝 Создание обращения\n\n"+
+            "Ваш номер обращения: %s\n\n"+
+            "Опишите вашу проблему одним сообщением.\n"+
+            "Мы ответим в ближайшее время.",
+            ticketID)
+
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "back_to_support"),
+            ),
+        )
+
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+
+        userStates[query.Message.Chat.ID] = "waiting_ticket_description"
+    }
+}
+
+func handleModelCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
+    var modelName string
+    
+    switch query.Data {
+    case "model_gpt35":
+        modelName = "GPT-3.5"
+        userAIModel[query.Message.Chat.ID] = "gpt-3.5-turbo"
+    case "model_gpt4":
+        modelName = "GPT-4"
+        userAIModel[query.Message.Chat.ID] = "gpt-4"
+    case "model_claude":
+        modelName = "Claude"
+        userAIModel[query.Message.Chat.ID] = "claude-3"
+    case "model_gemini":
+        modelName = "Gemini"
+        userAIModel[query.Message.Chat.ID] = "gemini-pro"
+    }
+    
+    msg := tgbotapi.NewMessage(query.Message.Chat.ID, 
+        fmt.Sprintf("✅ Модель изменена на %s", modelName))
+    bot.Send(msg)
+}
+
+func handleAdminCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
+    switch query.Data {
+    case "admin_add_plan":
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, 
+            "➕ Функция добавления тарифа (в разработке)")
+        bot.Send(msg)
+    case "admin_edit_plan":
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, 
+            "✏️ Функция редактирования тарифа (в разработке)")
+        bot.Send(msg)
+    case "admin_delete_plan":
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, 
+            "❌ Функция удаления тарифа (в разработке)")
+        bot.Send(msg)
+    }
+}
+
+func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
+    // Текстовое сообщение с контактами
+    text := fmt.Sprintf("📞 Поддержка\n\n"+
+        "Здравствуйте, %s!\n\n"+
+        "Вы можете связаться с нами:\n"+
+        "• Email: Skorpion_88-88@mail.ru\n"+
+        "• Telegram: @IDamieN66I\n"+
+        "• Чат: 24/7 онлайн\n\n"+
+        "Среднее время ответа: 15 минут",
+        user.FirstName)
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    bot.Send(msg)
+
+    // Кнопки действий
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonURL("📱 Написать в Telegram", "https://t.me/IDamieN66I"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("💬 Чат", "support_chat"),
+            tgbotapi.NewInlineKeyboardButtonData("❓ FAQ", "support_faq"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📝 Обращение", "support_ticket"),
+            tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+        ),
+    )
+
+    keyboardMsg := tgbotapi.NewMessage(chatID, "Выберите действие:")
+    keyboardMsg.ReplyMarkup = keyboard
+    bot.Send(keyboardMsg)
+}
+
+func showMenu(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🤖 Задать вопрос", "menu_ask"),
+            tgbotapi.NewInlineKeyboardButtonData("📋 Тарифы", "menu_plans"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📊 Использование", "menu_usage"),
+            tgbotapi.NewInlineKeyboardButtonData("⚙️ Модель", "menu_model"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("👤 Профиль", "menu_profile"),
+            tgbotapi.NewInlineKeyboardButtonData("📜 История", "menu_history"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("📞 Поддержка", "menu_support"),
+            tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "menu_help"),
+        ),
+    )
+
+    msg := tgbotapi.NewMessage(chatID, 
+        fmt.Sprintf("👋 Главное меню\n\nПривет, %s!\nВыберите действие:", user.FirstName))
+    msg.ReplyMarkup = keyboard
+    bot.Send(msg)
+}
+
+func getUserModel(chatID int64) string {
+    if model, ok := userAIModel[chatID]; ok {
+        return model
+    }
+    return "GPT-3.5 (по умолчанию)"
+}
+
+func askAI(question string) string {
+    return fmt.Sprintf("🤖 Ответ AI\n\nВы спросили: %s\n\nЭто демо-режим. В реальности здесь будет ответ от нейросети.", question)
+}
+
 func showPlans(bot *tgbotapi.BotAPI, chatID int64) {
     plansText := "*Базовый*\nДля небольших команд и стартапов\n💰 2990.00 ₽/мес\n\n" +
         "*Профессиональный*\nДля растущего бизнеса\n💰 29900.00 ₽/мес\n\n" +
@@ -245,6 +706,9 @@ func showPlans(bot *tgbotapi.BotAPI, chatID int64) {
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("💰 Купить Семейный", "plan_family"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
         ),
     )
 
@@ -284,7 +748,11 @@ func showPaymentMethods(bot *tgbotapi.BotAPI, chatID int64, planType string) {
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("🪙 Крипта", "pay_crypto_"+planClean),
-            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
+            tgbotapi.NewInlineKeyboardButtonData("❓ FAQ", "support_faq"),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔙 К тарифам", "back_to_plans"),
+            tgbotapi.NewInlineKeyboardButtonData("🔝 В меню", "back_to_menu"),
         ),
     )
 
@@ -322,7 +790,17 @@ func startCardPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
         Method:   "card",
     }
 
-    msg := tgbotapi.NewMessage(chatID, "💳 Введите номер карты (16 цифр):")
+    text := "💳 Оплата картой\n\n" +
+        "Введите номер карты (16 цифр):"
+
+    keyboard := tgbotapi.NewInlineKeyboardMarkup(
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "back_to_plans"),
+        ),
+    )
+
+    msg := tgbotapi.NewMessage(chatID, text)
+    msg.ReplyMarkup = keyboard
     bot.Send(msg)
 
     userStates[chatID] = "waiting_card_number"
@@ -364,6 +842,9 @@ func startUSDTPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_usdt_"+planClean),
+        ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
         ),
     )
 
@@ -410,6 +891,9 @@ func startBTCPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_btc_"+planClean),
         ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
+        ),
     )
 
     msg := tgbotapi.NewMessage(chatID, text)
@@ -453,6 +937,9 @@ func startSBPPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("✅ Я оплатил", "confirm_sbp_"+planClean),
         ),
+        tgbotapi.NewInlineKeyboardRow(
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
+        ),
     )
 
     msg := tgbotapi.NewMessage(chatID, text)
@@ -460,8 +947,6 @@ func startSBPPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
     msg.ReplyMarkup = keyboard
     bot.Send(msg)
 }
-
-// ==================== CRYPTO PAY (ИСПРАВЛЕНО) ====================
 
 func startCryptoPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
     var planName, price string
@@ -521,7 +1006,8 @@ func startCryptoPayment(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
             tgbotapi.NewInlineKeyboardButtonData("🔄 Проверить оплату", "check_crypto_status"),
         ),
         tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "back_to_plans"),
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_plans"),
+            tgbotapi.NewInlineKeyboardButtonData("🔝 В меню", "back_to_menu"),
         ),
     )
 
@@ -635,8 +1121,6 @@ func getInvoiceStatus(token string, invoiceID int64) (string, error) {
     
     return result.Result.Status, nil
 }
-
-// ==================== КОПИРОВАНИЕ АДРЕСОВ ====================
 
 func copyUSDTAddress(bot *tgbotapi.BotAPI, chatID int64, planClean string) {
     address := "TXmRt1UqWqfJ1XxqZQk3yL7vFhKpDnA2jB"
