@@ -116,6 +116,7 @@ func main() {
     r.GET("/ai", handlers.AIChatPageHandler)
     r.GET("/my-keys", handlers.MyKeysPageHandler)
     r.GET("/api-keys", handlers.APIKeysPageHandler)
+    r.GET("/support", handlers.SupportPageHandler)
 
     // Публичные, защищенные, админские и другие группы маршрутов (без изменений) ...
     public := r.Group("/")
