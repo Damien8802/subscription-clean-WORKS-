@@ -117,6 +117,8 @@ func main() {
     r.GET("/my-keys", handlers.MyKeysPageHandler)
     r.GET("/api-keys", handlers.APIKeysPageHandler)
     r.GET("/support", handlers.SupportPageHandler)
+    r.GET("/security", handlers.SecurityPageHandler)
+    r.GET("/referral", handlers.ReferralPageHandler)
 
     // Публичные, защищенные, админские и другие группы маршрутов (без изменений) ...
     public := r.Group("/")
@@ -127,7 +129,6 @@ func main() {
         public.GET("/info", handlers.InfoHandler)
         public.GET("/pricing", handlers.PricingPageHandler)
         public.GET("/partner", handlers.PartnerHandler)
-        public.GET("/referral", handlers.ReferralHandler)
     }
 
     authPages := r.Group("/")
@@ -142,7 +143,6 @@ func main() {
     {
         protected.GET("/settings", handlers.SettingsHandler)
         protected.GET("/my-subscriptions", handlers.MySubscriptionsPageHandler)
-        protected.GET("/security", handlers.SecurityHandler)
         protected.GET("/security-hub", handlers.SecurityHubHandler)
         protected.GET("/security-panel", handlers.SecurityPanelHandler)
         protected.GET("/integrations", handlers.IntegrationsHandler)
@@ -231,6 +231,8 @@ func main() {
         api.GET("/user/keys", handlers.GetUserAPIKeysHandler)
         api.POST("/keys/revoke", handlers.RevokeAPIKeyHandler)
         api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
+        api.GET("/referral/stats", handlers.GetReferralStatsHandler)
+        api.GET("/referral/friends", handlers.GetReferralFriendsHandler)
         
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
