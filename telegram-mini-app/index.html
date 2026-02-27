@@ -83,22 +83,74 @@
             padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2);
             width: 100%; max-width: 480px;
         }
-        .profile-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-        .profile-info { display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; flex: 1; }
-        .profile-info span { background: rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 20px; }
-        #userSubscription { background: transparent; padding: 6px 0; color: var(--tg-theme-hint-color, #666); font-weight: 500; width: 100%; }
+        .profile-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin-bottom: 10px; 
+            flex-wrap: wrap; 
+        }
+        .profile-info { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            font-size: 14px; 
+            flex: 1; 
+        }
+        .profile-info span { 
+            background: rgba(255,255,255,0.5); 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+        }
+        #userSubscription { 
+            background: transparent; 
+            padding: 6px 0; 
+            color: var(--tg-theme-hint-color, #666); 
+            font-weight: 500; 
+            width: 100%; 
+        }
         .subscribe-button {
             background: var(--tg-theme-button-color, linear-gradient(145deg, #2481cc, #1a6bb0));
-            color: white; border: none; border-radius: 24px; padding: 10px 20px;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 6px;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .subscribe-button:hover { transform: scale(1.02); }
-        .lang-toggle, .theme-toggle {
-            background: transparent; border: none; font-size: 22px; cursor: pointer;
-            width: 40px; height: 40px; border-radius: 50%;
+        
+        /* КНОПКИ */
+        .lang-toggle, .theme-toggle, .admin-toggle {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .lang-toggle:hover, .theme-toggle:hover, .admin-toggle:hover {
+            background: rgba(0,0,0,0.05);
         }
         
+        .admin-toggle {
+            font-size: 20px;
+            background: var(--tg-theme-button-color, #2481cc);
+            color: white;
+        }
+        
+        /* МОДАЛЬНЫЕ ОКНА */
         .modal {
             display: none;
             position: fixed;
@@ -111,6 +163,7 @@
             justify-content: center;
             z-index: 10000;
         }
+        .modal.active { display: flex; }
         .modal-content {
             background: white;
             border-radius: 28px;
@@ -122,7 +175,78 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
         
-        .plan-card, .method-card {
+        /* АДМИН-ПАНЕЛЬ */
+        .admin-panel {
+            padding: 16px;
+            background: var(--tg-theme-secondary-bg-color, white);
+            border-radius: 16px;
+            border: 1px solid var(--tg-theme-button-color, #2481cc);
+        }
+        .admin-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--tg-theme-text-color, #333);
+        }
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: rgba(36,129,204,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #2481cc);
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666);
+        }
+        .admin-users {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .user-email {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .user-role {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #e9ecef;
+            border-radius: 12px;
+        }
+        .user-role.admin {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: white;
+        }
+        .close-admin {
+            background: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        /* ТАРИФЫ */
+        .plan-card {
             background: var(--tg-theme-secondary-bg-color, #f8f9fa);
             border: 2px solid #e9ecef;
             border-radius: 16px;
@@ -131,7 +255,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .plan-card.selected, .method-card.selected {
+        .plan-card.selected {
             border-color: var(--tg-theme-button-color, #2481cc);
             background: rgba(36,129,204,0.05);
         }
@@ -144,16 +268,30 @@
         .plan-name { font-size: 18px; font-weight: 700; }
         .plan-price { font-size: 20px; font-weight: 700; color: var(--tg-theme-button-color, #2481cc); }
         
+        /* МЕТОДЫ ОПЛАТЫ */
         .method-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin: 20px 0;
         }
-        .method-card { text-align: center; padding: 16px 8px; }
+        .method-card {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .method-card.selected {
+            border-color: var(--tg-theme-button-color, #2481cc);
+            background: rgba(36,129,204,0.05);
+        }
         .method-icon { font-size: 32px; margin-bottom: 8px; }
         .method-name { font-size: 14px; font-weight: 600; }
         
+        /* ДЕТАЛИ ОПЛАТЫ */
         .payment-details {
             margin: 20px 0;
             padding: 20px;
@@ -163,12 +301,14 @@
         .detail-row { margin-bottom: 16px; }
         .detail-label { font-size: 12px; color: #666; margin-bottom: 4px; }
         .detail-value {
-            font-size: 16px; font-weight: 600;
+            font-size: 16px;
+            font-weight: 600;
             word-break: break-all;
             padding: 12px;
             background: white;
             border-radius: 12px;
             border: 1px solid #dee2e6;
+            width: 100%;
         }
         .copy-btn {
             background: var(--tg-theme-button-color, #2481cc);
@@ -204,23 +344,13 @@
             margin-top: 8px;
         }
         
-        .toast-container {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 10001; display: flex; flex-direction: column; gap: 10px;
-            pointer-events: none;
+        /* ТЕМНАЯ ТЕМА */
+        body.theme-dark {
+            --tg-theme-bg-color: #1a1a1a;
+            --tg-theme-text-color: #e0e0e0;
+            --tg-theme-hint-color: #666;
+            --tg-theme-button-color: #bb86fc;
         }
-        .toast {
-            background: #2481cc; color: white; padding: 12px 24px;
-            border-radius: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            font-size: 14px; animation: slideDown 0.3s ease; pointer-events: auto;
-        }
-        .toast.success { background: #4caf50; }
-        .toast.error { background: #ff5252; }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
         body.theme-dark .modal-content {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -228,6 +358,42 @@
         body.theme-dark .plan-card, body.theme-dark .method-card {
             background: #2d2d2d;
             border-color: #404040;
+        }
+        body.theme-dark .payment-details {
+            background: #2d2d2d;
+        }
+        body.theme-dark .detail-value {
+            background: #2d2d2d;
+            border-color: #404040;
+            color: #e0e0e0;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #2481cc;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+            pointer-events: auto;
+        }
+        .toast.success { background: #4caf50; }
+        .toast.error { background: #ff5252; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -240,8 +406,9 @@
                 <span id="userRole"></span>
             </div>
             <button class="subscribe-button" id="subscribeBtn">⭐ Купить подписку</button>
-            <button class="lang-toggle" id="langToggle">🇬🇧</button>
-            <button class="theme-toggle" id="themeToggle">🌓</button>
+            <button class="lang-toggle" id="langToggle" title="Switch language">🇬🇧</button>
+            <button class="theme-toggle" id="themeToggle" title="Переключить тему">🌓</button>
+            <button class="admin-toggle" id="adminToggle" title="Админ-панель">👑</button>
         </div>
         <div id="userSubscription"></div>
     </div>
@@ -337,9 +504,56 @@
         </div>
     </div>
     
+    <!-- АДМИН-ПАНЕЛЬ -->
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <div class="admin-panel">
+                <div class="admin-title">👑 Админ-панель</div>
+                
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <div class="stat-value">156</div>
+                        <div class="stat-label">Пользователей</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">Подписок</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-label">Платежей</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">1.2M</div>
+                        <div class="stat-label">Выручка</div>
+                    </div>
+                </div>
+                
+                <div class="admin-title" style="font-size: 16px;">📋 Последние пользователи</div>
+                <div class="admin-users">
+                    <div class="user-item">
+                        <span class="user-email">admin@example.com</span>
+                        <span class="user-role admin">admin</span>
+                    </div>
+                    <div class="user-item">
+                        <span class="user-email">user1@example.com</span>
+                        <span class="user-role">user</span>
+                    </div>
+                    <div class="user-item">
+                        <span class="user-email">user2@example.com</span>
+                        <span class="user-role">user</span>
+                    </div>
+                </div>
+                
+                <button class="close-admin" onclick="closeAdminModal()">✕ Закрыть</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // === ДАННЫЕ ===
         const CRYPTO_WALLET = '539564:AA31bHY40rT3NI0Fhw6no5BHCwWmftxquGM';
+        const BTC_ADDRESS = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
         
         const plans = {
             basic: { name: 'Базовый', price: 2990, usdt: 33.22, btc: 0.00066 },
@@ -353,13 +567,18 @@
         let user = null;
         let recognition = null;
         
-        // Telegram
+        // === Telegram ===
         let tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.ready(); }
         
-        // Демо-профиль
+        // === Демо-профиль ===
         setTimeout(() => {
-            user = { id: 1, name: 'Тест', email: 'user@example.com', role: 'user' };
+            user = { 
+                id: 1, 
+                name: 'Тест', 
+                email: 'user@example.com', 
+                role: 'user'
+            };
             document.getElementById('userEmail').textContent = user.email;
             document.getElementById('userRole').textContent = 'Роль: ' + user.role;
             document.getElementById('userSubscription').textContent = 'Подписка: не активна';
@@ -367,10 +586,11 @@
             document.getElementById('questionInput').disabled = false;
             document.getElementById('sendBtn').disabled = false;
             document.getElementById('micBtn').disabled = false;
+            
             addMessage('Здравствуйте! Задайте мне вопрос.', 'assistant');
         }, 500);
         
-        // === ЧАТ (через Go-бэкенд) ===
+        // === ЧАТ ===
         function addMessage(text, sender) {
             const messagesDiv = document.getElementById('messages');
             const wrapper = document.createElement('div');
@@ -431,39 +651,11 @@
             
             showTyping();
             
-            try {
-                // Запрос к твоему Go-бэкенду
-                const response = await fetch('/api/ai/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        question: question,
-                        model: 'yandex/yandexgpt-lite' 
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Сервер вернул ошибку ' + response.status);
-                }
-                
-                const data = await response.json();
+            setTimeout(() => {
                 hideTyping();
-                
-                if (data.answer) {
-                    addMessage(data.answer, 'assistant');
-                } else if (data.response) {
-                    addMessage(data.response, 'assistant');
-                } else {
-                    addMessage('Ошибка получения ответа от AI', 'assistant');
-                    console.error('Неожиданный ответ:', data);
-                }
-            } catch (error) {
-                hideTyping();
-                addMessage('Ошибка: ' + error.message, 'assistant');
-                console.error('Ошибка запроса:', error);
-            } finally {
+                addMessage('Это демо-ответ. AI скоро заработает.', 'assistant');
                 document.getElementById('sendBtn').disabled = false;
-            }
+            }, 1500);
         }
         
         // === ГОЛОСОВОЙ ВВОД ===
@@ -498,10 +690,29 @@
             };
         }
         
+        // === АДМИН-ПАНЕЛЬ ===
+        function openAdminModal() {
+            document.getElementById('adminModal').style.display = 'flex';
+            showToast('Админ-панель открыта', 'success');
+        }
+        
+        function closeAdminModal() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+        
         // === ОПЛАТА ===
-        function openPlanModal() { document.getElementById('planModal').style.display = 'flex'; }
-        function closePlanModal() { document.getElementById('planModal').style.display = 'none'; }
-        function backToPlans() { document.getElementById('methodModal').style.display = 'none'; openPlanModal(); }
+        function openPlanModal() { 
+            document.getElementById('planModal').style.display = 'flex'; 
+        }
+        
+        function closePlanModal() { 
+            document.getElementById('planModal').style.display = 'none'; 
+        }
+        
+        function backToPlans() { 
+            document.getElementById('methodModal').style.display = 'none'; 
+            openPlanModal(); 
+        }
         
         window.selectPlan = function(plan) {
             selectedPlan = plan;
@@ -527,10 +738,13 @@
         
         function updatePaymentDetails() {
             const plan = plans[selectedPlan];
-            document.getElementById('processPaymentBtn').innerHTML = 
-                `${selectedMethod === 'card' ? '💳' : selectedMethod === 'usdt' ? '₮' : selectedMethod === 'btc' ? '₿' : selectedMethod === 'sbp' ? '📱' : '🤖'} Оплатить ${plan.price.toLocaleString()} ₽`;
+            const detailsDiv = document.getElementById('paymentDetails');
+            const payBtn = document.getElementById('processPaymentBtn');
+            
+            payBtn.innerHTML = `${selectedMethod === 'card' ? '💳' : selectedMethod === 'usdt' ? '₮' : selectedMethod === 'btc' ? '₿' : selectedMethod === 'sbp' ? '📱' : '🤖'} Оплатить ${plan.price.toLocaleString()} ₽`;
             
             let html = '';
+            
             switch(selectedMethod) {
                 case 'card':
                     html = `
@@ -539,7 +753,7 @@
                                 <div class="detail-label">Номер карты</div>
                                 <input type="text" class="detail-value" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19">
                             </div>
-                            <div style="display:flex; gap:8px;">
+                            <div style="display:flex; gap:10px;">
                                 <div class="detail-row" style="flex:1;">
                                     <div class="detail-label">Срок</div>
                                     <input type="text" class="detail-value" id="cardExpiry" placeholder="MM/YY" maxlength="5">
@@ -551,27 +765,13 @@
                             </div>
                         </div>
                     `;
-                    setTimeout(() => {
-                        document.getElementById('cardNumber')?.addEventListener('input', function(e) {
-                            let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
-                            e.target.value = v;
-                        });
-                        document.getElementById('cardExpiry')?.addEventListener('input', function(e) {
-                            let v = e.target.value.replace(/\D/g, '');
-                            if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4);
-                            e.target.value = v;
-                        });
-                        document.getElementById('cardCvc')?.addEventListener('input', function(e) {
-                            e.target.value = e.target.value.replace(/\D/g, '');
-                        });
-                    }, 100);
                     break;
                 case 'usdt':
                     html = `
                         <div class="payment-details">
                             <div class="detail-row">
                                 <div class="detail-label">Адрес USDT (TRC-20)</div>
-                                <div class="detail-value">${CRYPTO_WALLET}</div>
+                                <div class="detail-value" style="font-size:14px;">${CRYPTO_WALLET}</div>
                                 <button class="copy-btn" onclick="copyAddress('${CRYPTO_WALLET}')">📋 Копировать</button>
                             </div>
                             <div class="detail-row">
@@ -586,8 +786,8 @@
                         <div class="payment-details">
                             <div class="detail-row">
                                 <div class="detail-label">Bitcoin адрес</div>
-                                <div class="detail-value">1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</div>
-                                <button class="copy-btn" onclick="copyAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')">📋 Копировать</button>
+                                <div class="detail-value">${BTC_ADDRESS}</div>
+                                <button class="copy-btn" onclick="copyAddress('${BTC_ADDRESS}')">📋 Копировать</button>
                             </div>
                             <div class="detail-row">
                                 <div class="detail-label">Сумма</div>
@@ -620,7 +820,25 @@
                     `;
                     break;
             }
-            document.getElementById('paymentDetails').innerHTML = html;
+            
+            detailsDiv.innerHTML = html;
+            
+            if (selectedMethod === 'card') {
+                setTimeout(() => {
+                    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+                        let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+                        e.target.value = v;
+                    });
+                    document.getElementById('cardExpiry')?.addEventListener('input', function(e) {
+                        let v = e.target.value.replace(/\D/g, '');
+                        if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4);
+                        e.target.value = v;
+                    });
+                    document.getElementById('cardCvc')?.addEventListener('input', function(e) {
+                        e.target.value = e.target.value.replace(/\D/g, '');
+                    });
+                }, 100);
+            }
         }
         
         window.copyAddress = function(address) {
@@ -648,13 +866,15 @@
         };
         
         function showToast(msg, type) {
-            const c = document.getElementById('toastContainer') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'toastContainer', className: 'toast-container' }));
+            const c = document.getElementById('toastContainer') || document.body.appendChild(
+                Object.assign(document.createElement('div'), { id: 'toastContainer', className: 'toast-container' })
+            );
             const t = Object.assign(document.createElement('div'), { className: `toast ${type}`, textContent: msg });
             c.appendChild(t);
             setTimeout(() => t.remove(), 3000);
         }
         
-        // === ОБРАБОТЧИКИ ===
+        // === КНОПКИ ===
         document.getElementById('subscribeBtn').addEventListener('click', openPlanModal);
         document.getElementById('sendBtn').addEventListener('click', sendQuestion);
         document.getElementById('micBtn').addEventListener('click', () => {
@@ -675,6 +895,7 @@
         // === ТЕМА ===
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.body.classList.toggle('theme-dark');
+            showToast('Тема переключена', 'success');
         });
         
         // === ЯЗЫК ===
@@ -682,7 +903,11 @@
         document.getElementById('langToggle').addEventListener('click', () => {
             currentLang = currentLang === 'ru' ? 'en' : 'ru';
             document.getElementById('langToggle').textContent = currentLang === 'ru' ? '🇬🇧' : '🇷🇺';
+            showToast(`Язык: ${currentLang === 'ru' ? 'Русский' : 'English'}`, 'success');
         });
+        
+        // === АДМИН-КНОПКА ===
+        document.getElementById('adminToggle').addEventListener('click', openAdminModal);
     </script>
 </body>
 </html>
