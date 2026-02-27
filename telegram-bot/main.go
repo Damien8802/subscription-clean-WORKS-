@@ -1,16 +1,17 @@
 package main
 
 import (
-    "log"
-    "os"
-    "fmt"
-    "net/http"
-    "strings"
     "encoding/json"
+    "fmt"
     "io"
+    "log"
+    "net/http"
+    "os"
+    "strings"
     "time"
+
+    "github.com/go-telegram-bot-api/telegram-bot-api/v5"
     "github.com/joho/godotenv"
-    tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // Хранилище состояний пользователей
@@ -835,8 +836,30 @@ func getUserModel(chatID int64) string {
     return "GPT-3.5 (по умолчанию)"
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ - БЕЗ ДЕМО-РЕЖИМА
 func askAI(question string) string {
-    return fmt.Sprintf("🤖 *Ответ AI*\n\nВы спросили: %s\n\nЭто демо-режим. В реальности здесь будет ответ от нейросети.", question)
+    // Отправляем запрос к бэкенду
+    resp, err := http.Post("http://localhost:8080/api/ai/ask", 
+        "application/json", 
+        strings.NewReader(fmt.Sprintf(`{"question":"%s"}`, question)))
+    
+    if err != nil {
+        return "❌ Ошибка вызова AI. Бэкенд недоступен."
+    }
+    defer resp.Body.Close()
+
+    var result struct {
+        Answer string `json:"answer"`
+    }
+    
+    body, _ := io.ReadAll(resp.Body)
+    json.Unmarshal(body, &result)
+
+    if result.Answer == "" {
+        return "❌ Не удалось получить ответ от AI"
+    }
+
+    return "🤖 " + result.Answer
 }
 
 func showPlans(bot *tgbotapi.BotAPI, chatID int64) {

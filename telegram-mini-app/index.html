@@ -656,24 +656,51 @@
         function hideTyping() {
             document.getElementById('typing-indicator')?.remove();
         }
-        
         async function sendQuestion() {
-            const input = document.getElementById('questionInput');
-            const question = input.value.trim();
-            if (!question) return;
-            
-            addMessage(question, 'user');
-            input.value = '';
-            document.getElementById('sendBtn').disabled = true;
-            
-            showTyping();
-            
-            setTimeout(() => {
-                hideTyping();
-                addMessage('Это демо-ответ. AI скоро заработает.', 'assistant');
-                document.getElementById('sendBtn').disabled = false;
-            }, 1500);
+    const input = document.getElementById('questionInput');
+    const question = input.value.trim();
+    if (!question) return;
+    
+    addMessage(question, 'user');
+    input.value = '';
+    document.getElementById('sendBtn').disabled = true;
+    
+    showTyping();
+    
+    try {
+        // Запрос к твоему Go-бэкенду
+        const response = await fetch('/api/ai/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                question: question,
+                model: 'yandex/yandexgpt-lite' 
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Сервер вернул ошибку ' + response.status);
         }
+        
+        const data = await response.json();
+        hideTyping();
+        
+        if (data.answer) {
+            addMessage(data.answer, 'assistant');
+        } else if (data.response) {
+            addMessage(data.response, 'assistant');
+        } else {
+            addMessage('Ошибка получения ответа от AI', 'assistant');
+            console.error('Неожиданный ответ:', data);
+        }
+    } catch (error) {
+        hideTyping();
+        addMessage('Ошибка: ' + error.message, 'assistant');
+        console.error('Ошибка запроса:', error);
+    } finally {
+        document.getElementById('sendBtn').disabled = false;
+    }
+}
         
         // === ГОЛОСОВОЙ ВВОД ===
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
