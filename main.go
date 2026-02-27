@@ -221,6 +221,8 @@ func main() {
         api.POST("/knowledge/upload", handlers.UploadKnowledgeHandler)
         api.GET("/knowledge/list", handlers.ListKnowledgeHandler)
         api.DELETE("/knowledge/delete/:id", handlers.DeleteKnowledgeHandler)
+        // Рассылки (Email и SMS)
+        api.POST("/notify", handlers.NotifyHandler)
         
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
@@ -229,6 +231,8 @@ func main() {
             authAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
         }
     }
+
+    r.GET("/notify", handlers.NotifyPageHandler)
 
     // ========== ДРУГИЕ ГРУППЫ МАРШРУТОВ (без изменений) ==========
     userKeys := r.Group("/api/user/keys")
