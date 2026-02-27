@@ -3,160 +3,635 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарифы - SaaSPro</title>
+    <title>SaaSPro - Платформа управления подписками</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 40px 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
             color: white;
-            margin-bottom: 40px;
-            font-size: 2.5em;
         }
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-        .pricing-card {
+        
+        /* ОСНОВНОЙ КОНТЕЙНЕР С БЕЛЫМ ФОНОМ ДЛЯ КОНТЕНТА */
+        .content-wrapper {
             background: white;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
+            border-radius: 40px 40px 0 0;
+            margin-top: 40px;
+            padding: 40px 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
         }
-        .pricing-card:hover {
-            transform: translateY(-5px);
+        
+        /* НАВИГАЦИЯ (на синем фоне) */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
         }
-        .plan-name {
-            font-size: 28px;
+        .logo {
+            font-size: 24px;
             font-weight: 700;
-            margin-bottom: 15px;
-            color: #333;
-        }
-        .plan-price {
-            font-size: 42px;
-            font-weight: 800;
-            color: #667eea;
-            margin-bottom: 20px;
-        }
-        .plan-price small {
-            font-size: 16px;
-            color: #999;
-        }
-        .plan-features {
-            text-align: left;
-            margin: 25px 0;
-            padding: 0 10px;
-        }
-        .plan-feature {
-            padding: 8px 0;
-            color: #555;
-            border-bottom: 1px solid #eee;
-        }
-        .plan-feature:last-child {
-            border-bottom: none;
-        }
-        .plan-feature:before {
-            content: "✅ ";
-            color: #4caf50;
-        }
-        .select-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 15px 40px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: opacity 0.3s;
-        }
-        .select-btn:hover {
-            opacity: 0.9;
         }
         .nav-links {
-            text-align: center;
-            margin-top: 40px;
+            display: flex;
+            gap: 30px;
         }
         .nav-links a {
             color: white;
             text-decoration: none;
-            margin: 0 15px;
-            font-size: 16px;
-            opacity: 0.8;
-            transition: opacity 0.3s;
+            opacity: 0.9;
         }
         .nav-links a:hover {
             opacity: 1;
         }
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        .auth-buttons a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 50px;
+        }
+        .login {
+            background: rgba(255,255,255,0.2);
+        }
+        .register {
+            background: white;
+            color: #667eea !important;
+            font-weight: 600;
+        }
+        
+        /* ГЕРОЙ (на синем фоне) */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            align-items: center;
+        }
+        .hero-content h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .hero-content p {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        .hero-image {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            height: 300px;
+        }
+        .hero-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        /* СТАТИСТИКА (на синем фоне) */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* ПОЧЕМУ ВЫБИРАЮТ (на белом фоне) */
+        .features {
+            max-width: 1200px;
+            margin: 0 auto 60px;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .features h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .features p {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        /* ТАРИФЫ И AI ЧАТ В ОДНОМ РЯДУ */
+        .pricing-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .pricing-header h2 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .pricing-header p {
+            color: #666;
+        }
+        .pricing-row {
+            display: grid;
+            grid-template-columns: 3fr 1.3fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        /* ТАРИФЫ */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .popular-tag {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 12px;
+        }
+        .pricing-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .price {
+            font-size: 36px;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .price small {
+            font-size: 14px;
+            color: #999;
+        }
+        .features-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+        .features-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .features-list li:before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: 600;
+        }
+        .btn {
+            display: block;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: 600;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        /* AI ЧАТ (СПРАВА ОТ ТАРИФОВ) */
+        .ai-chat-side {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .chat-header h3 {
+            font-size: 22px;
+            color: #667eea;
+        }
+        .online-badge {
+            background: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 11px;
+        }
+        .chat-subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .chat-container {
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+        }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .message {
+            max-width: 85%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .user-message {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background: #e9ecef;
+            color: #333;
+            align-self: flex-start;
+        }
+        .typing {
+            color: #999;
+            font-style: italic;
+            padding: 10px;
+            font-size: 13px;
+        }
+        .input-area {
+            display: flex;
+            gap: 8px;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+        .input-area button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        /* ФУТЕР (на синем фоне) */
+        .footer {
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            padding: 60px 20px 20px;
+            margin-top: 0;
+        }
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr;
+            gap: 40px;
+        }
+        .footer-col h4 {
+            margin-bottom: 20px;
+        }
+        .footer-col a, .footer-col p {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            line-height: 2;
+            display: block;
+        }
+        .footer-col a:hover {
+            color: white;
+        }
+        .copyright {
+            text-align: center;
+            padding-top: 40px;
+            color: rgba(255,255,255,0.6);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            max-width: 1200px;
+            margin: 40px auto 0;
+        }
+        
+        /* АДАПТИВНОСТЬ */
+        @media (max-width: 1000px) {
+            .pricing-row {
+                grid-template-columns: 1fr;
+            }
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .hero {
+                grid-template-columns: 1fr;
+            }
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 700px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Выберите тариф</h1>
-        
-        <div class="pricing-grid">
-            <!-- Базовый -->
-            <div class="pricing-card">
-                <div class="plan-name">Базовый</div>
-                <div class="plan-price">990 ₽ <small>/мес</small></div>
-                <div class="plan-features">
-                    <div class="plan-feature">До 100 пользователей</div>
-                    <div class="plan-feature">Базовая аналитика</div>
-                    <div class="plan-feature">Email поддержка</div>
-                </div>
-                <button class="select-btn" onclick="location.href='/payment?plan=basic&price=990'">Выбрать</button>
-            </div>
-            
-            <!-- Профессиональный -->
-            <div class="pricing-card">
-                <div class="plan-name">Профессиональный</div>
-                <div class="plan-price">2 990 ₽ <small>/мес</small></div>
-                <div class="plan-features">
-                    <div class="plan-feature">До 1000 пользователей</div>
-                    <div class="plan-feature">Продвинутая аналитика</div>
-                    <div class="plan-feature">Приоритетная поддержка</div>
-                    <div class="plan-feature">CRM</div>
-                </div>
-                <button class="select-btn" onclick="location.href='/payment?plan=pro&price=2990'">Выбрать</button>
-            </div>
-            
-            <!-- Корпоративный -->
-            <div class="pricing-card">
-                <div class="plan-name">Корпоративный</div>
-                <div class="plan-price">9 990 ₽ <small>/мес</small></div>
-                <div class="plan-features">
-                    <div class="plan-feature">Неограниченно пользователей</div>
-                    <div class="plan-feature">Полная аналитика</div>
-                    <div class="plan-feature">24/7 поддержка</div>
-                    <div class="plan-feature">Все интеграции</div>
-                </div>
-                <button class="select-btn" onclick="location.href='/payment?plan=enterprise&price=9990'">Выбрать</button>
-            </div>
-        </div>
-        
+    <!-- ВСЁ НА СИНЕМ ФОНЕ (до футера) -->
+    <!-- НАВИГАЦИЯ -->
+    <nav class="navbar">
+        <div class="logo">SaaSPro</div>
         <div class="nav-links">
             <a href="/">Главная</a>
-            <a href="/services">Услуги</a>
-            <a href="/api">API</a>
-            <a href="/telegram">Телеграм</a>
             <a href="/pricing">Тарифы</a>
-            <a href="/ai">AI Chat</a>
-            <a href="/maxim">Maxim-06</a>
+            <a href="/dashboard-improved">Дашборд</a>
+            <a href="/crm">CRM</a>
+            <a href="/analytics">Аналитика</a>
+            <a href="/partner">Партнеры</a>
+        </div>
+        <div class="auth-buttons">
+            <a href="/login" class="login">Вход</a>
+            <a href="/register" class="register">Регистрация</a>
+        </div>
+    </nav>
+
+    <!-- ГЕРОЙ -->
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Управляйте подписками легко</h1>
+            <p>Мощная платформа для управления SaaS подписками, платежами, аналитикой и автоматизацией. Все в одном месте.</p>
+        </div>
+        <div class="hero-image">
+            <img src="/static/img/tablet-20260226173920.svg" alt="Dashboard Preview">
         </div>
     </div>
+
+    <!-- СТАТИСТИКА -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">10+</div>
+            <div class="stat-label">Активных пользователей</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Обработано платежей</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">99%</div>
+            <div class="stat-label">Аптайм системы</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Поддержка</div>
+        </div>
+    </div>
+
+    <!-- БЕЛЫЙ КОНТЕЙНЕР ДЛЯ ОСТАЛЬНОГО КОНТЕНТА -->
+    <div class="content-wrapper">
+        <!-- ПОЧЕМУ ВЫБИРАЮТ -->
+        <div class="features">
+            <h2>Почему выбирают нас</h2>
+            <p>Все инструменты для эффективного управления подписками</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>📊 Продвинутая аналитика</h3>
+                    <p>Детальные отчеты, прогнозирование, графики и метрики в реальном времени</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💳 Мультивалютные платежи</h3>
+                    <p>Поддержка RUB, USD, EUR, криптовалют. Автоматические списания и инвойсы</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⚡ Автоматизация</h3>
+                    <p>Работа с 1С, Битрикс24, Telegram боты, Webhook, API интеграции</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ТАРИФЫ И AI ЧАТ В РЯД -->
+        <div class="pricing-section">
+            <div class="pricing-header">
+                <h2>Выберите свой тариф</h2>
+                <p>Гибкие планы для любого бизнеса</p>
+            </div>
+            
+            <div class="pricing-row">
+                <!-- ТАРИФЫ -->
+                <div class="pricing-grid">
+                    <div class="pricing-card">
+                        <h3>Базовый</h3>
+                        <div class="price">₽990 <small>/месяц</small></div>
+                        <ul class="features-list">
+                            <li>До 100 пользователей</li>
+                            <li>Базовая аналитика</li>
+                            <li>Email поддержка</li>
+                            <li>5 интеграций</li>
+                        </ul>
+                        <button class="btn" onclick="location.href='/payment?plan=basic&price=990'">Выбрать</button>
+                    </div>
+                    
+                    <div class="pricing-card">
+                        <div class="popular-tag">ПОПУЛЯРНЫЙ</div>
+                        <h3>Профессиональный</h3>
+                        <div class="price">₽2 990 <small>/месяц</small></div>
+                        <ul class="features-list">
+                            <li>До 1000 пользователей</li>
+                            <li>Продвинутая аналитика</li>
+                            <li>Приоритетная поддержка</li>
+                            <li>20 интеграций</li>
+                            <li>CRM система</li>
+                        </ul>
+                        <button class="btn" onclick="location.href='/payment?plan=pro&price=2990'">Выбрать</button>
+                    </div>
+                    
+                    <div class="pricing-card">
+                        <h3>Предприятие</h3>
+                        <div class="price">₽9 990 <small>/месяц</small></div>
+                        <ul class="features-list">
+                            <li>Неограниченно пользователей</li>
+                            <li>Полная аналитика + AI</li>
+                            <li>24/7 персональная поддержка</li>
+                            <li>Все интеграции</li>
+                            <li>White-label решение</li>
+                        </ul>
+                        <button class="btn" onclick="location.href='/contact'">Связаться с нами</button>
+                    </div>
+                </div>
+                
+                <!-- AI ЧАТ -->
+                <div class="ai-chat-side">
+                    <div class="chat-header">
+                        <h3>🤖 AI Помощник</h3>
+                        <span class="online-badge">Online 24/7</span>
+                    </div>
+                    <p class="chat-subtitle">Спросите о тарифах, оплате, функциях</p>
+                    
+                    <div class="chat-container">
+                        <div class="messages" id="messages"></div>
+                        <div class="input-area">
+                            <input type="text" id="questionInput" placeholder="Напишите вопрос..." />
+                            <button onclick="sendQuestion()">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФУТЕР (на синем фоне) -->
+    <div class="footer">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>SaaSPro</h4>
+                <p>Платформа для управления подписками нового поколения. Эффективно, безопасно, масштабируемо.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Продукт</h4>
+                <a href="/pricing">Тарифы</a>
+                <a href="/features">Функции</a>
+                <a href="/integrations">Интеграции</a>
+            </div>
+            <div class="footer-col">
+                <h4>Ресурсы</h4>
+                <a href="/docs">Документация</a>
+                <a href="/blog">Блог</a>
+                <a href="/support">Поддержка</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>📧 support@saaspro.ru</p>
+                <p>📞 +7 (999) 123-45-67</p>
+            </div>
+        </div>
+        <div class="copyright">
+            © 2024 SaaSPro. Все права защищены.
+        </div>
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        
+        function addMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            if (!question) return;
+
+            addMessage(question, true);
+            input.value = '';
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing';
+            typingDiv.textContent = 'AI печатает...';
+            messagesDiv.appendChild(typingDiv);
+
+            try {
+                const response = await fetch('/api/ai/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+                typingDiv.remove();
+                addMessage(data.answer || 'Извините, не удалось получить ответ', false);
+            } catch (error) {
+                typingDiv.remove();
+                addMessage('Ошибка: ' + error.message, false);
+            }
+        }
+
+        // Приветственное сообщение
+        addMessage('Здравствуйте! Я AI-помощник. Спросите меня о тарифах, оплате или возможностях платформы!', false);
+    </script>
 </body>
 </html>

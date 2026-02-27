@@ -127,6 +127,9 @@ r.GET("/app", func(c *gin.Context) {
         c.Redirect(http.StatusMovedPermanently, "/logistics")
     })
 
+    // AI Чат на сервере
+    r.GET("/ai", handlers.AIChatPageHandler)
+
     // ========== ГРУППЫ МАРШРУТОВ ==========
     public := r.Group("/")
     {
