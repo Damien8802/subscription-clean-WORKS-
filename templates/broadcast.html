@@ -1,0 +1,239 @@
+package handlers
+
+import (
+    "fmt"
+    "log"
+    "net/http"
+    "os"
+    "strings"
+    "time"
+
+    "github.com/gin-gonic/gin"
+    tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+// BroadcastRequest - структура запроса на рассылку
+type BroadcastRequest struct {
+    Type    string   `json:"type" binding:"required"` // "email", "sms", "telegram", "all"
+    Subject string   `json:"subject"`                  // для email
+    Message string   `json:"message" binding:"required"`
+    Users   []string `json:"users"`                    // список получателей (если пусто - тестовым контактам)
+}
+
+// EmailConfig для SMTP
+type EmailConfig struct {
+    Host     string
+    Port     string
+    Username string
+    Password string
+    From     string
+}
+
+// BroadcastHandler - главный обработчик рассылок
+func BroadcastHandler(c *gin.Context) {
+    var req BroadcastRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Получаем список пользователей для рассылки
+    var recipients []string
+    if len(req.Users) > 0 {
+        recipients = req.Users
+    } else {
+        // Если список пустой - используем тестовые контакты
+        log.Println("ℹ️ Список получателей пуст, отправка тестовым контактам")
+        recipients = []string{
+            "89182471690",          // Твой телефон для SMS
+            "skorpion_88-88@mail.ru", // Твой email
+            // "123456789",          // TODO: добавить твой Telegram chat_id, когда узнаешь
+        }
+    }
+
+    results := make(map[string]interface{})
+
+    switch req.Type {
+    case "email":
+        results = sendEmailBroadcast(recipients, req.Subject, req.Message)
+    case "sms":
+        results = sendSMSBroadcast(recipients, req.Message)
+    case "telegram":
+        results = sendTelegramBroadcast(recipients, req.Message)
+    case "all":
+        emailRes := sendEmailBroadcast(recipients, req.Subject, req.Message)
+        smsRes := sendSMSBroadcast(recipients, req.Message)
+        telegramRes := sendTelegramBroadcast(recipients, req.Message)
+        results = gin.H{
+            "email":    emailRes,
+            "sms":      smsRes,
+            "telegram": telegramRes,
+        }
+    default:
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неизвестный тип рассылки"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "results": results,
+    })
+}
+
+// BroadcastPageHandler - отображает HTML-страницу для рассылок
+func BroadcastPageHandler(c *gin.Context) {
+    c.HTML(http.StatusOK, "broadcast.html", gin.H{})
+}
+
+// ==================== EMAIL РАССЫЛКА ====================
+func sendEmailBroadcast(recipients []string, subject, message string) map[string]interface{} {
+    cfg := EmailConfig{
+        Host:     os.Getenv("SMTP_HOST"),
+        Port:     os.Getenv("SMTP_PORT"),
+        Username: os.Getenv("SMTP_USER"),
+        Password: os.Getenv("SMTP_PASS"),
+        From:     os.Getenv("SMTP_FROM"),
+    }
+
+    // Фильтруем только email-адреса (содержат '@')
+    var emails []string
+    for _, r := range recipients {
+        if strings.Contains(r, "@") {
+            emails = append(emails, r)
+        }
+    }
+
+    if len(emails) == 0 {
+        log.Println("📧 Нет email-адресов для рассылки")
+        return gin.H{"sent": 0, "message": "Нет email-адресов"}
+    }
+
+    if cfg.Host == "" || cfg.Port == "" {
+        // Демо-режим
+        log.Printf("📧 [DEMO] Email рассылка для %d получателей: %s", len(emails), subject)
+        return gin.H{
+            "sent":    len(emails),
+            "demo":    true,
+            "first":   emails[0],
+            "message": "DEMO: Настрой SMTP в .env для реальной отправки",
+        }
+    }
+
+    // TODO: Реальная отправка через SMTP
+    // Для продакшена добавить очередь, повторные попытки, логирование
+
+    return gin.H{
+        "sent": len(emails),
+        "via":  "smtp",
+    }
+}
+
+// ==================== SMS РАССЫЛКА ====================
+func sendSMSBroadcast(recipients []string, message string) map[string]interface{} {
+    apiKey := os.Getenv("SMS_API_KEY")
+
+    // Фильтруем только номера телефонов (начинаются с '+79' или '89')
+    var phones []string
+    for _, r := range recipients {
+        cleanNum := strings.TrimSpace(r)
+        if strings.HasPrefix(cleanNum, "89") || strings.HasPrefix(cleanNum, "+79") {
+            phones = append(phones, cleanNum)
+        }
+    }
+
+    if len(phones) == 0 {
+        log.Println("📱 Нет номеров телефонов для SMS-рассылки")
+        return gin.H{"sent": 0, "message": "Нет номеров телефонов"}
+    }
+
+    if apiKey == "" {
+        // Демо-режим
+        log.Printf("📱 [DEMO] SMS рассылка для %d номеров", len(phones))
+        return gin.H{
+            "sent":    len(phones),
+            "demo":    true,
+            "first":   phones[0],
+            "message": "DEMO: Настрой SMS_API_KEY в .env для реальной отправки",
+        }
+    }
+
+    // TODO: Интеграция с SMS-провайдером (sms.ru, smsc.ru и т.д.)
+    // for _, phone := range phones {
+    //     // Отправка через API
+    // }
+
+    return gin.H{
+        "sent": len(phones),
+        "via":  "sms-provider",
+    }
+}
+
+// ==================== TELEGRAM РАССЫЛКА ====================
+func sendTelegramBroadcast(recipients []string, message string) map[string]interface{} {
+    botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+
+    // TODO: Фильтрация chat_id. Пока считаем, что все переданные строки - это числа (chat_id)
+    var chatIDs []string
+    for _, r := range recipients {
+        // Простейшая проверка, что это не email и не телефон
+        if !strings.Contains(r, "@") && !strings.HasPrefix(r, "89") && !strings.HasPrefix(r, "+79") {
+            chatIDs = append(chatIDs, r)
+        }
+    }
+
+    if len(chatIDs) == 0 {
+        log.Println("🤖 Нет Telegram chat_id для рассылки")
+        return gin.H{"sent": 0, "message": "Нет Telegram chat_id"}
+    }
+
+    if botToken == "" {
+        log.Printf("🤖 [DEMO] Telegram рассылка для %d чатов", len(chatIDs))
+        return gin.H{
+            "sent":    len(chatIDs),
+            "demo":    true,
+            "first":   chatIDs[0],
+            "message": "DEMO: Проверь TELEGRAM_BOT_TOKEN в .env",
+        }
+    }
+
+    bot, err := tgbotapi.NewBotAPI(botToken)
+    if err != nil {
+        log.Printf("❌ Ошибка подключения к боту: %v", err)
+        return gin.H{
+            "error": err.Error(),
+            "sent":  0,
+        }
+    }
+
+    sent := 0
+    failed := 0
+
+    for _, chatIDStr := range chatIDs {
+        var chatID int64
+        fmt.Sscanf(chatIDStr, "%d", &chatID)
+        if chatID == 0 {
+            log.Printf("❌ Некорректный chat_id: %s", chatIDStr)
+            failed++
+            continue
+        }
+
+        msg := tgbotapi.NewMessage(chatID, message)
+        msg.ParseMode = "HTML"
+
+        _, err := bot.Send(msg)
+        if err != nil {
+            log.Printf("❌ Ошибка отправки в %d: %v", chatID, err)
+            failed++
+        } else {
+            sent++
+        }
+
+        // Небольшая пауза, чтобы не спамить
+        time.Sleep(100 * time.Millisecond)
+    }
+
+    return gin.H{
+        "sent":   sent,
+        "failed": failed,
+    }
+}

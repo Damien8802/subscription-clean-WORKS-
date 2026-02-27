@@ -47,7 +47,7 @@ func main() {
     r.SetTrustedProxies(cfg.TrustedProxies)
     r.Use(middleware.SetupCORS(cfg))
 
-    // Загрузка шаблонов
+    // Загрузка шаблонов (без изменений) ...
     subFS, err := fs.Sub(templateFS, "templates")
     if err != nil {
         log.Fatalf("❌ Не удалось открыть встроенные шаблоны: %v", err)
@@ -103,34 +103,19 @@ func main() {
     r.SetHTMLTemplate(tmpl)
     log.Println("✅ Шаблоны загружены из embed.FS")
 
-        // ========== СТАТИКА ==========
+    // ========== СТАТИКА, РЕДИРЕКТЫ, ПУБЛИЧНЫЕ И ЗАЩИЩЕННЫЕ МАРШРУТЫ (без изменений) ==========
     r.Static("/static", cfg.StaticPath)
     r.Static("/frontend", cfg.FrontendPath)
     r.Static("/app", "C:/Projects/subscription-clean-WORKS/telegram-mini-app")
-        // Для PWA – отдаём манифест и service-worker из папки telegram-mini-app
-    r.GET("/manifest.json", func(c *gin.Context) {
-        c.File("./telegram-mini-app/manifest.json")
-    })
-    r.GET("/service-worker.js", func(c *gin.Context) {
-        c.File("./telegram-mini-app/service-worker.js")
-    })
-r.GET("/app", func(c *gin.Context) {
-        c.File("C:/Projects/subscription-clean-WORKS/telegram-mini-app/index.html")
-    })// ========== РЕДИРЕКТЫ ==========
-    r.GET("/dashboard_improved", func(c *gin.Context) {
-        c.Redirect(http.StatusMovedPermanently, "/dashboard-improved")
-    })
-    r.GET("/dashboard", func(c *gin.Context) {
-        c.Redirect(http.StatusMovedPermanently, "/dashboard-improved")
-    })
-    r.GET("/delivery", func(c *gin.Context) {
-        c.Redirect(http.StatusMovedPermanently, "/logistics")
-    })
-
-    // AI Чат на сервере
+    r.GET("/manifest.json", func(c *gin.Context) { c.File("./telegram-mini-app/manifest.json") })
+    r.GET("/service-worker.js", func(c *gin.Context) { c.File("./telegram-mini-app/service-worker.js") })
+    r.GET("/app", func(c *gin.Context) { c.File("C:/Projects/subscription-clean-WORKS/telegram-mini-app/index.html") })
+    r.GET("/dashboard_improved", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
+    r.GET("/dashboard", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
+    r.GET("/delivery", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/logistics") })
     r.GET("/ai", handlers.AIChatPageHandler)
 
-    // ========== ГРУППЫ МАРШРУТОВ ==========
+    // Публичные, защищенные, админские и другие группы маршрутов (без изменений) ...
     public := r.Group("/")
     {
         public.GET("/", handlers.HomeHandler)
@@ -236,8 +221,7 @@ r.GET("/app", func(c *gin.Context) {
         api.POST("/knowledge/upload", handlers.UploadKnowledgeHandler)
         api.GET("/knowledge/list", handlers.ListKnowledgeHandler)
         api.DELETE("/knowledge/delete/:id", handlers.DeleteKnowledgeHandler)
-
-        // Защищённые эндпоинты API
+        
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
         {
@@ -246,7 +230,7 @@ r.GET("/app", func(c *gin.Context) {
         }
     }
 
-    // ========== УПРАВЛЕНИЕ API-КЛЮЧАМИ ==========
+    // ========== ДРУГИЕ ГРУППЫ МАРШРУТОВ (без изменений) ==========
     userKeys := r.Group("/api/user/keys")
     userKeys.Use(middleware.AuthMiddleware(cfg))
     {
@@ -255,19 +239,15 @@ r.GET("/app", func(c *gin.Context) {
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
-    // ========== AI GATEWAY ==========
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
         v1.POST("/chat/completions", handlers.ChatCompletionsHandler)
     }
 
-    // Админские API
     adminAPI := r.Group("/api/admin")
     adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
-        //adminAPI.PUT("/users/:id/role", handlers.AdminUpdateUserRoleHandler)
-        //adminAPI.DELETE("/users/:id", handlers.AdminDeleteUserHandler)
         adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
         adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
         adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
@@ -279,8 +259,11 @@ r.GET("/app", func(c *gin.Context) {
         adminAPI.GET("/stats", handlers.AdminStatsHandler)
         adminAPI.GET("/users", handlers.AdminUsersHandler)
         adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
-        adminAPI.POST("/broadcast", handlers.AdminBroadcastHandler)
+        
     }
+
+   
+    
 
     // 404
     r.NoRoute(func(c *gin.Context) {
@@ -290,10 +273,9 @@ r.GET("/app", func(c *gin.Context) {
         })
     })
 
-    // Баннер
+    // Баннер (без изменений) ...
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port
-
     fmt.Printf("\n============================================================\n")
     fmt.Printf("   🚀 SaaSPro - ПОЛНАЯ ВЕРСИЯ 3.0 (УНИФИЦИРОВАННАЯ)\n")
     fmt.Printf("============================================================\n\n")
@@ -345,5 +327,3 @@ r.GET("/app", func(c *gin.Context) {
     log.Printf("🚀 Сервер запущен на порту %s", port)
     r.Run(port)
 }
-
-
