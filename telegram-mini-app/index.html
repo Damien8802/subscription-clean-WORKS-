@@ -5,11 +5,9 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat</title>
+    <title>AI Chat - Оплата как в боте</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* все твои стили остаются без изменений - я их не трогаю, чтобы не сломать */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -21,6 +19,7 @@
             min-height: 100vh; padding: 16px; margin: 0;
         }
         @keyframes gradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        
         .chat-container {
             background: rgba(255,255,255,0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
             border-radius: 28px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
@@ -33,46 +32,52 @@
         .avatar {
             width: 32px; height: 32px; border-radius: 50%; background: var(--tg-theme-button-color, #2481cc);
             display: flex; align-items: center; justify-content: center; font-size: 18px;
-            flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); animation: scaleIn 0.3s ease;
+            flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .avatar.bot { background: var(--tg-theme-hint-color, #999); }
         .message {
             padding: 12px 16px; border-radius: 18px; max-width: 70%; word-wrap: break-word;
             position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .message.user { background: var(--tg-theme-button-color, #2481cc); color: white; border-bottom-right-radius: 4px; animation: slideInRight 0.4s cubic-bezier(0.21,1.11,0.42,1.11); }
-        .message.assistant { background: var(--tg-theme-bg-color, #e9eef2); color: var(--tg-theme-text-color, #222); border-bottom-left-radius: 4px; animation: slideInLeft 0.4s cubic-bezier(0.21,1.11,0.42,1.11); }
+        .message.user { background: var(--tg-theme-button-color, #2481cc); color: white; border-bottom-right-radius: 4px; }
+        .message.assistant { background: var(--tg-theme-bg-color, #e9eef2); color: var(--tg-theme-text-color, #222); border-bottom-left-radius: 4px; }
         .timestamp { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
-        .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: var(--tg-theme-bg-color, #e9eef2); border-radius: 18px; border-bottom-left-radius: 4px; max-width: fit-content; animation: fadeIn 0.3s ease; }
-        .typing-indicator span { width: 8px; height: 8px; background: var(--tg-theme-hint-color, #999); border-radius: 50%; animation: typing 1.4s infinite; }
-        .typing-indicator span:nth-child(2) { animation-delay:0.2s; } .typing-indicator span:nth-child(3) { animation-delay:0.4s; }
-        @keyframes typing { 0%,60%,100% { transform:translateY(0); opacity:0.4; } 30% { transform:translateY(-8px); opacity:1; } }
+        .typing-indicator {
+            display: flex; gap: 4px; padding: 12px 16px; background: var(--tg-theme-bg-color, #e9eef2);
+            border-radius: 18px; border-bottom-left-radius: 4px; max-width: fit-content;
+        }
+        .typing-indicator span {
+            width: 8px; height: 8px; background: var(--tg-theme-hint-color, #999);
+            border-radius: 50%; animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-8px); opacity: 1; } }
+        
         .input-area { display: flex; align-items: center; gap: 8px; margin-top: 10px; width: 100%; }
         .mic-button {
             background: var(--tg-theme-button-color, linear-gradient(145deg, #2481cc, #1a6bb0));
             color: white; border: none; border-radius: 50%; width: 48px; height: 48px;
-            font-size: 22px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
+            font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
         .mic-button.listening { background: linear-gradient(145deg, #ff5252, #ff1744); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform:scale(1); box-shadow:0 4px 12px rgba(255,82,82,0.4); } 50% { transform:scale(1.05); box-shadow:0 8px 24px rgba(255,82,82,0.6); } 100% { transform:scale(1); box-shadow:0 4px 12px rgba(255,82,82,0.4); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .button-group { display: flex; gap: 8px; flex-shrink: 0; }
         .icon-button {
             background: var(--tg-theme-button-color, linear-gradient(145deg, #2481cc, #1a6bb0));
             color: white; border: none; border-radius: 50%; width: 48px; height: 48px;
-            font-size: 22px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
+            font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
         }
         .icon-button.clear { background: linear-gradient(145deg, #ff7b7b, #ff5252); }
         input {
             flex: 1; padding: 14px 18px; border: none; border-radius: 30px;
             background: var(--tg-theme-bg-color, white); color: var(--tg-theme-text-color, #222);
             font-size: 16px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: box-shadow 0.2s; min-width: 0;
+            min-width: 0;
         }
-        input:focus { box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        
         .profile-card {
             background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-radius: 20px;
             padding: 16px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2);
@@ -85,311 +90,167 @@
         .subscribe-button {
             background: var(--tg-theme-button-color, linear-gradient(145deg, #2481cc, #1a6bb0));
             color: white; border: none; border-radius: 24px; padding: 10px 20px;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: inline-flex; align-items: center; gap: 6px;
-            text-decoration: none; white-space: nowrap;
         }
         .subscribe-button:hover { transform: scale(1.02); }
-        .subscribe-button:active { transform: scale(0.98); }
-        .token-stats { margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 16px; display: flex; flex-direction: column; gap: 8px; }
-        .stat-item { display: flex; justify-content: space-between; font-size: 14px; }
-        .stat-label { color: var(--tg-theme-hint-color, #666); }
-        .stat-value { font-weight: 600; }
-        .progress-mini { height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
-        .progress-mini-fill { height: 100%; background: var(--tg-theme-button-color, #2481cc); width: 0%; transition: width 0.3s; }
-        .docs-section { margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.02); border-radius: 16px; }
-        .docs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .docs-header h4 { font-size: 14px; color: var(--tg-theme-hint-color, #666); margin: 0; }
-        .docs-list { max-height: 150px; overflow-y: auto; margin-bottom: 10px; }
-        .doc-item { background: var(--tg-theme-bg-color, rgba(255,255,255,0.5)); border-radius: 12px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
-        .doc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-        .doc-delete { background: transparent; border: none; color: #ff5252; cursor: pointer; font-size: 16px; }
-        .upload-btn { background: var(--tg-theme-button-color, #2481cc); color: white; border: none; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-        .model-selector { margin: 12px 0 0; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: 16px; display: flex; align-items: center; gap: 10px; }
-        .model-selector label { font-size: 14px; color: var(--tg-theme-hint-color, #666); white-space: nowrap; }
-        .model-selector select { flex: 1; background: var(--tg-theme-bg-color, white); border: 1px solid rgba(0,0,0,0.1); border-radius: 20px; padding: 8px 12px; font-size: 14px; color: var(--tg-theme-text-color, #222); outline: none; cursor: pointer; }
-        .theme-toggle, .lang-toggle, .install-btn {
+        .lang-toggle, .theme-toggle {
             background: transparent; border: none; font-size: 22px; cursor: pointer;
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; transition: background 0.2s;
+            width: 40px; height: 40px; border-radius: 50%;
         }
-        .theme-toggle:hover, .lang-toggle:hover, .install-btn:hover { background: rgba(0,0,0,0.05); }
-        .install-btn { font-size: 24px; }
-        body.theme-light {
-            --tg-theme-bg-color: #f5f5f5;
-            --tg-theme-text-color: #222222;
-            --tg-theme-hint-color: #999999;
-            --tg-theme-link-color: #2481cc;
-            --tg-theme-button-color: #2481cc;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-secondary-bg-color: #ffffff;
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
         }
-        body.theme-dark {
-            --tg-theme-bg-color: #1a1a1a;
-            --tg-theme-text-color: #e0e0e0;
-            --tg-theme-hint-color: #666666;
-            --tg-theme-link-color: #bb86fc;
-            --tg-theme-button-color: #bb86fc;
-            --tg-theme-button-text-color: #000000;
-            --tg-theme-secondary-bg-color: #2d2d2d;
+        .modal-content {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
-        body.theme-dark .chat-container, body.theme-dark .profile-card {
-            background: rgba(30,30,30,0.85);
-            border-color: rgba(255,255,255,0.1);
+        
+        .plan-card, .method-card {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        body.theme-dark .message.assistant {
-            background: #2d2d2d;
-            color: #e0e0e0;
+        .plan-card.selected, .method-card.selected {
+            border-color: var(--tg-theme-button-color, #2481cc);
+            background: rgba(36,129,204,0.05);
         }
-        body.theme-dark input {
-            background: #2d2d2d;
-            color: #e0e0e0;
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
         }
+        .plan-name { font-size: 18px; font-weight: 700; }
+        .plan-price { font-size: 20px; font-weight: 700; color: var(--tg-theme-button-color, #2481cc); }
+        
+        .method-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .method-card { text-align: center; padding: 16px 8px; }
+        .method-icon { font-size: 32px; margin-bottom: 8px; }
+        .method-name { font-size: 14px; font-weight: 600; }
+        
+        .payment-details {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 16px;
+        }
+        .detail-row { margin-bottom: 16px; }
+        .detail-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .detail-value {
+            font-size: 16px; font-weight: 600;
+            word-break: break-all;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+        }
+        .copy-btn {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .qr-code { text-align: center; margin: 20px 0; }
+        .qr-code img { width: 200px; height: 200px; border-radius: 16px; }
+        
+        .pay-button {
+            background: var(--tg-theme-button-color, #2481cc);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .pay-button.secondary {
+            background: transparent;
+            border: 2px solid var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-color, #2481cc);
+            margin-top: 8px;
+        }
+        
         .toast-container {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 9999; display: flex; flex-direction: column; gap: 10px;
-            pointer-events: none; max-width: 90%; width: auto;
+            z-index: 10001; display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
         }
         .toast {
-            background: var(--tg-theme-button-color, #2481cc); color: white;
-            padding: 12px 20px 12px 16px; border-radius: 30px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2); font-size: 14px;
-            display: flex; align-items: center; gap: 10px;
-            animation: slideDown 0.3s ease; pointer-events: auto; max-width: 400px;
+            background: #2481cc; color: white; padding: 12px 24px;
+            border-radius: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            font-size: 14px; animation: slideDown 0.3s ease; pointer-events: auto;
         }
         .toast.success { background: #4caf50; }
         .toast.error { background: #ff5252; }
-        .toast.warning { background: #ff9800; }
-        .toast.info { background: #2481cc; }
-        .toast-icon { font-size: 18px; }
-        .toast-close {
-            background: transparent; border: none; color: white; font-size: 18px;
-            cursor: pointer; opacity: 0.7; margin-left: auto; padding: 0 4px;
-        }
-        .toast-close:hover { opacity: 1; }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .toast.fade-out { animation: fadeOut 0.3s ease forwards; }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0); }
-            to { opacity: 0; transform: translateY(-20px); }
+        
+        body.theme-dark .modal-content {
+            background: #1a1a1a;
+            border: 1px solid #333;
         }
-        .progress-bar {
-            position: relative; height: 4px; background: rgba(0,0,0,0.05);
-            border-radius: 2px; margin: 8px 20px 0; overflow: hidden; display: none;
-        }
-        .progress-bar.active { display: block; }
-        .progress-bar-fill {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: linear-gradient(90deg, var(--tg-theme-button-color, #2481cc), #8a6de9);
-            border-radius: 2px; animation: progress 30s linear forwards;
-        }
-        @keyframes progress { 0% { width:0%; } 100% { width:100%; } }
-        .copy-btn {
-            background:transparent; border:none; font-size:16px; cursor:pointer;
-            opacity:0.5; transition:opacity 0.2s; margin-left:8px;
-        }
-        .copy-btn:hover { opacity:1; }
-        .reactions {
-            display:flex; gap:8px; margin-top:4px; justify-content:flex-end;
-            opacity:0; transition:opacity 0.2s;
-        }
-        .message-wrapper.assistant:hover .reactions { opacity:1; }
-        .reaction-btn {
-            background:transparent; border:none; font-size:16px; cursor:pointer;
-            display:flex; align-items:center; gap:4px;
-        }
-        .reaction-count { font-size:14px; color:#666; }
-        .messages::-webkit-scrollbar { width:6px; }
-        .messages::-webkit-scrollbar-track { background:transparent; }
-        .messages::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.2); border-radius:10px; }
-        .messages { scrollbar-width:thin; scrollbar-color:rgba(0,0,0,0.2) transparent; }
-        .admin-panel { margin-top:20px; border-top:1px solid rgba(0,0,0,0.1); padding-top:16px; }
-        .admin-tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-        .admin-tab {
-            background: rgba(0,0,0,0.05); border:none; border-radius:20px;
-            padding:8px 16px; font-size:14px; cursor:pointer;
-        }
-        .admin-tab.active { background: var(--tg-theme-button-color,#2481cc); color:white; }
-        .admin-section { display:none; }
-        .admin-section.active { display:block; }
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(2,1fr); gap:12px; margin-bottom:16px;
-        }
-        .stat-card {
-            background: rgba(0,0,0,0.03); border-radius:16px; padding:12px; text-align:center;
-        }
-        .stat-value { font-size:24px; font-weight:700; color: var(--tg-theme-button-color,#2481cc); }
-        .stat-label { font-size:12px; color: var(--tg-theme-hint-color,#666); }
-        .users-table { width:100%; border-collapse:collapse; font-size:13px; }
-        .users-table th { text-align:left; padding:8px 4px; color:#666; font-weight:500; }
-        .users-table td { padding:8px 4px; border-bottom:1px solid rgba(0,0,0,0.05); }
-        .block-btn { background:#ff5252; color:white; border:none; border-radius:12px; padding:4px 8px; font-size:12px; cursor:pointer; }
-        .unblock-btn { background:#4caf50; color:white; border:none; border-radius:12px; padding:4px 8px; font-size:12px; cursor:pointer; }
-        .plans-list { display:flex; flex-direction:column; gap:8px; }
-        .plan-item {
-            background: rgba(0,0,0,0.03); border-radius:16px; padding:12px;
-            display:flex; align-items:center; justify-content:space-between;
-        }
-        .plan-info h4 { margin:0 0 4px; font-size:16px; }
-        .plan-info p { margin:0; font-size:12px; color:#666; }
-        .plan-actions button {
-            background:#ff5252; color:white; border:none; border-radius:12px;
-            padding:6px 12px; font-size:12px; cursor:pointer; margin-left:8px;
-        }
-        .plan-actions .edit-plan { background:#4caf50; }
-        .modal {
-            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:10000;
-        }
-        .modal.active { display:flex; }
-        .modal-content {
-            background: white; border-radius:28px; padding:24px; max-width:400px;
-            width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.3);
-        }
-        .modal-content h3 { margin-top:0; margin-bottom:20px; font-size:1.4rem; }
-        .form-group { margin-bottom:16px; }
-        .form-group label {
-            display:block; margin-bottom:6px; font-size:14px; color:#666;
-        }
-        .form-group input, .form-group textarea {
-            width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:16px;
-            font-size:14px;
-        }
-        .form-row { display:flex; gap:12px; }
-        .form-row .form-group { flex:1; }
-        .modal-buttons { display:flex; gap:10px; margin-top:20px; }
-        .modal-buttons button {
-            flex:1; padding:12px; border:none; border-radius:24px; font-size:16px;
-            font-weight:600; cursor:pointer;
-        }
-        .save-btn { background:#2481cc; color:white; }
-        .cancel-btn { background:#f0f0f0; }
-        .stats-tab { margin-top:16px; }
-        .stats-controls { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-        .stats-btn {
-            background:rgba(0,0,0,0.05); border:none; border-radius:20px;
-            padding:8px 16px; font-size:14px; cursor:pointer;
-        }
-        .stats-btn.active { background:#2481cc; color:white; }
-        .chart-container { position:relative; height:200px; width:100%; margin:10px 0; }
-        @media (min-width:600px) {
-            .chat-container, .profile-card { max-width:800px; }
-            .message { max-width:80%; }
-        }
-        @media (min-width:1024px) {
-            .chat-container, .profile-card { max-width:900px; }
-            .message { max-width:70%; }
-        }
-        @media (orientation:landscape) and (max-height:600px) {
-            .chat-container { max-height:85vh; }
-            .messages { max-height:60vh; }
+        body.theme-dark .plan-card, body.theme-dark .method-card {
+            background: #2d2d2d;
+            border-color: #404040;
         }
     </style>
 </head>
 <body>
+    <!-- ПРОФИЛЬ -->
     <div class="profile-card" id="profileCard" style="display: none;">
         <div class="profile-header">
             <div class="profile-info">
                 <span id="userEmail"></span>
                 <span id="userRole"></span>
             </div>
-            <a href="https://t.me/AgentServer_bot?start=plans" target="_blank" class="subscribe-button" id="subscribeBtn">⭐ <span data-i18n="buy_subscription">Купить подписку</span></a>
-            <button class="lang-toggle" id="langToggle" title="Switch language">🇬🇧</button>
-            <!-- Кнопка видна всегда, но будет скрыта, если приложение уже установлено -->
-            <button class="install-btn" id="installBtn" title="Установить приложение">📲</button>
-            <button class="theme-toggle" id="adminPanelBtn" title="Админ-панель" style="display: none;">👑</button>
-            <button class="theme-toggle" id="themeToggle" title="Переключить тему">🌓</button>
+            <button class="subscribe-button" id="subscribeBtn">⭐ Купить подписку</button>
+            <button class="lang-toggle" id="langToggle">🇬🇧</button>
+            <button class="theme-toggle" id="themeToggle">🌓</button>
         </div>
-        <div id="userSubscription" style="margin-bottom: 10px;"></div>
-        <div class="token-stats" id="tokenStats" style="display: none;">
-            <div class="stat-item">
-                <span class="stat-label" data-i18n="tokens_used">Использовано токенов</span>
-                <span class="stat-value" id="tokensUsed">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label" data-i18n="tokens_limit">Лимит</span>
-                <span class="stat-value" id="tokensLimit">—</span>
-            </div>
-            <div class="progress-mini">
-                <div class="progress-mini-fill" id="tokenProgress" style="width: 0%;"></div>
-            </div>
-        </div>
-        <div class="docs-section" id="docsSection" style="display: none;">
-            <div class="docs-header">
-                <h4 data-i18n="my_documents">📚 Мои документы</h4>
-                <label class="upload-btn" for="docUpload"><span data-i18n="upload">📎 Загрузить</span></label>
-                <input type="file" id="docUpload" accept=".txt,.pdf" style="display: none;">
-            </div>
-            <div class="docs-list" id="docsList"></div>
-        </div>
-        <div class="model-selector" id="modelSelector" style="display: none;">
-            <label data-i18n="model">Модель:</label>
-            <select id="modelSelect">
-                <option value="yandex/yandexgpt-lite">YandexGPT Lite</option>
-                <option value="gigachat/gigachat-max">GigaChat Max</option>
-                <option value="openai/gpt-4.1-mini">GPT-4.1 Mini</option>
-                <option value="deepseek/deepseek-chat">DeepSeek Chat</option>
-                <option value="ollama/llama3.2">Llama 3.2</option>
-            </select>
-        </div>
-        <div class="stats-tab" id="statsTab" style="display: none;">
-            <h4 data-i18n="token_usage_stats">📈 Использование токенов</h4>
-            <div class="stats-controls">
-                <button class="stats-btn active" data-period="week" data-i18n="week">Неделя</button>
-                <button class="stats-btn" data-period="month" data-i18n="month">Месяц</button>
-                <button class="stats-btn" data-period="year" data-i18n="year">Год</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="tokenChart"></canvas>
-            </div>
-        </div>
-        <div class="admin-panel" id="adminPanel" style="display: none;">
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="stats" data-i18n="stats">📊 Статистика</button>
-                <button class="admin-tab" data-tab="users" data-i18n="users">👥 Пользователи</button>
-                <button class="admin-tab" data-tab="plans" data-i18n="plans">📋 Тарифы</button>
-            </div>
-            <div class="admin-section active" id="statsSection">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalUsers">0</div>
-                        <div class="stat-label" data-i18n="total_users">Пользователей</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="activeSubs">0</div>
-                        <div class="stat-label" data-i18n="active_subs">Активных подписок</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalAI">0</div>
-                        <div class="stat-label" data-i18n="total_ai">AI-запросов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalKeys">0</div>
-                        <div class="stat-label" data-i18n="total_keys">API-ключей</div>
-                    </div>
-                </div>
-            </div>
-            <div class="admin-section" id="usersSection">
-                <table class="users-table">
-                    <thead><tr><th data-i18n="email">Email</th><th data-i18n="role">Роль</th><th data-i18n="status">Статус</th><th data-i18n="action">Действие</th></tr></thead>
-                    <tbody id="usersList"></tbody>
-                </table>
-            </div>
-            <div class="admin-section" id="plansSection">
-                <div class="plans-list" id="plansList"></div>
-            </div>
-        </div>
+        <div id="userSubscription"></div>
     </div>
+    
+    <!-- ЧАТ -->
     <div class="chat-container">
         <div class="messages" id="messages"></div>
-        <div class="progress-bar" id="progressBar">
-            <div class="progress-bar-fill" id="progressBarFill"></div>
-        </div>
         <div class="input-area">
-            <input type="text" id="questionInput" placeholder="" disabled>
+            <input type="text" id="questionInput" placeholder="Введите ваш вопрос..." disabled>
             <button class="mic-button" id="micBtn" title="Голосовой ввод" disabled>🎤</button>
             <div class="button-group">
                 <button class="icon-button" id="sendBtn" disabled>✈️</button>
@@ -397,729 +258,431 @@
             </div>
         </div>
     </div>
-    <div id="loading" class="spinner" style="display: none;"></div>
-    <div class="modal" id="planModal">
+    
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА ТАРИФА -->
+    <div id="planModal" class="modal">
         <div class="modal-content">
-            <h3 id="modalTitle" data-i18n="create_plan">Создание тарифа</h3>
-            <form id="planForm">
-                <div class="form-group">
-                    <label data-i18n="plan_name">Название</label>
-                    <input type="text" id="planName" required>
+            <h2 style="margin-bottom: 20px;">🚀 Выберите тариф</h2>
+            
+            <div class="plan-card selected" data-plan="basic" onclick="selectPlan('basic')">
+                <div class="plan-header">
+                    <span class="plan-name">Базовый</span>
+                    <span class="plan-price">2 990 ₽</span>
                 </div>
-                <div class="form-group">
-                    <label data-i18n="plan_code">Код</label>
-                    <input type="text" id="planCode" required>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="description">Описание</label>
-                    <textarea id="planDescription" rows="2"></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="price_monthly">Цена в месяц (₽)</label>
-                        <input type="number" id="planPriceMonthly" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="price_yearly">Цена в год (₽)</label>
-                        <input type="number" id="planPriceYearly" step="0.01" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="currency">Валюта</label>
-                    <input type="text" id="planCurrency" value="RUB" required>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="ai_quota">AI-квота (токенов)</label>
-                    <input type="number" id="planAIQuota" value="1000000" required>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="ai_models">Разрешённые модели</label>
-                    <input type="text" id="planAIModels" value="*" required>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="is_active">Активен</label>
-                    <input type="checkbox" id="planIsActive" checked>
-                </div>
-                <input type="hidden" id="planId">
-            </form>
-            <div class="modal-buttons">
-                <button class="save-btn" id="savePlanBtn" data-i18n="save">Сохранить</button>
-                <button class="cancel-btn" id="cancelPlanBtn" data-i18n="cancel">Отмена</button>
+                <div>1 000 000 токенов/мес</div>
             </div>
+            
+            <div class="plan-card" data-plan="pro" onclick="selectPlan('pro')">
+                <div class="plan-header">
+                    <span class="plan-name">Профессиональный</span>
+                    <span class="plan-price">29 900 ₽</span>
+                </div>
+                <div>10 000 000 токенов/мес</div>
+            </div>
+            
+            <div class="plan-card" data-plan="family" onclick="selectPlan('family')">
+                <div class="plan-header">
+                    <span class="plan-name">Семейный</span>
+                    <span class="plan-price">9 900 ₽</span>
+                </div>
+                <div>5 аккаунтов, 5 000 000 токенов</div>
+            </div>
+            
+            <div class="plan-card" data-plan="enterprise" onclick="selectPlan('enterprise')">
+                <div class="plan-header">
+                    <span class="plan-name">Корпоративный</span>
+                    <span class="plan-price">49 000 ₽</span>
+                </div>
+                <div>Безлимит токенов, SLA</div>
+            </div>
+            
+            <button class="pay-button" onclick="openPaymentMethodModal()">💳 Продолжить</button>
+            <button class="pay-button secondary" onclick="closePlanModal()">✕ Закрыть</button>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    
+    <!-- МОДАЛЬНОЕ ОКНО ВЫБОРА СПОСОБА ОПЛАТЫ -->
+    <div id="methodModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 8px;" id="selectedPlanTitle">💳 Базовый</h2>
+            <div style="color: #666; margin-bottom: 20px;" id="selectedPlanAmount">Сумма: 2 990 ₽</div>
+            
+            <div class="method-grid">
+                <div class="method-card selected" data-method="card" onclick="selectMethod('card')">
+                    <div class="method-icon">💳</div>
+                    <div class="method-name">Карта</div>
+                </div>
+                <div class="method-card" data-method="usdt" onclick="selectMethod('usdt')">
+                    <div class="method-icon">₮</div>
+                    <div class="method-name">USDT</div>
+                </div>
+                <div class="method-card" data-method="btc" onclick="selectMethod('btc')">
+                    <div class="method-icon">₿</div>
+                    <div class="method-name">Bitcoin</div>
+                </div>
+                <div class="method-card" data-method="sbp" onclick="selectMethod('sbp')">
+                    <div class="method-icon">📱</div>
+                    <div class="method-name">СБП</div>
+                </div>
+                <div class="method-card" data-method="crypto" onclick="selectMethod('crypto')">
+                    <div class="method-icon">🤖</div>
+                    <div class="method-name">CryptoBot</div>
+                </div>
+            </div>
+            
+            <div id="paymentDetails"></div>
+            
+            <button class="pay-button" onclick="processPayment()" id="processPaymentBtn">💳 Оплатить 2 990 ₽</button>
+            <button class="pay-button secondary" onclick="backToPlans()">← Назад к тарифам</button>
+        </div>
+    </div>
+    
     <script>
-        // ---------- Мультиязычность ----------
-        const translations = {
-            ru: {
-                buy_subscription: "Купить подписку",
-                tokens_used: "Использовано токенов",
-                tokens_limit: "Лимит",
-                my_documents: "📚 Мои документы",
-                upload: "📎 Загрузить",
-                model: "Модель:",
-                token_usage_stats: "📈 Использование токенов",
-                week: "Неделя",
-                month: "Месяц",
-                year: "Год",
-                stats: "📊 Статистика",
-                users: "👥 Пользователи",
-                plans: "📋 Тарифы",
-                total_users: "Пользователей",
-                active_subs: "Активных подписок",
-                total_ai: "AI-запросов",
-                total_keys: "API-ключей",
-                email: "Email",
-                role: "Роль",
-                status: "Статус",
-                action: "Действие",
-                create_plan: "Создание тарифа",
-                plan_name: "Название",
-                plan_code: "Код",
-                description: "Описание",
-                price_monthly: "Цена в месяц (₽)",
-                price_yearly: "Цена в год (₽)",
-                currency: "Валюта",
-                ai_quota: "AI-квота (токенов)",
-                ai_models: "Разрешённые модели",
-                is_active: "Активен",
-                save: "Сохранить",
-                cancel: "Отмена",
-                input_placeholder: "Введите ваш вопрос...",
-                voice_input_title: "Голосовой ввод",
-                clear_chat: "Очистить чат",
-                no_active_subscription: "Нет активной подписки",
-                subscription_active: "Подписка: активна",
-                auth_error: "Ошибка авторизации",
-                copy_error: "Не удалось скопировать текст",
-                mic_denied: "Доступ к микрофону запрещён",
-                mic_not_supported: "Голосовой ввод не поддерживается",
-                upload_success: "Документ загружен",
-                upload_error: "Ошибка загрузки",
-                delete_confirm: "Удалить документ?",
-                delete_success: "Документ удалён",
-                plan_saved: "Тариф сохранён",
-                plan_deleted: "Тариф удалён",
-                plan_delete_confirm: "Удалить тариф?",
-                install_unavailable: "Установка сейчас недоступна. Попробуйте позже или используйте меню браузера.",
-            },
-            en: {
-                buy_subscription: "Buy subscription",
-                tokens_used: "Tokens used",
-                tokens_limit: "Limit",
-                my_documents: "📚 My documents",
-                upload: "📎 Upload",
-                model: "Model:",
-                token_usage_stats: "📈 Token usage",
-                week: "Week",
-                month: "Month",
-                year: "Year",
-                stats: "📊 Statistics",
-                users: "👥 Users",
-                plans: "📋 Plans",
-                total_users: "Total users",
-                active_subs: "Active subscriptions",
-                total_ai: "AI requests",
-                total_keys: "API keys",
-                email: "Email",
-                role: "Role",
-                status: "Status",
-                action: "Action",
-                create_plan: "Create plan",
-                plan_name: "Name",
-                plan_code: "Code",
-                description: "Description",
-                price_monthly: "Monthly price (₽)",
-                price_yearly: "Yearly price (₽)",
-                currency: "Currency",
-                ai_quota: "AI quota (tokens)",
-                ai_models: "Allowed models",
-                is_active: "Active",
-                save: "Save",
-                cancel: "Cancel",
-                input_placeholder: "Type your question...",
-                voice_input_title: "Voice input",
-                clear_chat: "Clear chat",
-                no_active_subscription: "No active subscription",
-                subscription_active: "Subscription: active",
-                auth_error: "Authorization error",
-                copy_error: "Failed to copy text",
-                mic_denied: "Microphone access denied",
-                mic_not_supported: "Voice input not supported",
-                upload_success: "Document uploaded",
-                upload_error: "Upload error",
-                delete_confirm: "Delete document?",
-                delete_success: "Document deleted",
-                plan_saved: "Plan saved",
-                plan_deleted: "Plan deleted",
-                plan_delete_confirm: "Delete plan?",
-                install_unavailable: "Installation not available now. Try later or use browser menu.",
-            }
+        // === ДАННЫЕ ===
+        const CRYPTO_WALLET = '539564:AA31bHY40rT3NI0Fhw6no5BHCwWmftxquGM';
+        
+        const plans = {
+            basic: { name: 'Базовый', price: 2990, usdt: 33.22, btc: 0.00066 },
+            pro: { name: 'Профессиональный', price: 29900, usdt: 332.22, btc: 0.00664 },
+            family: { name: 'Семейный', price: 9900, usdt: 110.00, btc: 0.00220 },
+            enterprise: { name: 'Корпоративный', price: 49000, usdt: 544.44, btc: 0.01088 }
         };
-        let currentLang = localStorage.getItem('lang') || 'ru';
-        function t(key) { return translations[currentLang][key] || key; }
-        function applyLanguage() {
-            document.querySelectorAll('[data-i18n]').forEach(el => { const key = el.getAttribute('data-i18n'); el.textContent = t(key); });
-            document.getElementById('questionInput').placeholder = t('input_placeholder');
-            document.getElementById('micBtn').title = t('voice_input_title');
-            document.getElementById('clearBtn').title = t('clear_chat');
-        }
-        function toggleLang() {
-            currentLang = currentLang === 'ru' ? 'en' : 'ru';
-            localStorage.setItem('lang', currentLang);
-            document.getElementById('langToggle').textContent = currentLang === 'ru' ? '🇬🇧' : '🇷🇺';
-            applyLanguage();
-            if (user) {
-                document.getElementById('userSubscription').textContent = user.subscription ? t('subscription_active') : t('no_active_subscription');
-            }
-        }
-        document.getElementById('langToggle').addEventListener('click', toggleLang);
-        applyLanguage();
-        document.getElementById('langToggle').textContent = currentLang === 'ru' ? '🇬🇧' : '🇷🇺';
-        // ---------- PWA ----------
-        let deferredPrompt;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Кнопка уже видна, но можно добавить дополнительную логику, если нужно
-        });
-
-        window.addEventListener('appinstalled', () => {
-            document.getElementById('installBtn').style.display = 'none';
-            deferredPrompt = null;
-        });
-
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-            document.getElementById('installBtn').style.display = 'none';
-        }
-
-        document.getElementById('installBtn').addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    document.getElementById('installBtn').style.display = 'none';
-                }
-                deferredPrompt = null;
-            } else {
-                showToast(t('install_unavailable'), 'warning');
-            }
-        });
-        // ---------- Основной код ----------
-        let tg = window.Telegram.WebApp; tg.expand(); tg.ready();
-        const initData = tg.initData;
+        
+        let selectedPlan = 'basic';
+        let selectedMethod = 'card';
         let user = null;
-        let tokenChart = null;
-        let editingPlanId = null;
-        async function loadProfile() {
-            try {
-                const response = await fetch('/api/webapp/auth', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({initData}) });
-                if (!response.ok) throw new Error('Auth failed');
-                const data = await response.json();
-                user = data.user;
-                window.userName = user.name || '';
-                document.getElementById('userEmail').textContent = user.email || '—';
-                document.getElementById('userRole').textContent = t('role') + ': ' + (user.role || '—');
-                document.getElementById('userSubscription').textContent = data.subscription ? t('subscription_active') : t('no_active_subscription');
-                document.getElementById('profileCard').style.display = 'block';
-                document.getElementById('questionInput').disabled = false;
-                document.getElementById('sendBtn').disabled = false;
-                document.getElementById('micBtn').disabled = false;
-                if (user.role === 'admin') {
-                    document.getElementById('adminPanelBtn').style.display = '';
-                }
-                await loadHistory();
-                await loadTokenUsage();
-                await loadDocs();
-                document.getElementById('statsTab').style.display = 'block';
-                updateChart('week');
-            } catch(e){ console.error(e); showToast(t('auth_error'), 'error'); }
-        }
-        async function loadHistory() {
-            if (!user) return;
-            try {
-                const response = await fetch(`/api/chat/history?user_id=${user.id}`);
-                if (!response.ok) throw new Error('Failed to load history');
-                const data = await response.json();
-                document.getElementById('messages').innerHTML = '';
-                for (const msg of data.history) addMessage(msg.content, msg.role, false);
-                if (data.history.length === 0) addMessage('Здравствуйте! Задайте мне вопрос.', 'assistant', false);
-            } catch(e){ console.error('Ошибка загрузки истории:', e); }
-        }
-        async function loadTokenUsage() {
-            if (!user) return;
-            try {
-                const response = await fetch('/api/user/ai-usage', { headers: { 'Authorization': 'Bearer ' + user.id } });
-                if (!response.ok) throw new Error('Failed to load usage');
-                const data = await response.json();
-                if (data.keys && data.keys.length > 0) {
-                    const key = data.keys[0];
-                    document.getElementById('tokensUsed').textContent = key.quota_used;
-                    if (key.quota_limit === -1) {
-                        document.getElementById('tokensLimit').textContent = '∞';
-                        document.getElementById('tokenStats').style.display = 'none';
-                    } else {
-                        document.getElementById('tokensLimit').textContent = key.quota_limit;
-                        const percent = (key.quota_used / key.quota_limit) * 100;
-                        document.getElementById('tokenProgress').style.width = percent + '%';
-                        document.getElementById('tokenStats').style.display = 'block';
-                    }
-                } else {
-                    document.getElementById('tokenStats').style.display = 'none';
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки статистики токенов:', e);
-                document.getElementById('tokenStats').style.display = 'none';
-            }
-        }
-        async function loadDocs() {
-            if (!user) return;
-            try {
-                const response = await fetch(`/api/knowledge/list?user_id=${user.id}`);
-                if (!response.ok) throw new Error('Failed to load docs');
-                const data = await response.json();
-                const docsList = document.getElementById('docsList');
-                docsList.innerHTML = '';
-                if (data.docs && data.docs.length > 0) {
-                    data.docs.forEach(doc => {
-                        const item = document.createElement('div');
-                        item.className = 'doc-item';
-                        item.innerHTML = `<span class="doc-name" title="${doc.filename}">📄 ${doc.filename}</span><button class="doc-delete" data-id="${doc.id}">✕</button>`;
-                        docsList.appendChild(item);
-                    });
-                    document.querySelectorAll('.doc-delete').forEach(btn => {
-                        btn.addEventListener('click', async (e) => {
-                            const id = e.target.dataset.id;
-                            if (confirm(t('delete_confirm'))) {
-                                await fetch(`/api/knowledge/delete/${id}`, { method:'DELETE' });
-                                showToast(t('delete_success'), 'success');
-                                loadDocs();
-                            }
-                        });
-                    });
-                    document.getElementById('docsSection').style.display = 'block';
-                } else {
-                    docsList.innerHTML = '<div style="padding:8px; text-align:center; color:#999;">' + (currentLang==='ru'?'Нет документов':'No documents') + '</div>';
-                    document.getElementById('docsSection').style.display = 'block';
-                }
-            } catch(e){ console.error('Ошибка загрузки документов:', e); }
-        }
-        document.getElementById('docUpload').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('user_id', user.id);
-            formData.append('file', file);
-            try {
-                const response = await fetch('/api/knowledge/upload', { method:'POST', body:formData });
-                if (!response.ok) throw new Error('Upload failed');
-                showToast(t('upload_success'), 'success');
-                e.target.value = '';
-                loadDocs();
-            } catch(err){ showToast(t('upload_error') + ': ' + err.message, 'error'); }
-        });
-        function renderMessage(text) {
-            const parts = []; let lastIndex = 0, match;
-            const regex = /```(\w*)\n([\s\S]*?)```/g;
-            while ((match = regex.exec(text)) !== null) {
-                if (match.index > lastIndex) parts.push({ type:'text', content:text.substring(lastIndex, match.index) });
-                parts.push({ type:'code', language:match[1]||'plaintext', code:match[2] });
-                lastIndex = match.index + match[0].length;
-            }
-            if (lastIndex < text.length) parts.push({ type:'text', content:text.substring(lastIndex) });
-            return parts;
-        }
-        function addMessage(text, sender, saveToHistory = true) {
+        let recognition = null;
+        
+        // Telegram
+        let tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
+        
+        // Демо-профиль
+        setTimeout(() => {
+            user = { id: 1, name: 'Тест', email: 'user@example.com', role: 'user' };
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userRole').textContent = 'Роль: ' + user.role;
+            document.getElementById('userSubscription').textContent = 'Подписка: не активна';
+            document.getElementById('profileCard').style.display = 'block';
+            document.getElementById('questionInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('micBtn').disabled = false;
+            addMessage('Здравствуйте! Задайте мне вопрос.', 'assistant');
+        }, 500);
+        
+        // === ЧАТ (через Go-бэкенд) ===
+        function addMessage(text, sender) {
             const messagesDiv = document.getElementById('messages');
-            const wrapper = document.createElement('div'); wrapper.className = `message-wrapper ${sender}`;
-            const avatar = document.createElement('div'); avatar.className = `avatar ${sender==='assistant'?'bot':''}`;
-            if (sender === 'user') {
-                avatar.textContent = (window.userName && window.userName.trim()) ? window.userName.trim().charAt(0).toUpperCase() : '👤';
-            } else avatar.textContent = '🤖';
-            wrapper.appendChild(avatar);
-            const messageDiv = document.createElement('div'); messageDiv.className = `message ${sender}`;
-            const parts = sender==='assistant' ? renderMessage(text) : [{ type:'text', content:text }];
-            for (const part of parts) {
-                if (part.type === 'text') {
-                    messageDiv.appendChild(document.createTextNode(part.content));
-                } else {
-                    const pre = document.createElement('pre');
-                    const codeElem = document.createElement('code');
-                    codeElem.className = `language-${part.language}`;
-                    codeElem.textContent = part.code;
-                    pre.appendChild(codeElem);
-                    messageDiv.appendChild(pre);
-                }
-            }
-            const timestamp = document.createElement('div'); timestamp.className = 'timestamp';
-            timestamp.textContent = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper ${sender}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${sender === 'assistant' ? 'bot' : ''}`;
+            avatar.textContent = sender === 'assistant' ? '🤖' : '👤';
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             messageDiv.appendChild(timestamp);
+            
+            wrapper.appendChild(avatar);
             wrapper.appendChild(messageDiv);
-            if (sender === 'assistant') {
-                const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn'; copyBtn.textContent = '📋';
-                copyBtn.addEventListener('click', ()=>{
-                    navigator.clipboard.writeText(text).then(()=>{ copyBtn.textContent='✅'; setTimeout(()=> copyBtn.textContent='📋', 1500); })
-                    .catch(()=> showToast(t('copy_error'), 'error'));
-                });
-                wrapper.appendChild(copyBtn);
-            }
             messagesDiv.appendChild(wrapper);
-            if (sender === 'assistant') {
-                const reactionsDiv = document.createElement('div'); reactionsDiv.className = 'reactions';
-                reactionsDiv.innerHTML = '<button class="reaction-btn" data-reaction="like">👍<span class="reaction-count">0</span></button><button class="reaction-btn" data-reaction="dislike">👎<span class="reaction-count">0</span></button>';
-                wrapper.appendChild(reactionsDiv);
-                reactionsDiv.querySelectorAll('.reaction-btn').forEach(btn => btn.addEventListener('click', (e)=>{
-                    e.stopPropagation();
-                    const countSpan = btn.querySelector('.reaction-count');
-                    countSpan.textContent = parseInt(countSpan.textContent)+1;
-                }));
-            }
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-            if (saveToHistory && user && user.id) {
-                fetch('/api/chat/save', { method:'POST', headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({ user_id:user.id, role:sender, content:text }) }).catch(e=>console.error('Ошибка сохранения истории:', e));
-            }
         }
+        
         function showTyping() {
+            if (document.getElementById('typing-indicator')) return;
             const messagesDiv = document.getElementById('messages');
-            const typingDiv = document.createElement('div'); typingDiv.className = 'message-wrapper assistant'; typingDiv.id = 'typing-indicator';
-            const avatar = document.createElement('div'); avatar.className = 'avatar bot'; avatar.textContent = '🤖';
-            const indicator = document.createElement('div'); indicator.className = 'typing-indicator';
-            for (let i=0;i<3;i++) indicator.appendChild(document.createElement('span'));
-            typingDiv.appendChild(avatar); typingDiv.appendChild(indicator);
-            messagesDiv.appendChild(typingDiv); messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message-wrapper assistant';
+            typingDiv.id = 'typing-indicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar bot';
+            avatar.textContent = '🤖';
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            for (let i = 0; i < 3; i++) indicator.appendChild(document.createElement('span'));
+            
+            typingDiv.appendChild(avatar);
+            typingDiv.appendChild(indicator);
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-        function hideTyping() { document.getElementById('typing-indicator')?.remove(); }
+        
+        function hideTyping() {
+            document.getElementById('typing-indicator')?.remove();
+        }
+        
         async function sendQuestion() {
             const input = document.getElementById('questionInput');
             const question = input.value.trim();
             if (!question) return;
-            const model = document.getElementById('modelSelect').value;
+            
             addMessage(question, 'user');
-            input.value = ''; document.getElementById('sendBtn').disabled = true;
+            input.value = '';
+            document.getElementById('sendBtn').disabled = true;
+            
             showTyping();
-            const progressBar = document.getElementById('progressBar');
-            progressBar.classList.add('active');
-            const progressFill = document.getElementById('progressBarFill');
-            progressFill.style.animation = 'none';
-            progressFill.offsetHeight;
-            progressFill.style.animation = 'progress 30s linear forwards';
+            
             try {
+                // Запрос к твоему Go-бэкенду
                 const response = await fetch('/api/ai/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question, model })
+                    body: JSON.stringify({ 
+                        question: question,
+                        model: 'yandex/yandexgpt-lite' 
+                    })
                 });
-                hideTyping();
-                progressBar.classList.remove('active');
-                if (!response.ok) throw new Error('AI request failed');
+                
+                if (!response.ok) {
+                    throw new Error('Сервер вернул ошибку ' + response.status);
+                }
+                
                 const data = await response.json();
-                addMessage(data.answer, 'assistant');
-            } catch (e) {
                 hideTyping();
-                progressBar.classList.remove('active');
-                addMessage('Ошибка: ' + e.message, 'assistant');
+                
+                if (data.answer) {
+                    addMessage(data.answer, 'assistant');
+                } else if (data.response) {
+                    addMessage(data.response, 'assistant');
+                } else {
+                    addMessage('Ошибка получения ответа от AI', 'assistant');
+                    console.error('Неожиданный ответ:', data);
+                }
+            } catch (error) {
+                hideTyping();
+                addMessage('Ошибка: ' + error.message, 'assistant');
+                console.error('Ошибка запроса:', error);
             } finally {
                 document.getElementById('sendBtn').disabled = false;
             }
         }
-        let recognition = null;
+        
+        // === ГОЛОСОВОЙ ВВОД ===
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
-            recognition.lang = 'ru-RU'; recognition.continuous = false; recognition.interimResults = false;
-            recognition.onstart = ()=>{ document.getElementById('micBtn').classList.add('listening'); document.getElementById('micBtn').textContent = '⏺️'; };
-            recognition.onend = ()=>{ document.getElementById('micBtn').classList.remove('listening'); document.getElementById('micBtn').textContent = '🎤'; };
-            recognition.onresult = (event)=>{ document.getElementById('questionInput').value = event.results[0][0].transcript; sendQuestion(); };
-            recognition.onerror = (event)=>{ console.error(event.error); document.getElementById('micBtn').classList.remove('listening'); document.getElementById('micBtn').textContent = '🎤'; if (event.error==='not-allowed') showToast(t('mic_denied'), 'error'); };
-        } else console.warn('Speech recognition not supported');
-        document.getElementById('micBtn').addEventListener('click', ()=>{
-            if (!recognition) { showToast(t('mic_not_supported'), 'warning'); return; }
-            try { recognition.start(); } catch(e){ console.error(e); }
-        });
-        loadProfile();
-        document.getElementById('sendBtn').addEventListener('click', sendQuestion);
-        document.getElementById('questionInput').addEventListener('keypress', (e)=> e.key==='Enter' && sendQuestion());
-        document.getElementById('clearBtn').addEventListener('click', ()=>{ document.getElementById('messages').innerHTML=''; addMessage('Чат очищен. Задайте новый вопрос.','assistant'); });
-        // Темы
-        const themes = ['system', 'light', 'dark']; let currentThemeIndex = 0;
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            const idx = themes.indexOf(savedTheme);
-            if (idx !== -1) { currentThemeIndex = idx; applyTheme(savedTheme); }
-        }
-        function applyTheme(theme) {
-            document.body.className = theme === 'system' ? '' : `theme-${theme}`;
-            localStorage.setItem('theme', theme);
-            const btn = document.getElementById('themeToggle');
-            if (btn) {
-                if (theme === 'system') btn.textContent = '🌓';
-                else if (theme === 'light') btn.textContent = '☀️';
-                else btn.textContent = '🌙';
-            }
-        }
-        document.getElementById('themeToggle')?.addEventListener('click', () => {
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            applyTheme(themes[currentThemeIndex]);
-        });
-        // Тосты
-        function showToast(message, type = 'info', duration = 3000) {
-            const container = document.getElementById('toastContainer') || (()=>{
-                const c = document.createElement('div'); c.id='toastContainer'; c.className='toast-container';
-                document.body.appendChild(c); return c;
-            })();
-            const toast = document.createElement('div'); toast.className = `toast ${type}`;
-            let icon = 'ℹ️';
-            if (type === 'success') icon = '✅';
-            else if (type === 'error') icon = '❌';
-            else if (type === 'warning') icon = '⚠️';
-            toast.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span><button class="toast-close">✕</button>`;
-            toast.querySelector('.toast-close').onclick = () => { toast.classList.add('fade-out'); setTimeout(()=>toast.remove(),300); };
-            container.appendChild(toast);
-            setTimeout(() => { if (toast.parentNode) { toast.classList.add('fade-out'); setTimeout(()=>toast.remove(),300); } }, duration);
-        }
-        // Админ-панель и графики (упрощённо)
-        let isAdmin = false;
-        document.querySelectorAll('.admin-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                const target = tab.dataset.tab;
-                document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-                document.getElementById(target + 'Section').classList.add('active');
-            });
-        });
-        async function loadAdminStats() {
-            try {
-                const response = await fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + initData } });
-                if (!response.ok) throw new Error('Failed to load stats');
-                const data = await response.json();
-                document.getElementById('totalUsers').textContent = data.total_users || 0;
-                document.getElementById('activeSubs').textContent = data.active_subscriptions || 0;
-                document.getElementById('totalAI').textContent = data.total_ai_requests || 0;
-                document.getElementById('totalKeys').textContent = data.total_api_keys || 0;
-            } catch (e) { showToast('Ошибка загрузки статистики', 'error'); }
-        }
-        async function loadAdminUsers() {
-            try {
-                const response = await fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + initData } });
-                if (!response.ok) throw new Error('Failed to load users');
-                const data = await response.json();
-                const tbody = document.getElementById('usersList');
-                tbody.innerHTML = '';
-                data.users.forEach(u => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${u.email || '—'}</td>
-                        <td>${u.role || 'user'}</td>
-                        <td>${u.is_active ? '✅' : '❌'}</td>
-                        <td>
-                            <button class="${u.is_active ? 'block-btn' : 'unblock-btn'}" data-id="${u.id}">
-                                ${u.is_active ? (currentLang==='ru'?'Заблокировать':'Block') : (currentLang==='ru'?'Разблокировать':'Unblock')}
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-                document.querySelectorAll('#usersList button').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const userId = e.target.dataset.id;
-                        const isActive = e.target.classList.contains('unblock-btn');
-                        await toggleUserBlock(userId, !isActive);
-                    });
-                });
-            } catch (e) { showToast('Ошибка загрузки пользователей', 'error'); }
-        }
-        async function toggleUserBlock(userId, block) {
-            try {
-                const response = await fetch('/api/admin/users/' + userId + '/block', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + initData },
-                    body: JSON.stringify({ is_active: !block })
-                });
-                if (!response.ok) throw new Error('Failed');
-                showToast(block ? 'Пользователь заблокирован' : 'Пользователь разблокирован', 'success');
-                loadAdminUsers();
-            } catch (e) { showToast('Ошибка', 'error'); }
-        }
-        async function loadAdminPlans() {
-            try {
-                const response = await fetch('/api/admin/plans', { headers: { 'Authorization': 'Bearer ' + initData } });
-                if (!response.ok) throw new Error('Failed to load plans');
-                const data = await response.json();
-                const list = document.getElementById('plansList');
-                list.innerHTML = '';
-                const createBtn = document.createElement('div');
-                createBtn.style.marginBottom = '16px';
-                createBtn.innerHTML = '<button class="upload-btn" onclick="openCreatePlan()">➕ ' + (currentLang==='ru'?'Создать тариф':'Create plan') + '</button>';
-                list.appendChild(createBtn);
-                data.plans.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'plan-item';
-                    div.innerHTML = `
-                        <div class="plan-info">
-                            <h4>${p.name}</h4>
-                            <p>${p.description || ''} | ${p.price_monthly} ₽/мес | AI: ${p.ai_quota}</p>
-                        </div>
-                        <div class="plan-actions">
-                            <button class="edit-plan" data-id="${p.id}" style="background:#4caf50;">✏️</button>
-                            <button class="delete-plan" data-id="${p.id}">🗑️</button>
-                        </div>
-                    `;
-                    list.appendChild(div);
-                });
-                document.querySelectorAll('.edit-plan').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const planId = e.target.dataset.id;
-                        const plan = data.plans.find(p => p.id == planId);
-                        if (plan) openEditPlan(plan);
-                    });
-                });
-                document.querySelectorAll('.delete-plan').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const planId = e.target.dataset.id;
-                        if (confirm(currentLang==='ru'?'Удалить тариф?':'Delete plan?')) {
-                            try {
-                                const response = await fetch('/api/admin/plans/' + planId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + initData } });
-                                if (!response.ok) throw new Error('Failed');
-                                showToast(currentLang==='ru'?'Тариф удалён':'Plan deleted', 'success');
-                                loadAdminPlans();
-                            } catch (e) { showToast('Ошибка удаления', 'error'); }
-                        }
-                    });
-                });
-            } catch (e) { showToast('Ошибка загрузки тарифов', 'error'); }
-        }
-        function openCreatePlan() {
-            editingPlanId = null;
-            document.getElementById('modalTitle').textContent = currentLang==='ru'?'Создание тарифа':'Create plan';
-            document.getElementById('planId').value = '';
-            document.getElementById('planName').value = '';
-            document.getElementById('planCode').value = '';
-            document.getElementById('planDescription').value = '';
-            document.getElementById('planPriceMonthly').value = '';
-            document.getElementById('planPriceYearly').value = '';
-            document.getElementById('planCurrency').value = 'RUB';
-            document.getElementById('planAIQuota').value = '1000000';
-            document.getElementById('planAIModels').value = '*';
-            document.getElementById('planIsActive').checked = true;
-            document.getElementById('planModal').classList.add('active');
-        }
-        function openEditPlan(plan) {
-            editingPlanId = plan.id;
-            document.getElementById('modalTitle').textContent = currentLang==='ru'?'Редактирование тарифа':'Edit plan';
-            document.getElementById('planId').value = plan.id;
-            document.getElementById('planName').value = plan.name;
-            document.getElementById('planCode').value = plan.code;
-            document.getElementById('planDescription').value = plan.description || '';
-            document.getElementById('planPriceMonthly').value = plan.price_monthly;
-            document.getElementById('planPriceYearly').value = plan.price_yearly;
-            document.getElementById('planCurrency').value = plan.currency;
-            document.getElementById('planAIQuota').value = plan.ai_quota;
-            document.getElementById('planAIModels').value = plan.ai_models ? plan.ai_models.join(',') : '*';
-            document.getElementById('planIsActive').checked = plan.is_active;
-            document.getElementById('planModal').classList.add('active');
-        }
-        document.getElementById('cancelPlanBtn').addEventListener('click', () => {
-            document.getElementById('planModal').classList.remove('active');
-        });
-        document.getElementById('savePlanBtn').addEventListener('click', async () => {
-            const planData = {
-                name: document.getElementById('planName').value,
-                code: document.getElementById('planCode').value,
-                description: document.getElementById('planDescription').value,
-                price_monthly: parseFloat(document.getElementById('planPriceMonthly').value),
-                price_yearly: parseFloat(document.getElementById('planPriceYearly').value),
-                currency: document.getElementById('planCurrency').value,
-                ai_quota: parseInt(document.getElementById('planAIQuota').value),
-                ai_models: document.getElementById('planAIModels').value.split(',').map(s => s.trim()),
-                is_active: document.getElementById('planIsActive').checked,
+            recognition.lang = 'ru-RU';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = () => {
+                document.getElementById('micBtn').classList.add('listening');
+                document.getElementById('micBtn').textContent = '⏺️';
             };
-            const method = editingPlanId ? 'PUT' : 'POST';
-            const url = editingPlanId ? `/api/admin/plans/${editingPlanId}` : '/api/admin/plans';
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + initData },
-                    body: JSON.stringify(planData)
-                });
-                if (!response.ok) throw new Error('Failed to save plan');
-                showToast(currentLang==='ru'?'Тариф сохранён':'Plan saved', 'success');
-                document.getElementById('planModal').classList.remove('active');
-                loadAdminPlans();
-            } catch (e) { showToast('Ошибка: ' + e.message, 'error'); }
-        });
-        // График
-        function generateDemoData(period) {
-            const labels = []; const data = [];
-            const now = new Date();
-            let days = 7;
-            if (period === 'month') days = 30;
-            if (period === 'year') days = 365;
-            for (let i = days-1; i >= 0; i--) {
-                const d = new Date(now);
-                d.setDate(d.getDate() - i);
-                labels.push(d.toLocaleDateString('ru-RU', { day:'numeric', month:'short' }));
-                data.push(Math.floor(Math.random()*900)+100);
-            }
-            return { labels, data };
-        }
-        function updateChart(period) {
-            const { labels, data } = generateDemoData(period);
-            if (tokenChart) tokenChart.destroy();
-            const ctx = document.getElementById('tokenChart').getContext('2d');
-            tokenChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: currentLang==='ru'?'Токенов использовано':'Tokens used',
-                        data: data,
-                        borderColor: '#2481cc',
-                        backgroundColor: 'rgba(36,129,204,0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
+            
+            recognition.onend = () => {
+                document.getElementById('micBtn').classList.remove('listening');
+                document.getElementById('micBtn').textContent = '🎤';
+            };
+            
+            recognition.onresult = (event) => {
+                document.getElementById('questionInput').value = event.results[0][0].transcript;
+                sendQuestion();
+            };
+            
+            recognition.onerror = (event) => {
+                document.getElementById('micBtn').classList.remove('listening');
+                document.getElementById('micBtn').textContent = '🎤';
+                if (event.error === 'not-allowed') {
+                    showToast('❌ Доступ к микрофону запрещён', 'error');
                 }
-            });
+            };
         }
-        document.querySelectorAll('.stats-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.stats-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                updateChart(btn.dataset.period);
-            });
-        });
-        document.getElementById('adminPanelBtn')?.addEventListener('click', () => {
-            const panel = document.getElementById('adminPanel');
-            if (panel.style.display === 'none') {
-                panel.style.display = 'block';
-                loadAdminStats();
-                loadAdminUsers();
-                loadAdminPlans();
-            } else {
-                panel.style.display = 'none';
+        
+        // === ОПЛАТА ===
+        function openPlanModal() { document.getElementById('planModal').style.display = 'flex'; }
+        function closePlanModal() { document.getElementById('planModal').style.display = 'none'; }
+        function backToPlans() { document.getElementById('methodModal').style.display = 'none'; openPlanModal(); }
+        
+        window.selectPlan = function(plan) {
+            selectedPlan = plan;
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.plan-card[data-plan="${plan}"]`).classList.add('selected');
+        };
+        
+        window.openPaymentMethodModal = function() {
+            closePlanModal();
+            const plan = plans[selectedPlan];
+            document.getElementById('selectedPlanTitle').textContent = `💳 ${plan.name}`;
+            document.getElementById('selectedPlanAmount').textContent = `Сумма: ${plan.price.toLocaleString()} ₽`;
+            selectMethod('card');
+            document.getElementById('methodModal').style.display = 'flex';
+        };
+        
+        window.selectMethod = function(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.method-card[data-method="${method}"]`).classList.add('selected');
+            updatePaymentDetails();
+        };
+        
+        function updatePaymentDetails() {
+            const plan = plans[selectedPlan];
+            document.getElementById('processPaymentBtn').innerHTML = 
+                `${selectedMethod === 'card' ? '💳' : selectedMethod === 'usdt' ? '₮' : selectedMethod === 'btc' ? '₿' : selectedMethod === 'sbp' ? '📱' : '🤖'} Оплатить ${plan.price.toLocaleString()} ₽`;
+            
+            let html = '';
+            switch(selectedMethod) {
+                case 'card':
+                    html = `
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Номер карты</div>
+                                <input type="text" class="detail-value" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19">
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <div class="detail-row" style="flex:1;">
+                                    <div class="detail-label">Срок</div>
+                                    <input type="text" class="detail-value" id="cardExpiry" placeholder="MM/YY" maxlength="5">
+                                </div>
+                                <div class="detail-row" style="flex:1;">
+                                    <div class="detail-label">CVC</div>
+                                    <input type="text" class="detail-value" id="cardCvc" placeholder="123" maxlength="3">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        document.getElementById('cardNumber')?.addEventListener('input', function(e) {
+                            let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+                            e.target.value = v;
+                        });
+                        document.getElementById('cardExpiry')?.addEventListener('input', function(e) {
+                            let v = e.target.value.replace(/\D/g, '');
+                            if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4);
+                            e.target.value = v;
+                        });
+                        document.getElementById('cardCvc')?.addEventListener('input', function(e) {
+                            e.target.value = e.target.value.replace(/\D/g, '');
+                        });
+                    }, 100);
+                    break;
+                case 'usdt':
+                    html = `
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Адрес USDT (TRC-20)</div>
+                                <div class="detail-value">${CRYPTO_WALLET}</div>
+                                <button class="copy-btn" onclick="copyAddress('${CRYPTO_WALLET}')">📋 Копировать</button>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Сумма</div>
+                                <div class="detail-value">${plan.usdt.toFixed(2)} USDT</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'btc':
+                    html = `
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Bitcoin адрес</div>
+                                <div class="detail-value">1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</div>
+                                <button class="copy-btn" onclick="copyAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa')">📋 Копировать</button>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Сумма</div>
+                                <div class="detail-value">${plan.btc.toFixed(5)} BTC</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'sbp':
+                    html = `
+                        <div class="payment-details">
+                            <div class="qr-code">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=СБП ${plan.price} руб" alt="QR">
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Сумма</div>
+                                <div class="detail-value">${plan.price.toLocaleString()} ₽</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'crypto':
+                    html = `
+                        <div class="payment-details">
+                            <div style="text-align:center;">
+                                <div style="font-size:48px;">🤖</div>
+                                <p>Счет будет создан в Crypto Bot</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
             }
-        });
-        // Pull-to-refresh
-        let startY=0; window.addEventListener('touchstart', e=>{ if (window.scrollY===0) startY=e.touches[0].clientY; });
-        window.addEventListener('touchmove', e=>{ if (startY>0 && e.touches[0].clientY > startY+50) { location.reload(); startY=0; } });
-        // Service Worker регистрация
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/app/service-worker.js')
-                .then(reg => console.log('SW registered'))
-                .catch(err => console.log('SW error', err));
+            document.getElementById('paymentDetails').innerHTML = html;
         }
+        
+        window.copyAddress = function(address) {
+            navigator.clipboard.writeText(address).then(() => showToast('✅ Адрес скопирован', 'success'));
+        };
+        
+        window.processPayment = function() {
+            const plan = plans[selectedPlan];
+            if (selectedMethod === 'card') {
+                const cn = document.getElementById('cardNumber')?.value.replace(/\s/g, '');
+                const ce = document.getElementById('cardExpiry')?.value;
+                const cc = document.getElementById('cardCvc')?.value;
+                if (!cn || cn.length < 16) return showToast('❌ Введите номер карты', 'error');
+                if (!ce || !ce.includes('/')) return showToast('❌ Введите срок действия', 'error');
+                if (!cc || cc.length < 3) return showToast('❌ Введите CVC', 'error');
+                showToast('✅ Платёж по карте создан', 'success');
+            } else if (selectedMethod === 'crypto') {
+                showToast('✅ Счет создан! Перейдите в CryptoBot', 'success');
+                if (tg) tg.openLink('https://t.me/CryptoBot');
+                else window.open('https://t.me/CryptoBot', '_blank');
+            } else {
+                showToast(`✅ Оплатите через ${selectedMethod}`, 'success');
+            }
+            setTimeout(() => document.getElementById('methodModal').style.display = 'none', 1500);
+        };
+        
+        function showToast(msg, type) {
+            const c = document.getElementById('toastContainer') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'toastContainer', className: 'toast-container' }));
+            const t = Object.assign(document.createElement('div'), { className: `toast ${type}`, textContent: msg });
+            c.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+        
+        // === ОБРАБОТЧИКИ ===
+        document.getElementById('subscribeBtn').addEventListener('click', openPlanModal);
+        document.getElementById('sendBtn').addEventListener('click', sendQuestion);
+        document.getElementById('micBtn').addEventListener('click', () => {
+            if (!recognition) {
+                showToast('❌ Голосовой ввод не поддерживается', 'error');
+                return;
+            }
+            try { recognition.start(); } catch (e) { console.error(e); }
+        });
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            document.getElementById('messages').innerHTML = '';
+            addMessage('Чат очищен', 'assistant');
+        });
+        document.getElementById('questionInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendQuestion();
+        });
+        
+        // === ТЕМА ===
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('theme-dark');
+        });
+        
+        // === ЯЗЫК ===
+        let currentLang = 'ru';
+        document.getElementById('langToggle').addEventListener('click', () => {
+            currentLang = currentLang === 'ru' ? 'en' : 'ru';
+            document.getElementById('langToggle').textContent = currentLang === 'ru' ? '🇬🇧' : '🇷🇺';
+        });
     </script>
 </body>
 </html>

@@ -58,6 +58,29 @@ type CryptoResponse struct {
 // Хранилище созданных счетов
 var invoices = make(map[int64]int64) // chatID -> invoiceID
 
+// Функция создания нижнего меню
+func createMainMenu() tgbotapi.ReplyKeyboardMarkup {
+    keyboard := tgbotapi.NewReplyKeyboard(
+        tgbotapi.NewKeyboardButtonRow(
+            tgbotapi.NewKeyboardButton("🚀 Mini App"),
+            tgbotapi.NewKeyboardButton("💰 Тарифы"),
+            tgbotapi.NewKeyboardButton("📊 Аналитика"),
+        ),
+        tgbotapi.NewKeyboardButtonRow(
+            tgbotapi.NewKeyboardButton("👤 Профиль"),
+            tgbotapi.NewKeyboardButton("📞 Поддержка"),
+            tgbotapi.NewKeyboardButton("⚙️ API"),
+        ),
+        tgbotapi.NewKeyboardButtonRow(
+            tgbotapi.NewKeyboardButton("📜 История"),
+            tgbotapi.NewKeyboardButton("ℹ️ Помощь"),
+            tgbotapi.NewKeyboardButton("🔙 Меню"),
+        ),
+    )
+    keyboard.ResizeKeyboard = true
+    return keyboard
+}
+
 func main() {
     godotenv.Load("../.env")
     token := os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -77,6 +100,13 @@ func main() {
             handleMessage(bot, update.Message)
         }
     }
+}
+
+func getUserName(user *tgbotapi.User) string {
+    if user.UserName != "" {
+        return "@" + user.UserName
+    }
+    return user.FirstName
 }
 
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
@@ -165,25 +195,48 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
         return
     }
 
+    // Обработка текстовых кнопок из нижнего меню
+    if message.Text == "🚀 Mini App" || 
+       message.Text == "💰 Тарифы" || 
+       message.Text == "📊 Аналитика" || 
+       message.Text == "👤 Профиль" || 
+       message.Text == "📞 Поддержка" || 
+       message.Text == "⚙️ API" || 
+       message.Text == "📜 История" || 
+       message.Text == "ℹ️ Помощь" ||
+       message.Text == "🔙 Меню" {
+        handleTextButtons(bot, message)
+        return
+    }
+
     // Обычные команды
     switch message.Text {
     case "/start":
-        msg := tgbotapi.NewMessage(message.Chat.ID,
-            "👋 Привет, DamieN!\n\n"+
-                "Я бот SaaS-платформы. Я автоматически создам для вас аккаунт и API-ключ при первом запросе.\n\n"+
-                "После этого вы сможете:\n"+
-                "/ask – задать вопрос AI\n"+
-                "/plans – посмотреть тарифы\n"+
-                "/usage – узнать остаток токенов\n"+
-                "/setmodel – выбрать модель AI\n"+
-                "/profile – информация о вашем профиле\n"+
-                "/history – история AI-запросов\n"+
-                "/feedback – отправить отзыв\n"+
-                "/support – контакты поддержки\n"+
-                "/admin – админ-панель (для администратора)\n"+
-                "/menu – главное меню\n"+
-                "/adminplans – управление тарифами (админ)\n"+
-                "/help – справка")
+        userName := getUserName(message.From)
+        text := fmt.Sprintf(
+            "✨ *Добро пожаловать, %s!* ✨\n\n"+
+            "┌────────────────────────────────────┐\n"+
+            "│  🤖 *SaaS Platform*                │\n"+
+            "│  💻 *Сервер: saaspro.ru*           │\n"+
+            "│  📊 *Статус: ONLINE*               │\n"+
+            "│  ⚡ *Uptime: 99.9%%*                 │\n"+
+            "└────────────────────────────────────┘\n\n"+
+            "📋 *Наши возможности:*\n"+
+            "• 🤖 AI обработка данных\n"+
+            "• 🔄 Интеграция с Битрикс24\n"+
+            "• 📦 Синхронизация с 1С\n"+
+            "• 📈 CRM аналитика\n"+
+            "• 🔑 Генерация API ключей\n"+
+            "• 🌐 REST API интеграции\n"+
+            "• 📊 Дашборды и отчеты\n"+
+            "• 🔒 Безопасное хранение данных\n\n"+
+            "👤 *Пользователь:* %s\n\n"+
+            "👇 *Используйте кнопки внизу для навигации*",
+            userName, userName)
+        
+        msg := tgbotapi.NewMessage(message.Chat.ID, text)
+        msg.ParseMode = "Markdown"
+        msg.ReplyMarkup = createMainMenu()
         bot.Send(msg)
 
     case "/plans":
@@ -217,7 +270,7 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
                 tgbotapi.NewInlineKeyboardButtonData("✨ Gemini", "model_gemini"),
             ),
             tgbotapi.NewInlineKeyboardRow(
-                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Назад", "back_to_menu"),
             ),
         )
         msg := tgbotapi.NewMessage(message.Chat.ID, "Выберите модель AI:")
@@ -275,7 +328,25 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
         bot.Send(msg)
         
     case "/menu":
-        showMenu(bot, message.Chat.ID, message.From)
+        showMainMenu(bot, message.Chat.ID, message.From)
+        
+    case "/app":
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonURL("🚀 ЗАПУСТИТЬ MINI APP", "https://t.me/AgentServer_bot/app"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
+            ),
+        )
+        
+        text := "📱 *MINI APP*\n\n"+
+            "Нажмите кнопку ниже, чтобы открыть Mini App!"
+        
+        msg := tgbotapi.NewMessage(message.Chat.ID, text)
+        msg.ParseMode = "Markdown"
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
         
     case "/adminplans":
         keyboard := tgbotapi.NewInlineKeyboardMarkup(
@@ -289,7 +360,7 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
                 tgbotapi.NewInlineKeyboardButtonData("❌ Удалить", "admin_delete_plan"),
             ),
             tgbotapi.NewInlineKeyboardRow(
-                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
             ),
         )
         msg := tgbotapi.NewMessage(message.Chat.ID, "📦 *Управление тарифами*\nВыберите действие:")
@@ -309,10 +380,99 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
                 "/history – история запросов\n"+
                 "/feedback – отправить отзыв\n"+
                 "/support – контакты поддержки\n"+
-                "/menu – главное меню")
+                "/menu – показать меню с кнопками\n"+
+                "/app – открыть Mini App")
         msg.ParseMode = "Markdown"
         bot.Send(msg)
     }
+}
+
+func handleTextButtons(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+    switch message.Text {
+    case "🚀 Mini App":
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonURL("🚀 ЗАПУСТИТЬ MINI APP", "https://t.me/AgentServer_bot/app"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
+            ),
+        )
+        msg := tgbotapi.NewMessage(message.Chat.ID, "📱 *Mini App*\nНажмите кнопку для запуска!")
+        msg.ParseMode = "Markdown"
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+        
+    case "💰 Тарифы":
+        showPlans(bot, message.Chat.ID)
+        
+    case "📊 Аналитика":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "📊 *Аналитика данных*\n\n"+
+            "• Анализ CRM данных\n"+
+            "• Отчеты по Битрикс24\n"+
+            "• Статистика 1С\n"+
+            "• Дашборды и графики\n\n"+
+            "Используйте /ask для запросов")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "👤 Профиль":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            fmt.Sprintf("👤 *Ваш профиль*\n\nID: `%d`\nИмя: %s\n\n🔑 API ключи: /api_keys",
+                message.From.ID, message.From.FirstName))
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "📞 Поддержка":
+        handleSupport(bot, message.Chat.ID, message.From)
+        
+    case "⚙️ API":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "🔑 *API управление*\n\n"+
+            "• Для Битрикс24\n"+
+            "• Для 1С\n"+
+            "• Для CRM\n"+
+            "• REST API\n\n"+
+            "Сгенерировать ключ: /generate_key\n"+
+            "Мои ключи: /my_keys")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "📜 История":
+        history := userHistory[message.Chat.ID]
+        if len(history) == 0 {
+            msg := tgbotapi.NewMessage(message.Chat.ID, "📜 История пуста")
+            bot.Send(msg)
+            return
+        }
+        msg := tgbotapi.NewMessage(message.Chat.ID, 
+            fmt.Sprintf("📜 *Последний запрос*\n\n%s", history[len(history)-1]))
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "ℹ️ Помощь":
+        msg := tgbotapi.NewMessage(message.Chat.ID,
+            "ℹ️ *Помощь*\n\n"+
+            "/start - перезапуск\n"+
+            "/menu - главное меню\n"+
+            "/ask - задать вопрос AI\n"+
+            "/plans - тарифы\n"+
+            "/profile - профиль\n"+
+            "/support - поддержка")
+        msg.ParseMode = "Markdown"
+        bot.Send(msg)
+        
+    case "🔙 Меню":
+        showMainMenu(bot, message.Chat.ID, message.From)
+    }
+}
+
+func showMainMenu(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
+    msg := tgbotapi.NewMessage(chatID, fmt.Sprintf("📱 *Главное меню*\n\nПривет, %s!", getUserName(user)))
+    msg.ParseMode = "Markdown"
+    msg.ReplyMarkup = createMainMenu()
+    bot.Send(msg)
 }
 
 func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
@@ -320,6 +480,27 @@ func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
     bot.Request(callback)
     
     log.Printf("Нажата кнопка: %s", query.Data)
+
+    // Открыть Mini App
+    if query.Data == "open_miniapp" {
+        keyboard := tgbotapi.NewInlineKeyboardMarkup(
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonURL("🚀 ЗАПУСТИТЬ MINI APP", "https://t.me/AgentServer_bot/app"),
+            ),
+            tgbotapi.NewInlineKeyboardRow(
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
+            ),
+        )
+        
+        text := "📱 *MINI APP*\n\n"+
+            "Нажмите кнопку ниже, чтобы открыть Mini App!"
+        
+        msg := tgbotapi.NewMessage(query.Message.Chat.ID, text)
+        msg.ParseMode = "Markdown"
+        msg.ReplyMarkup = keyboard
+        bot.Send(msg)
+        return
+    }
 
     // Меню
     if strings.HasPrefix(query.Data, "menu_") {
@@ -371,7 +552,7 @@ func handleCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
     }
 
     if query.Data == "back_to_menu" {
-        showMenu(bot, query.Message.Chat.ID, query.From)
+        showMainMenu(bot, query.Message.Chat.ID, query.From)
         return
     }
 
@@ -467,7 +648,7 @@ func handleMenuCallback(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
                 tgbotapi.NewInlineKeyboardButtonData("GPT-4", "model_gpt4"),
             ),
             tgbotapi.NewInlineKeyboardRow(
-                tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+                tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
             ),
         )
         msg := tgbotapi.NewMessage(query.Message.Chat.ID, "Выберите модель:")
@@ -618,8 +799,8 @@ func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
     text := fmt.Sprintf("📞 Поддержка\n\n"+
         "Здравствуйте, %s!\n\n"+
         "Вы можете связаться с нами:\n"+
-        "• Email: Skorpion_88-88@mail.ru\n"+
-        "• Telegram: @IDamieN66I\n"+
+        "• Email: support@saaspro.ru\n"+
+        "• Telegram: @saaspro_support\n"+
         "• Чат: 24/7 онлайн\n\n"+
         "Среднее время ответа: 15 минут",
         user.FirstName)
@@ -630,7 +811,7 @@ func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
     // Кнопки действий
     keyboard := tgbotapi.NewInlineKeyboardMarkup(
         tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonURL("📱 Написать в Telegram", "https://t.me/IDamieN66I"),
+            tgbotapi.NewInlineKeyboardButtonURL("📱 Написать в Telegram", "https://t.me/saaspro_support"),
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("💬 Чат", "support_chat"),
@@ -638,39 +819,13 @@ func handleSupport(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
         ),
         tgbotapi.NewInlineKeyboardRow(
             tgbotapi.NewInlineKeyboardButtonData("📝 Обращение", "support_ticket"),
-            tgbotapi.NewInlineKeyboardButtonData("🔙 В меню", "back_to_menu"),
+            tgbotapi.NewInlineKeyboardButtonData("🔙 Главное меню", "back_to_menu"),
         ),
     )
 
     keyboardMsg := tgbotapi.NewMessage(chatID, "Выберите действие:")
     keyboardMsg.ReplyMarkup = keyboard
     bot.Send(keyboardMsg)
-}
-
-func showMenu(bot *tgbotapi.BotAPI, chatID int64, user *tgbotapi.User) {
-    keyboard := tgbotapi.NewInlineKeyboardMarkup(
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("🤖 Задать вопрос", "menu_ask"),
-            tgbotapi.NewInlineKeyboardButtonData("📋 Тарифы", "menu_plans"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("📊 Использование", "menu_usage"),
-            tgbotapi.NewInlineKeyboardButtonData("⚙️ Модель", "menu_model"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("👤 Профиль", "menu_profile"),
-            tgbotapi.NewInlineKeyboardButtonData("📜 История", "menu_history"),
-        ),
-        tgbotapi.NewInlineKeyboardRow(
-            tgbotapi.NewInlineKeyboardButtonData("📞 Поддержка", "menu_support"),
-            tgbotapi.NewInlineKeyboardButtonData("ℹ️ Помощь", "menu_help"),
-        ),
-    )
-
-    msg := tgbotapi.NewMessage(chatID, 
-        fmt.Sprintf("👋 Главное меню\n\nПривет, %s!\nВыберите действие:", user.FirstName))
-    msg.ReplyMarkup = keyboard
-    bot.Send(msg)
 }
 
 func getUserModel(chatID int64) string {
@@ -681,7 +836,7 @@ func getUserModel(chatID int64) string {
 }
 
 func askAI(question string) string {
-    return fmt.Sprintf("🤖 Ответ AI\n\nВы спросили: %s\n\nЭто демо-режим. В реальности здесь будет ответ от нейросети.", question)
+    return fmt.Sprintf("🤖 *Ответ AI*\n\nВы спросили: %s\n\nЭто демо-режим. В реальности здесь будет ответ от нейросети.", question)
 }
 
 func showPlans(bot *tgbotapi.BotAPI, chatID int64) {
