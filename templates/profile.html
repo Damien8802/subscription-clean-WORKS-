@@ -1,174 +1,338 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
-    <title>Мой профиль - SaaSPro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль пользователя - SaaSPro</title>
     <style>
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 0; margin-bottom: 30px; }
-        .profile-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); }
-        .avatar-circle { width: 100px; height: 100px; background: linear-gradient(145deg, #667eea, #5a67d8); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; margin-bottom: 20px; }
-        .nav-tabs .nav-link.active { border-bottom: 3px solid #667eea; color: #667eea; font-weight: 600; }
-        .btn-save { background: #667eea; color: white; border-radius: 50px; padding: 10px 30px; border: none; }
-        .btn-save:hover { background: #5a67d8; }
-        @media (max-width: 768px) { .profile-header { padding: 30px 0; } .profile-card { padding: 20px; } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        /* Шапка профиля */
+        .profile-header {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .profile-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .info-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        /* Блок с API ключами */
+        .api-section {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i {
+            color: #667eea;
+        }
+        
+        /* Создание ключа */
+        .create-key-box {
+            background: #f0f3ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            align-items: end;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        /* Уведомление о новом ключе */
+        .new-key-alert {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .raw-key {
+            font-size: 16px;
+            font-weight: bold;
+            color: #28a745;
+            word-break: break-all;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .btn-copy {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        /* Список ключей */
+        .keys-list {
+            display: grid;
+            gap: 15px;
+        }
+        .key-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .key-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .key-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .key-status {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .status-active {
+            background: #4caf50;
+            color: white;
+        }
+        .key-hash {
+            background: #e9ecef;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .btn-revoke {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: white;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
-    <div class="profile-header">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h2"><i class="fas fa-user-circle me-3"></i>Мой профиль</h1>
-                <a href="/" class="btn btn-light rounded-pill"><i class="fas fa-arrow-left me-2"></i>На главную</a>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
-        {{ if .User }}
-        <div class="row">
-            <div class="col-lg-3 mb-4">
-                <div class="profile-card text-center">
-                    <div class="avatar-circle mx-auto">
-                        <span style="font-size: 2rem; font-weight: bold;">{{ .Initials }}</span>
-                    </div>
-                    <h4>{{ .User.Name }}</h4>
-                    <p class="text-muted mb-1">{{ .User.Email }}</p>
-                    <span class="badge bg-light text-dark px-3 py-2 mt-2">{{ .User.Role }}</span>
-                    <hr class="my-4">
-                    <div class="text-start small">
-                        <p><i class="fas fa-calendar me-2 text-secondary"></i>Зарегистрирован: {{ .User.CreatedAt.Format "02.01.2006" }}</p>
-                        <p><i class="fas fa-id-card me-2 text-secondary"></i>ID: {{ .User.ID }}</p>
-                    </div>
+        <!-- Шапка профиля -->
+        <div class="profile-header">
+            <h1 class="profile-title">👤 Профиль пользователя</h1>
+            <div class="profile-info">
+                <div class="info-card">
+                    <div class="info-label">ID пользователя</div>
+                    <div class="info-value" id="userId">test-user-123</div>
                 </div>
-            </div>
-            <div class="col-lg-9">
-                <div class="profile-card">
-                    <ul class="nav nav-tabs border-0 mb-4" id="profileTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active bg-transparent border-0 px-4" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit" type="button" role="tab">Редактировать профиль</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link bg-transparent border-0 px-4" id="password-tab" data-bs-toggle="tab" data-bs-target="#password" type="button" role="tab">Сменить пароль</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content" id="profileTabsContent">
-                        <div class="tab-pane fade show active" id="edit" role="tabpanel">
-                            <form id="profileForm">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Имя</label>
-                                    <input type="text" class="form-control form-control-lg rounded-4" id="name" value="{{ .User.Name }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Email</label>
-                                    <input type="email" class="form-control form-control-lg rounded-4" id="email" value="{{ .User.Email }}" required>
-                                </div>
-                                <button type="submit" class="btn btn-save mt-2">
-                                    <i class="fas fa-save me-2"></i>Сохранить изменения
-                                </button>
-                                <div id="profileMessage" class="mt-3"></div>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="password" role="tabpanel">
-                            <form id="passwordForm">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Текущий пароль</label>
-                                    <input type="password" class="form-control form-control-lg rounded-4" id="oldPassword" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Новый пароль</label>
-                                    <input type="password" class="form-control form-control-lg rounded-4" id="newPassword" required>
-                                    <div class="form-text">Минимум 6 символов</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Подтвердите новый пароль</label>
-                                    <input type="password" class="form-control form-control-lg rounded-4" id="confirmPassword" required>
-                                </div>
-                                <button type="submit" class="btn btn-save mt-2">
-                                    <i class="fas fa-key me-2"></i>Изменить пароль
-                                </button>
-                                <div id="passwordMessage" class="mt-3"></div>
-                            </form>
-                        </div>
-                    </div>
+                <div class="info-card">
+                    <div class="info-label">Email</div>
+                    <div class="info-value" id="userEmail">user@example.com</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">Подписка</div>
+                    <div class="info-value" id="userPlan">Базовый тариф</div>
                 </div>
             </div>
         </div>
-        {{ else }}
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="profile-card text-center">
-                    <div class="avatar-circle mx-auto">
-                        <span style="font-size: 2rem; font-weight: bold;">?</span>
+
+        <!-- Блок API ключей -->
+        <div class="api-section">
+            <div class="section-title">
+                <i class="fas fa-key"></i> Мои API ключи
+            </div>
+
+            <!-- Уведомление о новом ключе -->
+            <div class="new-key-alert" id="newKeyAlert">
+                <strong>✅ Новый ключ создан! Сохраните его:</strong>
+                <div class="raw-key" id="rawKeyDisplay"></div>
+                <button class="btn-copy" onclick="copyNewKey()">📋 Копировать ключ</button>
+            </div>
+
+            <!-- Форма создания ключа -->
+            <div class="create-key-box">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название ключа</label>
+                        <input type="text" id="keyName" placeholder="Например: Production" value="Мой ключ">
                     </div>
-                    <h4 class="mt-3">Пользователь не найден</h4>
-                    <p class="text-muted">{{ if .Error }}{{ .Error }}{{ else }}Войдите в систему, чтобы увидеть профиль.{{ end }}</p>
-                    <a href="/login" class="btn btn-primary rounded-pill px-5 mt-3">Войти</a>
+                    <div class="form-group">
+                        <label>Лимит запросов</label>
+                        <input type="number" id="quotaLimit" value="1000">
+                    </div>
+                    <button class="btn-primary" onclick="createKey()">Создать ключ</button>
                 </div>
             </div>
+
+            <!-- Список ключей -->
+            <div class="keys-list" id="keysList">
+                <p style="text-align: center; color: #666;">Загрузка...</p>
+            </div>
         </div>
-        {{ end }}
+
+        <a href="/dashboard-improved" class="back-link">← Вернуться в дашборд</a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        {{ if .User }}
-        document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            try {
-                const response = await fetch('/api/user/profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email })
-                });
-                const result = await response.json();
-                const msgDiv = document.getElementById('profileMessage');
-                if (response.ok) {
-                    msgDiv.innerHTML = '<div class="alert alert-success">Профиль обновлён!</div>';
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    msgDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + result.error + '</div>';
-                }
-            } catch (err) {
-                document.getElementById('profileMessage').innerHTML = '<div class="alert alert-danger">Сетевая ошибка</div>';
-            }
-        });
+        const userId = document.getElementById('userId').textContent;
 
-        document.getElementById('passwordForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const oldPassword = document.getElementById('oldPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirm = document.getElementById('confirmPassword').value;
-            if (newPassword !== confirm) {
-                document.getElementById('passwordMessage').innerHTML = '<div class="alert alert-danger">Пароли не совпадают</div>';
+        async function loadKeys() {
+            const response = await fetch(`/api/user/keys?user_id=${userId}`);
+            const data = await response.json();
+            
+            const keysList = document.getElementById('keysList');
+            
+            if (!data.keys || data.keys.length === 0) {
+                keysList.innerHTML = '<p style="text-align: center; color: #666;">У вас пока нет API ключей. Создайте первый ключ выше.</p>';
                 return;
             }
-            try {
-                const response = await fetch('/api/user/password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
-                });
-                const result = await response.json();
-                const msgDiv = document.getElementById('passwordMessage');
-                if (response.ok) {
-                    msgDiv.innerHTML = '<div class="alert alert-success">Пароль изменён!</div>';
-                    document.getElementById('oldPassword').value = '';
-                    document.getElementById('newPassword').value = '';
-                    document.getElementById('confirmPassword').value = '';
-                } else {
-                    msgDiv.innerHTML = '<div class="alert alert-danger">Ошибка: ' + result.error + '</div>';
-                }
-            } catch (err) {
-                document.getElementById('passwordMessage').innerHTML = '<div class="alert alert-danger">Сетевая ошибка</div>';
+
+            keysList.innerHTML = data.keys.map(key => `
+                <div class="key-card" id="key-${key.id}">
+                    <div class="key-header">
+                        <span class="key-name">${key.name || 'Без названия'}</span>
+                        <span class="key-status ${key.is_active ? 'status-active' : ''}">
+                            ${key.is_active ? 'Активен' : 'Неактивен'}
+                        </span>
+                    </div>
+                    <div class="key-hash">${key.key_hash.substring(0, 30)}...</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <small>Использовано: ${key.quota_used} / ${key.quota_limit}</small>
+                        ${key.is_active ? 
+                            `<button class="btn-revoke" onclick="revokeKey('${key.id}')">Отозвать</button>` : 
+                            ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createKey() {
+            const name = document.getElementById('keyName').value;
+            const quota = document.getElementById('quotaLimit').value;
+
+            const response = await fetch('/api/keys/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    name: name,
+                    quota_limit: parseInt(quota)
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('newKeyAlert').style.display = 'block';
+                document.getElementById('rawKeyDisplay').textContent = data.raw_key;
+                document.getElementById('keyName').value = 'Мой ключ';
+                loadKeys();
+            } else {
+                alert('Ошибка: ' + data.error);
             }
-        });
-        {{ end }}
+        }
+
+        async function revokeKey(keyId) {
+            if (!confirm('Отозвать ключ? Он перестанет работать.')) return;
+
+            const response = await fetch('/api/keys/revoke', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key_id: keyId })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('✅ Ключ отозван');
+                loadKeys();
+            } else {
+                alert('❌ Ошибка: ' + data.error);
+            }
+        }
+
+        function copyNewKey() {
+            const key = document.getElementById('rawKeyDisplay').textContent;
+            navigator.clipboard.writeText(key);
+            alert('✅ Ключ скопирован!');
+        }
+
+        loadKeys();
     </script>
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
 </body>
 </html>

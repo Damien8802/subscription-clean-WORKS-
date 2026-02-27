@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои API ключи</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; }
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .create-section { background: #f0f3ff; border-radius: 15px; padding: 30px; margin-bottom: 30px; }
+        .new-key-alert { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 20px; margin-bottom: 20px; display: none; }
+        .raw-key { font-size: 18px; font-weight: bold; color: #28a745; word-break: break-all; }
+        .key-card { background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #667eea; }
+        .key-value { font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 8px; word-break: break-all; }
+        .btn-copy { background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; }
+        .btn-revoke { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; }
+        .badge-active { background: #4caf50; color: white; padding: 5px 10px; border-radius: 20px; }
+        .badge-inactive { background: #f44336; color: white; padding: 5px 10px; border-radius: 20px; }
+        .back-link { color: white; text-decoration: none; margin-top: 20px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-key me-3"></i> Мои API ключи</h1>
+            <p class="mb-0">Управляйте своими API ключами для доступа к сервисам</p>
+            <a href="/profile" class="back-link">← Вернуться в профиль</a>
+        </div>
+
+        <!-- Уведомление о новом ключе -->
+        <div class="new-key-alert" id="newKeyAlert">
+            <h4>✅ Новый ключ создан! Сохраните его (показывается только один раз):</h4>
+            <div class="raw-key" id="rawKeyDisplay"></div>
+            <button class="btn-copy mt-2" onclick="copyNewKey()">📋 Копировать ключ</button>
+        </div>
+
+        <!-- Создание ключа -->
+        <div class="create-section">
+            <h3 class="mb-3">➕ Создать новый API ключ</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Название ключа</label>
+                        <input type="text" class="form-control" id="keyName" placeholder="Например: Production, Development">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Лимит запросов</label>
+                        <input type="number" class="form-control" id="quotaLimit" value="1000">
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="createKey()">Создать</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список ключей -->
+        <div class="card">
+            <h3 class="mb-4">📋 Мои ключи</h3>
+            <div id="keysList">
+                <p class="text-center text-muted py-4">Загрузка...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('userId') || 'test-user-123';
+
+        async function loadKeys() {
+            const response = await fetch(`/api/user/keys?user_id=${userId}`);
+            const data = await response.json();
+            
+            const keysList = document.getElementById('keysList');
+            
+            if (!data.keys || data.keys.length === 0) {
+                keysList.innerHTML = '<p class="text-center text-muted py-4">У вас пока нет API ключей</p>';
+                return;
+            }
+
+            keysList.innerHTML = data.keys.map(key => `
+                <div class="key-card" id="key-${key.id}">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h4 class="mb-1">${key.name || 'Без названия'}</h4>
+                            <small class="text-muted">Создан: ${new Date(key.created_at).toLocaleDateString()}</small>
+                        </div>
+                        <div>
+                            <span class="${key.is_active ? 'badge-active' : 'badge-inactive'}">
+                                ${key.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="key-value mb-3">
+                        ${key.key_hash.substring(0, 30)}...
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Лимит запросов:</small>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="badge bg-info">${key.quota_used}</span>
+                                <span>/</span>
+                                <span class="badge bg-secondary">${key.quota_limit}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            ${key.is_active ? 
+                                `<button class="btn-revoke" onclick="revokeKey('${key.id}')">
+                                    Отозвать ключ
+                                </button>` : 
+                                ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createKey() {
+            const name = document.getElementById('keyName').value || 'Мой ключ';
+            const quota = document.getElementById('quotaLimit').value;
+
+            const response = await fetch('/api/keys/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: userId,
+                    name: name,
+                    quota_limit: parseInt(quota)
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('newKeyAlert').style.display = 'block';
+                document.getElementById('rawKeyDisplay').textContent = data.raw_key;
+                document.getElementById('keyName').value = '';
+                loadKeys();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        }
+
+        async function revokeKey(keyId) {
+            if (!confirm('Отозвать ключ? Он перестанет работать.')) return;
+
+            const response = await fetch('/api/keys/revoke', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key_id: keyId })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('✅ Ключ отозван');
+                loadKeys();
+            } else {
+                alert('❌ Ошибка: ' + data.error);
+            }
+        }
+
+        function copyNewKey() {
+            const key = document.getElementById('rawKeyDisplay').textContent;
+            navigator.clipboard.writeText(key);
+            alert('✅ Ключ скопирован!');
+        }
+
+        loadKeys();
+    </script>
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

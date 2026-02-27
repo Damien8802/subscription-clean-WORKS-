@@ -114,6 +114,8 @@ func main() {
     r.GET("/dashboard", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
     r.GET("/delivery", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/logistics") })
     r.GET("/ai", handlers.AIChatPageHandler)
+    r.GET("/my-keys", handlers.MyKeysPageHandler)
+    r.GET("/api-keys", handlers.APIKeysPageHandler)
 
     // Публичные, защищенные, админские и другие группы маршрутов (без изменений) ...
     public := r.Group("/")

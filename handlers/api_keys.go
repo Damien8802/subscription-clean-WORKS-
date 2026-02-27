@@ -101,3 +101,17 @@ func ValidateAPIKeyHandler(c *gin.Context) {
         "quota":   apiKey.QuotaLimit - apiKey.QuotaUsed,
     })
 }
+
+// MyKeysPageHandler - страница с ключами пользователя
+func MyKeysPageHandler(c *gin.Context) {
+    c.HTML(http.StatusOK, "my-keys.html", gin.H{
+        "Title": "Мои API ключи",
+    })
+}
+
+// APIKeysPageHandler - страница управления ключами
+func APIKeysPageHandler(c *gin.Context) {
+    c.HTML(http.StatusOK, "api_keys.html", gin.H{
+        "Title": "Мои API ключи",
+    })
+}
