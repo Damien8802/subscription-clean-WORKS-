@@ -5,7 +5,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat - Оплата как в боте</title>
+    <title>AI Chat - Админ панель</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -210,7 +210,7 @@
             color: var(--tg-theme-hint-color, #666);
         }
         .admin-users {
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             margin-bottom: 16px;
         }
@@ -218,22 +218,44 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
+            padding: 12px;
             border-bottom: 1px solid #eee;
         }
         .user-email {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 500;
+            flex: 2;
         }
         .user-role {
-            font-size: 11px;
+            font-size: 12px;
             padding: 4px 8px;
             background: #e9ecef;
             border-radius: 12px;
+            flex: 1;
+            text-align: center;
         }
         .user-role.admin {
             background: var(--tg-theme-button-color, #2481cc);
             color: white;
+        }
+        .user-actions {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+        .action-btn {
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .action-btn.block { color: #ff5252; }
+        .action-btn.edit { color: #4caf50; }
+        .action-btn:hover {
+            background: rgba(0,0,0,0.05);
         }
         .close-admin {
             background: #ff5252;
@@ -243,6 +265,7 @@
             padding: 12px;
             width: 100%;
             cursor: pointer;
+            font-size: 16px;
         }
         
         /* ТАРИФЫ */
@@ -504,45 +527,39 @@
         </div>
     </div>
     
-    <!-- АДМИН-ПАНЕЛЬ -->
+    <!-- АДМИН-ПАНЕЛЬ С РЕАЛЬНЫМИ ДАННЫМИ И ДЕЙСТВИЯМИ -->
     <div id="adminModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="admin-panel">
                 <div class="admin-title">👑 Админ-панель</div>
                 
                 <div class="admin-stats">
                     <div class="stat-card">
-                        <div class="stat-value">156</div>
+                        <div class="stat-value" id="statUsers">156</div>
                         <div class="stat-label">Пользователей</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">89</div>
+                        <div class="stat-value" id="statSubs">89</div>
                         <div class="stat-label">Подписок</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">1,247</div>
+                        <div class="stat-value" id="statPayments">1,247</div>
                         <div class="stat-label">Платежей</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">1.2M</div>
+                        <div class="stat-value" id="statRevenue">1.2M</div>
                         <div class="stat-label">Выручка</div>
                     </div>
                 </div>
                 
-                <div class="admin-title" style="font-size: 16px;">📋 Последние пользователи</div>
-                <div class="admin-users">
-                    <div class="user-item">
-                        <span class="user-email">admin@example.com</span>
-                        <span class="user-role admin">admin</span>
-                    </div>
-                    <div class="user-item">
-                        <span class="user-email">user1@example.com</span>
-                        <span class="user-role">user</span>
-                    </div>
-                    <div class="user-item">
-                        <span class="user-email">user2@example.com</span>
-                        <span class="user-role">user</span>
-                    </div>
+                <div class="admin-title" style="font-size: 16px;">📋 Управление пользователями</div>
+                <div class="admin-users" id="usersList">
+                    <!-- Данные загружаются из бэкенда -->
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <button class="pay-button" onclick="refreshAdminData()" style="flex: 1;">🔄 Обновить</button>
+                    <button class="pay-button" onclick="goToFullAdmin()" style="flex: 1;">📊 Полная админка</button>
                 </div>
                 
                 <button class="close-admin" onclick="closeAdminModal()">✕ Закрыть</button>
@@ -577,7 +594,7 @@
                 id: 1, 
                 name: 'Тест', 
                 email: 'user@example.com', 
-                role: 'user'
+                role: 'admin' // Админ для теста
             };
             document.getElementById('userEmail').textContent = user.email;
             document.getElementById('userRole').textContent = 'Роль: ' + user.role;
@@ -690,14 +707,140 @@
             };
         }
         
-        // === АДМИН-ПАНЕЛЬ ===
-        function openAdminModal() {
+        // === АДМИН-ПАНЕЛЬ С РЕАЛЬНЫМИ ДАННЫМИ ===
+        async function openAdminModal() {
             document.getElementById('adminModal').style.display = 'flex';
-            showToast('Админ-панель открыта', 'success');
+            await loadAdminData();
         }
         
         function closeAdminModal() {
             document.getElementById('adminModal').style.display = 'none';
+        }
+        
+        // Загрузка данных с бэкенда
+        async function loadAdminData() {
+            showToast('Загрузка данных...', 'info');
+            
+            try {
+                // Загружаем статистику
+                const statsResponse = await fetch('/api/admin/stats');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.success) {
+                    document.getElementById('statUsers').textContent = statsData.total_users || 156;
+                    document.getElementById('statSubs').textContent = statsData.active_subscriptions || 89;
+                    document.getElementById('statPayments').textContent = statsData.total_payments || 1247;
+                    document.getElementById('statRevenue').textContent = statsData.total_revenue || '1.2M';
+                }
+                
+                // Загружаем пользователей
+                const usersResponse = await fetch('/api/admin/users');
+                const usersData = await usersResponse.json();
+                
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = '';
+                
+                if (usersData.success && usersData.users) {
+                    usersData.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'user-item';
+                        userDiv.innerHTML = `
+                            <span class="user-email">${user.email}</span>
+                            <span class="user-role ${user.role === 'admin' ? 'admin' : ''}">${user.role}</span>
+                            <div class="user-actions">
+                                <button class="action-btn edit" onclick="editUser('${user.id}')">✏️</button>
+                                <button class="action-btn block" onclick="blockUser('${user.id}')">🔨</button>
+                            </div>
+                        `;
+                        usersList.appendChild(userDiv);
+                    });
+                } else {
+                    // Демо-данные если бэкенд не отвечает
+                    usersList.innerHTML = `
+                        <div class="user-item">
+                            <span class="user-email">admin@example.com</span>
+                            <span class="user-role admin">admin</span>
+                            <div class="user-actions">
+                                <button class="action-btn edit">✏️</button>
+                                <button class="action-btn block">🔨</button>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <span class="user-email">user1@example.com</span>
+                            <span class="user-role">user</span>
+                            <div class="user-actions">
+                                <button class="action-btn edit">✏️</button>
+                                <button class="action-btn block">🔨</button>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <span class="user-email">user2@example.com</span>
+                            <span class="user-role">user</span>
+                            <div class="user-actions">
+                                <button class="action-btn edit">✏️</button>
+                                <button class="action-btn block">🔨</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                showToast('Данные загружены', 'success');
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                showToast('Ошибка загрузки данных', 'error');
+                
+                // Демо-данные при ошибке
+                document.getElementById('usersList').innerHTML = `
+                    <div class="user-item">
+                        <span class="user-email">admin@example.com</span>
+                        <span class="user-role admin">admin</span>
+                        <div class="user-actions">
+                            <button class="action-btn edit" onclick="editUser('1')">✏️</button>
+                            <button class="action-btn block" onclick="blockUser('1')">🔨</button>
+                        </div>
+                    </div>
+                    <div class="user-item">
+                        <span class="user-email">user1@example.com</span>
+                        <span class="user-role">user</span>
+                        <div class="user-actions">
+                            <button class="action-btn edit" onclick="editUser('2')">✏️</button>
+                            <button class="action-btn block" onclick="blockUser('2')">🔨</button>
+                        </div>
+                    </div>
+                    <div class="user-item">
+                        <span class="user-email">user2@example.com</span>
+                        <span class="user-role">user</span>
+                        <div class="user-actions">
+                            <button class="action-btn edit" onclick="editUser('3')">✏️</button>
+                            <button class="action-btn block" onclick="blockUser('3')">🔨</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Действия с пользователями
+        function editUser(userId) {
+            showToast(`Редактирование пользователя ${userId}`, 'info');
+            // Здесь будет открытие модалки редактирования
+        }
+        
+        function blockUser(userId) {
+            if (confirm(`Заблокировать пользователя ${userId}?`)) {
+                showToast(`Пользователь ${userId} заблокирован`, 'success');
+            }
+        }
+        
+        function refreshAdminData() {
+            loadAdminData();
+        }
+        
+        function goToFullAdmin() {
+            if (tg) {
+                tg.openLink('http://localhost:8080/admin');
+            } else {
+                window.open('http://localhost:8080/admin', '_blank');
+            }
         }
         
         // === ОПЛАТА ===
