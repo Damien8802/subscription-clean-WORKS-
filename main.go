@@ -223,6 +223,11 @@ func main() {
         api.DELETE("/knowledge/delete/:id", handlers.DeleteKnowledgeHandler)
         // Рассылки (Email и SMS)
         api.POST("/notify", handlers.NotifyHandler)
+        // В блоке api добавь:
+        api.POST("/keys/create", handlers.CreateAPIKeyHandler)
+        api.GET("/user/keys", handlers.GetUserAPIKeysHandler)
+        api.POST("/keys/revoke", handlers.RevokeAPIKeyHandler)
+        api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
         
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
@@ -238,15 +243,15 @@ func main() {
     userKeys := r.Group("/api/user/keys")
     userKeys.Use(middleware.AuthMiddleware(cfg))
     {
-        userKeys.GET("/", handlers.ListAPIKeysHandler)
-        userKeys.POST("/", handlers.GenerateAPIKeyHandler)
+        //userKeys.GET("/", handlers.ListAPIKeysHandler)
+        //userKeys.POST("/", handlers.GenerateAPIKeyHandler)
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
-        v1.POST("/chat/completions", handlers.ChatCompletionsHandler)
+        //v1.POST("/chat/completions", handlers.ChatCompletionsHandler)
     }
 
     adminAPI := r.Group("/api/admin")
