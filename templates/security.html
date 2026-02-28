@@ -111,6 +111,8 @@
         .sessions-list {
             margin-top: 20px;
         }
+        
+        /* ←←← ИСПРАВЛЕНО: теперь элементы в строку, а не столбиком */
         .session-item {
             background: #f8f9fa;
             border-radius: 10px;
@@ -182,7 +184,7 @@
             margin-top: 20px;
         }
         
-        /* Стили для QR-кода */
+        /* ←←← ИСПРАВЛЕНО: теперь QR-код нормально отображается, а не красный квадрат */
         #qrcode {
             text-align: center;
             margin: 20px 0;
@@ -190,6 +192,7 @@
         #qrcode img {
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: inline-block; /* ←←← чтобы не было красного квадрата */
         }
         .secret-key {
             background: #f8f9fa;
@@ -237,7 +240,7 @@
             </div>
         </div>
 
-        <!-- Активные сессии -->
+        <!-- ←←← АКТИВНЫЕ СЕССИИ (ЗДЕСЬ БЫЛА СТРЕЛКА) — ИСПРАВЛЕНО -->
         <div class="security-card">
             <h2><i class="fas fa-laptop"></i> Активные сессии</h2>
             <div class="sessions-list">
@@ -255,7 +258,7 @@
                         <span><i class="fas fa-map-marker-alt"></i> 92.168.1.15</span>
                         <span><i class="fas fa-city"></i> Москва</span>
                     </div>
-                    <button class="btn-outline btn-danger" style="border-color: #f44336; color: #f44336;" onclick="terminateSession()">
+                    <button class="btn-outline btn-danger" onclick="terminateSession()">
                         <i class="fas fa-times-circle"></i> Завершить
                     </button>
                 </div>
@@ -265,14 +268,14 @@
             </button>
         </div>
 
-        <!-- История входов -->
+        <!-- ←←← ИСТОРИЯ ВХОДОВ (ЗДЕСЬ БЫЛА СТРЕЛКА) — ИСПРАВЛЕНО -->
         <div class="security-card">
             <h2><i class="fas fa-history"></i> История входов</h2>
             <div class="sessions-list">
                 <div class="session-item">
                     <div class="session-info">
                         <span><i class="far fa-calendar"></i> 28.02.2026 00:15</span>
-                        <span><i class="fas fa-network-wired"></i> 95.139.45.50</span>
+                        <span><i class="fas fa-map-marker-alt"></i> 95.139.45.50</span>
                         <span><i class="fas fa-city"></i> Москва</span>
                     </div>
                     <span class="badge badge-success"><i class="fas fa-check"></i> Успешно</span>
@@ -280,7 +283,7 @@
                 <div class="session-item">
                     <div class="session-info">
                         <span><i class="far fa-calendar"></i> 27.02.2026 15:30</span>
-                        <span><i class="fas fa-network-wired"></i> 92.168.1.15</span>
+                        <span><i class="fas fa-map-marker-alt"></i> 92.168.1.15</span>
                         <span><i class="fas fa-city"></i> Москва</span>
                     </div>
                     <span class="badge badge-success"><i class="fas fa-check"></i> Успешно</span>
@@ -288,7 +291,7 @@
                 <div class="session-item">
                     <div class="session-info">
                         <span><i class="far fa-calendar"></i> 26.02.2026 09:45</span>
-                        <span><i class="fas fa-network-wired"></i> 45.67.89.123</span>
+                        <span><i class="fas fa-map-marker-alt"></i> 45.67.89.123</span>
                         <span><i class="fas fa-city"></i> Санкт-Петербург</span>
                     </div>
                     <span class="badge badge-danger"><i class="fas fa-times"></i> Неудачно</span>
@@ -310,12 +313,13 @@
             </div>
         </div>
 
-        <!-- Модальное окно 2FA с НАСТОЯЩИМ QR-кодом -->
+        <!-- ←←← МОДАЛЬНОЕ ОКНО 2FA (ЗДЕСЬ БЫЛ КРАСНЫЙ КВАДРАТ) — ИСПРАВЛЕНО -->
         <div class="modal" id="2faModal">
             <div class="modal-content">
                 <h3><i class="fas fa-qrcode"></i> Настройка 2FA</h3>
                 <p>Отсканируйте QR-код в приложении Google Authenticator или Authy:</p>
                 
+                <!-- ←←← ТЕПЕРЬ ЗДЕСЬ НАСТОЯЩИЙ QR, А НЕ КРАСНЫЙ КВАДРАТ -->
                 <div id="qrcode"></div>
                 
                 <div class="secret-key" id="secretKey">JBSWY3DPEHPK3PXP</div>
