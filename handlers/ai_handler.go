@@ -54,7 +54,7 @@ type YandexGPTResponse struct {
     } `json:"result"`
 }
 
-// Поиск по документам пользователя (RAG) – оставляем
+// Поиск по документам пользователя (RAG)
 func searchUserDocs(ctx context.Context, userID, query string, limit int) ([]string, error) {
     rows, err := database.Pool.Query(ctx,
         `SELECT content FROM knowledge_docs 
@@ -109,7 +109,7 @@ func searchWeb(query string, numResults int) ([]string, error) {
     return snippets, nil
 }
 
-// Запрос к OpenWeatherMap (оставляем как опцию)
+// Запрос к OpenWeatherMap
 func getWeather(city string) (string, error) {
     apiKey := os.Getenv("OPENWEATHER_API_KEY")
     if apiKey == "" {
@@ -145,6 +145,39 @@ func getWeather(city string) (string, error) {
         data.Name, data.Weather[0].Description, data.Main.Temp, data.Main.Pressure, data.Main.Humidity, data.Wind.Speed), nil
 }
 
+// GetUserActivePlan получает активную подписку пользователя
+func GetUserActivePlan(userID string) (*models.Plan, int64, error) {
+    var plan models.Plan
+    var used int64
+    
+    err := database.Pool.QueryRow(context.Background(), `
+        SELECT 
+            p.id, p.name, p.code, p.description, 
+            p.price_monthly, p.price_yearly, p.currency,
+            p.features, p.ai_capabilities, p.max_users,
+            p.is_active, p.sort_order,
+            COALESCE(us.ai_tokens_used, 0) as tokens_used
+        FROM subscription_plans p
+        JOIN user_subscriptions us ON us.plan_id = p.id
+        WHERE us.user_id = $1 AND us.status = 'active'
+        AND us.current_period_start <= NOW() 
+        AND us.current_period_end >= NOW()
+        ORDER BY us.created_at DESC
+        LIMIT 1
+    `, userID).Scan(
+        &plan.ID, &plan.Name, &plan.Code, &plan.Description,
+        &plan.PriceMonthly, &plan.PriceYearly, &plan.Currency,
+        &plan.Features, &plan.AICapabilities, &plan.MaxUsers,
+        &plan.IsActive, &plan.SortOrder, &used,
+    )
+    
+    if err != nil {
+        return nil, 0, err
+    }
+    
+    return &plan, used, nil
+}
+
 func AIAskHandler(c *gin.Context) {
     var err error
     userID, exists := c.Get("userID")
@@ -170,19 +203,16 @@ func AIAskHandler(c *gin.Context) {
 
     cfg := config.Load()
     var plan *models.Plan
+    var tokensUsed int64
     var isAdmin bool
 
     if !cfg.SkipAuth {
         role, _ := c.Get("userRole")
         isAdmin = role == "admin"
         if !isAdmin {
-            plan, err = models.GetUserActivePlan(userID.(string))
+            plan, tokensUsed, err = GetUserActivePlan(userID.(string))
             if err != nil {
                 c.JSON(http.StatusForbidden, gin.H{"error": "no active subscription"})
-                return
-            }
-            if plan.AIQuota == 0 {
-                c.JSON(http.StatusForbidden, gin.H{"error": "AI assistant not included in your plan"})
                 return
             }
         }
@@ -197,7 +227,6 @@ func AIAskHandler(c *gin.Context) {
 
     // Если запрос о погоде, пытаемся получить данные
     if needWeather {
-        // Простое извлечение города (можно улучшить)
         words := strings.Fields(req.Question)
         var city string
         for i, w := range words {
@@ -228,7 +257,7 @@ func AIAskHandler(c *gin.Context) {
         }
     }
 
-    // Собираем системный промпт (ТОЛЬКО ОДИН РАЗ)
+    // Собираем системный промпт
     var sb strings.Builder
     sb.WriteString(`Ты — профессиональный AI-ассистент платформы ServerAgent.
 
@@ -280,7 +309,7 @@ func AIAskHandler(c *gin.Context) {
         }
     }
 
-    // Инструкция для модели: теперь она может отвечать из своих знаний
+    // Инструкция для модели
     sb.WriteString("\n\n**ИНСТРУКЦИЯ:**\n")
     sb.WriteString("1. Отвечай на вопрос, используя предоставленную информацию и свои знания.\n")
     sb.WriteString("2. Если в предоставленных данных есть конкретные цифры, обязательно их приведи.\n")
@@ -293,6 +322,17 @@ func AIAskHandler(c *gin.Context) {
     if cfg.YandexFolderID == "" || cfg.YandexAPIKey == "" {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "YandexGPT API key not configured"})
         return
+    }
+
+    // Проверяем лимиты если есть подписка
+    if plan != nil && !isAdmin {
+        caps := plan.GetAICapabilities()
+        maxRequests := int64(caps["max_requests"].(float64))
+        
+        if tokensUsed >= maxRequests {
+            c.JSON(http.StatusForbidden, gin.H{"error": "AI quota exceeded"})
+            return
+        }
     }
 
     yandexReq := YandexGPTRequest{
@@ -364,25 +404,20 @@ func AIAskHandler(c *gin.Context) {
 
     answer := yandexResp.Result.Alternatives[0].Message.Text
 
-    // Списываем токены (оставляем как было)
-    if !cfg.SkipAuth && !isAdmin && plan != nil {
-        totalTokens, err := strconv.Atoi(yandexResp.Result.Usage.TotalTokens)
-        if err != nil {
-            log.Printf("⚠️ Ошибка преобразования токенов: %v", err)
-            totalTokens = 0
-        }
-        newUsed := plan.AITokensUsed + int64(totalTokens)
-        if newUsed > plan.AIQuota {
-            c.JSON(http.StatusForbidden, gin.H{"error": "AI quota exceeded"})
-            return
-        }
+    // Списываем токены если есть подписка
+    if plan != nil && !isAdmin {
+        totalTokens, _ := strconv.Atoi(yandexResp.Result.Usage.TotalTokens)
+        newUsed := tokensUsed + int64(totalTokens)
+        
         _, err = database.Pool.Exec(c.Request.Context(),
             "UPDATE user_subscriptions SET ai_tokens_used = $1 WHERE user_id = $2 AND status = 'active'",
             newUsed, userID)
         if err != nil {
             log.Printf("❌ Ошибка обновления ai_tokens_used: %v", err)
         } else {
-            log.Printf("✅ Списано %d токенов, осталось %d", totalTokens, plan.AIQuota-newUsed)
+            caps := plan.GetAICapabilities()
+            maxRequests := int64(caps["max_requests"].(float64))
+            log.Printf("✅ Списано %d токенов, осталось %d", totalTokens, maxRequests-newUsed)
         }
     }
 

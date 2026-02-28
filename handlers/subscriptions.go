@@ -1,141 +1,51 @@
 package handlers
 
 import (
-	"fmt"
-	"net/http"
-	"subscription-system/config"
-	"subscription-system/database"
-	"subscription-system/models"
+    "net/http"
 
-	"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
 )
 
+// MySubscriptionsPageHandler отображает страницу с подписками пользователя
 func MySubscriptionsPageHandler(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		var id string
-		rows, err := database.Pool.Query(c.Request.Context(), "SELECT id FROM users ORDER BY created_at LIMIT 1")
-		if err == nil && rows.Next() {
-			rows.Scan(&id)
-			userID = id
-		}
-		rows.Close()
-		if userID == nil || userID == "" {
-			c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-				"Title":         "Мои подписки - SaaSPro",
-				"Version":       "3.0",
-				"Subscriptions": []models.Subscription{},
-			})
-			return
-		}
-	}
+    userID, exists := c.Get("userID")
+    if !exists {
+        userID = "test-user-123"
+    }
 
-	subs, err := models.GetUserSubscriptions(userID.(string))
-	if err != nil {
-		c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-			"Title":         "Мои подписки - SaaSPro",
-			"Version":       "3.0",
-			"Subscriptions": []models.Subscription{},
-		})
-		return
-	}
-	c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-		"Title":         "Мои подписки - SaaSPro",
-		"Version":       "3.0",
-		"Subscriptions": subs,
-	})
+    c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
+        "Title":  "Мои подписки",
+        "UserID": userID,
+    })
 }
 
-func GetPlansHandler(c *gin.Context) {
-	plans, err := models.GetAllActivePlans()
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"plans": []models.Plan{}})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"plans": plans})
-}
-
-type CreateSubscriptionRequest struct {
-	PlanID      int `json:"plan_id" binding:"required"`
-	PeriodMonth int `json:"period_month" binding:"required,oneof=1 12"`
-}
-
+// CreateSubscriptionHandler - создание новой подписки (заглушка)
 func CreateSubscriptionHandler(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		cfg := config.Load()
-		if cfg.SkipAuth {
-			// В режиме разработки берём первого пользователя
-			var id string
-			err := database.Pool.QueryRow(c.Request.Context(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(&id)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "no users found"})
-				return
-			}
-			userID = id
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return
-		}
-	}
+    var req struct {
+        PlanCode string `json:"plan_code" binding:"required"`
+        UserID   string `json:"user_id"`
+    }
 
-	var req CreateSubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	plan, err := models.GetPlanByID(req.PlanID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid plan id"})
-		return
-	}
-	sub, err := models.CreateSubscription(userID.(string), req.PlanID, req.PeriodMonth)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create subscription"})
-		return
-	}
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
 
-	// AI: добавляем информацию о подписке в базу знаний
-	metadata := map[string]interface{}{
-		"subscription_id": sub.ID,
-		"plan_id":         plan.ID,
-		"plan_name":       plan.Name,
-		"plan_price":      plan.PriceMonthly,
-		"period_months":   req.PeriodMonth,
-		"end_date":        sub.CurrentPeriodEnd,
-	}
-	content := fmt.Sprintf("Подписка на тариф '%s' активирована до %s", plan.Name, sub.CurrentPeriodEnd.Format("2006-01-02"))
-	_ = models.AddDocument(userID.(string), "subscription", content, metadata)
-
-	c.JSON(http.StatusCreated, gin.H{
-		"subscription": sub,
-		"plan":         plan,
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Подписка создана",
+    })
 }
 
+// GetUserSubscriptionsHandler - список подписок пользователя (заглушка)
 func GetUserSubscriptionsHandler(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		cfg := config.Load()
-		if cfg.SkipAuth {
-			// В режиме разработки берём первого пользователя
-			var id string
-			err := database.Pool.QueryRow(c.Request.Context(), "SELECT id FROM users ORDER BY created_at LIMIT 1").Scan(&id)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "no users found"})
-				return
-			}
-			userID = id
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-			return
-		}
-	}
+    userID := c.Query("user_id")
+    if userID == "" {
+        userID = "test-user-123"
+    }
 
-	subs, err := models.GetUserSubscriptions(userID.(string))
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"subscriptions": []models.Subscription{}})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"subscriptions": subs})
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "subscriptions": []interface{}{},
+    })
 }

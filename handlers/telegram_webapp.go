@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    //"context"
     "crypto/hmac"
     "crypto/sha256"
     "encoding/hex"
@@ -19,6 +20,7 @@ import (
     "github.com/google/uuid"
 )
 
+// ValidateWebAppData проверяет подпись данных от Telegram
 func ValidateWebAppData(initData string, botToken string) (int64, error) {
     values, err := url.ParseQuery(initData)
     if err != nil {
@@ -73,9 +75,10 @@ func ValidateWebAppData(initData string, botToken string) (int64, error) {
     return user.ID, nil
 }
 
+// WebAppAuthHandler обрабатывает авторизацию через Telegram Mini App
 func WebAppAuthHandler(c *gin.Context) {
     var req struct {
-        InitData string `json:"initData"` // binding:"required" убрано
+        InitData string `json:"initData"`
     }
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(400, gin.H{"error": err.Error()})
@@ -104,7 +107,7 @@ func WebAppAuthHandler(c *gin.Context) {
             c.JSON(400, gin.H{"error": "initData required in production mode"})
             return
         }
-        // В режиме разработки используем фиксированный Telegram ID (ваш)
+        // В режиме разработки используем фиксированный Telegram ID
         telegramID = 1977550186
     }
 
@@ -113,10 +116,12 @@ func WebAppAuthHandler(c *gin.Context) {
         `SELECT id FROM users WHERE telegram_id = $1`, telegramID).Scan(&userID)
 
     if err != nil {
+        // Пользователь не найден — создаём нового
         email := fmt.Sprintf("tg_%d@placeholder.com", telegramID)
         name := fmt.Sprintf("user_%d", telegramID)
         randomPass := uuid.New().String()[:12]
 
+        // Создаём пользователя
         newUser, err := models.CreateUser(email, randomPass, name)
         if err != nil {
             c.JSON(500, gin.H{"error": "failed to create user"})
@@ -124,6 +129,7 @@ func WebAppAuthHandler(c *gin.Context) {
         }
         userID = newUser.ID
 
+        // Обновляем telegram_id
         _, err = database.Pool.Exec(c.Request.Context(),
             `UPDATE users SET telegram_id = $1 WHERE id = $2`, telegramID, userID)
         if err != nil {
@@ -132,17 +138,16 @@ func WebAppAuthHandler(c *gin.Context) {
         }
     }
 
+    // Получаем данные пользователя
     user, err := models.GetUserByID(userID)
     if err != nil {
         c.JSON(500, gin.H{"error": "user not found"})
         return
     }
 
+    // Временно отключаем проверку подписки
     var subscription interface{}
-    sub, err := models.GetUserActivePlan(userID)
-    if err == nil {
-        subscription = sub
-    }
+    // TODO: добавить проверку подписки позже
 
     c.JSON(200, gin.H{
         "user": gin.H{

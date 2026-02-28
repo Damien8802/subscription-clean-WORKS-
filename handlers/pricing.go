@@ -1,27 +1,25 @@
 package handlers
 
 import (
-"net/http"
-"subscription-system/models"
+    "net/http"
 
-"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
+    "subscription-system/models"
 )
 
+// PricingPageHandler отображает страницу с тарифами
 func PricingPageHandler(c *gin.Context) {
-plans, err := models.GetAllActivePlans()
-if err != nil {
-// Если ошибка – показываем пустой список, но не 500
-c.HTML(http.StatusOK, "pricing.html", gin.H{
-"Title":   "Тарифы - SaaSPro",
-"Version": "3.0",
-"Plans":   []models.Plan{},
-"Error":   "Не удалось загрузить тарифы",
-})
-return
-}
-c.HTML(http.StatusOK, "pricing.html", gin.H{
-"Title":   "Тарифы - SaaSPro",
-"Version": "3.0",
-"Plans":   plans,
-})
+    plans, err := models.GetAllPlans()
+    if err != nil {
+        c.HTML(http.StatusInternalServerError, "pricing.html", gin.H{
+            "Title": "Ошибка",
+            "Error": "Не удалось загрузить тарифы",
+        })
+        return
+    }
+
+    c.HTML(http.StatusOK, "pricing.html", gin.H{
+        "Title": "Тарифы - SaaSPro",
+        "Plans": plans,
+    })
 }
