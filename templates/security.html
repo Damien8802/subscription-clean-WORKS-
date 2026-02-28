@@ -112,7 +112,6 @@
             margin-top: 20px;
         }
         
-        /* ←←← ИСПРАВЛЕНО: теперь элементы в строку, а не столбиком */
         .session-item {
             background: #f8f9fa;
             border-radius: 10px;
@@ -184,7 +183,6 @@
             margin-top: 20px;
         }
         
-        /* ←←← ИСПРАВЛЕНО: теперь QR-код нормально отображается, а не красный квадрат */
         #qrcode {
             text-align: center;
             margin: 20px 0;
@@ -192,7 +190,7 @@
         #qrcode img {
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            display: inline-block; /* ←←← чтобы не было красного квадрата */
+            display: inline-block;
         }
         .secret-key {
             background: #f8f9fa;
@@ -203,6 +201,25 @@
             text-align: center;
             margin: 10px 0;
             word-break: break-all;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -222,8 +239,8 @@
                     <p>Защитите свой аккаунт дополнительным кодом</p>
                 </div>
                 <div>
-                    <span class="badge badge-warning" id="2faStatus"><i class="fas fa-times-circle"></i> Выключено</span>
-                    <button class="btn-outline" onclick="enable2FA()" id="2faBtn"><i class="fas fa-qrcode"></i> Включить</button>
+                    <span class="badge badge-warning" id="2faStatus"><i class="fas fa-times-circle"></i> Проверка...</span>
+                    <button class="btn-outline" onclick="setup2FA()" id="2faBtn"><i class="fas fa-qrcode"></i> Настроить</button>
                 </div>
             </div>
         </div>
@@ -240,7 +257,7 @@
             </div>
         </div>
 
-        <!-- ←←← АКТИВНЫЕ СЕССИИ (ЗДЕСЬ БЫЛА СТРЕЛКА) — ИСПРАВЛЕНО -->
+        <!-- Активные сессии -->
         <div class="security-card">
             <h2><i class="fas fa-laptop"></i> Активные сессии</h2>
             <div class="sessions-list">
@@ -268,7 +285,7 @@
             </button>
         </div>
 
-        <!-- ←←← ИСТОРИЯ ВХОДОВ (ЗДЕСЬ БЫЛА СТРЕЛКА) — ИСПРАВЛЕНО -->
+        <!-- История входов -->
         <div class="security-card">
             <h2><i class="fas fa-history"></i> История входов</h2>
             <div class="sessions-list">
@@ -313,30 +330,59 @@
             </div>
         </div>
 
-        <!-- ←←← МОДАЛЬНОЕ ОКНО 2FA (ЗДЕСЬ БЫЛ КРАСНЫЙ КВАДРАТ) — ИСПРАВЛЕНО -->
+        <!-- Модальное окно 2FA с 3 шагами -->
         <div class="modal" id="2faModal">
             <div class="modal-content">
                 <h3><i class="fas fa-qrcode"></i> Настройка 2FA</h3>
-                <p>Отсканируйте QR-код в приложении Google Authenticator или Authy:</p>
                 
-                <!-- ←←← ТЕПЕРЬ ЗДЕСЬ НАСТОЯЩИЙ QR, А НЕ КРАСНЫЙ КВАДРАТ -->
-                <div id="qrcode"></div>
-                
-                <div class="secret-key" id="secretKey">JBSWY3DPEHPK3PXP</div>
-                
-                <p style="font-size: 13px; color: #666; text-align: center;">
-                    <i class="fas fa-info-circle"></i> 
-                    Не можете отсканировать? Введите этот ключ вручную.
-                </p>
-                
-                <input type="text" placeholder="Введите 6-значный код" id="2faCode" maxlength="6">
-                
-                <div class="modal-buttons">
-                    <button class="btn" style="flex:1;" onclick="confirm2FA()">
-                        <i class="fas fa-check"></i> Подтвердить
+                <!-- Шаг 1: Генерация QR -->
+                <div id="step1" class="step active">
+                    <div id="qrcode" style="text-align: center; margin: 20px 0;"></div>
+                    <div id="secretKey" class="secret-key">Генерация...</div>
+                    <p style="font-size: 13px; color: #666; text-align: center;">
+                        <i class="fas fa-info-circle"></i> 
+                        Отсканируйте QR-код в Google Authenticator или Authy
+                    </p>
+                    <button class="btn" style="width: 100%;" onclick="goToStep2()">
+                        <i class="fas fa-arrow-right"></i> Продолжить
                     </button>
-                    <button class="btn-outline" style="flex:1;" onclick="closeModal()">
-                        <i class="fas fa-times"></i> Отмена
+                </div>
+                
+                <!-- Шаг 2: Ввод кода -->
+                <div id="step2" class="step">
+                    <p>Введите 6-значный код из приложения:</p>
+                    <input type="text" placeholder="Код" id="2faCode" maxlength="6">
+                    <div class="modal-buttons">
+                        <button class="btn" style="flex:1;" onclick="verify2FA()">
+                            <i class="fas fa-check"></i> Подтвердить
+                        </button>
+                        <button class="btn-outline" style="flex:1;" onclick="closeModal()">
+                            <i class="fas fa-times"></i> Отмена
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Шаг 3: Успех -->
+                <div id="step3" class="step">
+                    <div style="text-align: center; margin: 20px 0;">
+                        <i class="fas fa-check-circle" style="font-size: 64px; color: #4caf50;"></i>
+                    </div>
+                    <h3 style="text-align: center; color: #4caf50;">✅ 2FA включена!</h3>
+                    <p style="text-align: center; margin: 20px 0;">Теперь при каждом входе нужно будет вводить код.</p>
+                    <button class="btn" style="width: 100%;" onclick="closeModal()">
+                        <i class="fas fa-check"></i> Готово
+                    </button>
+                </div>
+                
+                <!-- Шаг 4: Ошибка -->
+                <div id="stepError" class="step">
+                    <div style="text-align: center; margin: 20px 0;">
+                        <i class="fas fa-times-circle" style="font-size: 64px; color: #f44336;"></i>
+                    </div>
+                    <h3 style="text-align: center; color: #f44336;">❌ Ошибка</h3>
+                    <p id="errorMessage" style="text-align: center; margin: 20px 0;"></p>
+                    <button class="btn" style="width: 100%;" onclick="goToStep1()">
+                        <i class="fas fa-redo"></i> Попробовать снова
                     </button>
                 </div>
             </div>
@@ -348,6 +394,140 @@
     <!-- Библиотека для QR-кода -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
+        const userId = localStorage.getItem('userId') || 'test-user-123';
+        let currentSecret = '';
+
+        // Загружаем статус 2FA при загрузке страницы
+        async function load2FAStatus() {
+            try {
+                const response = await fetch(`/api/2fa/status?user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.exists) {
+                    if (data.enabled) {
+                        document.getElementById('2faStatus').innerHTML = '<i class="fas fa-check-circle"></i> Включено';
+                        document.getElementById('2faStatus').className = 'badge badge-success';
+                        document.getElementById('2faBtn').innerHTML = '<i class="fas fa-shield-alt"></i> Выключить';
+                        document.getElementById('2faBtn').onclick = disable2FA;
+                    } else {
+                        document.getElementById('2faStatus').innerHTML = '<i class="fas fa-times-circle"></i> Настроено, но не активно';
+                        document.getElementById('2faStatus').className = 'badge badge-warning';
+                        document.getElementById('2faBtn').innerHTML = '<i class="fas fa-qrcode"></i> Активировать';
+                        document.getElementById('2faBtn').onclick = setup2FA;
+                    }
+                } else {
+                    document.getElementById('2faStatus').innerHTML = '<i class="fas fa-times-circle"></i> Не настроено';
+                    document.getElementById('2faStatus').className = 'badge badge-warning';
+                    document.getElementById('2faBtn').innerHTML = '<i class="fas fa-qrcode"></i> Настроить';
+                    document.getElementById('2faBtn').onclick = setup2FA;
+                }
+            } catch (e) {
+                console.error('Error loading 2FA status:', e);
+            }
+        }
+
+        function goToStep1() {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+        }
+
+        function goToStep2() {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('step2').classList.add('active');
+        }
+
+        function showError(message) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById('stepError').classList.add('active');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        async function setup2FA() {
+            document.getElementById('2faModal').style.display = 'flex';
+            goToStep1();
+            
+            try {
+                const response = await fetch(`/api/2fa/generate?user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSecret = data.secret;
+                    
+                    // Очищаем и создаём QR
+                    document.getElementById('qrcode').innerHTML = '';
+                    new QRCode(document.getElementById('qrcode'), {
+                        text: data.url,
+                        width: 200,
+                        height: 200,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    document.getElementById('secretKey').textContent = data.secret;
+                } else {
+                    showError('Не удалось сгенерировать QR-код');
+                }
+            } catch (e) {
+                showError('Ошибка соединения с сервером');
+            }
+        }
+
+        async function verify2FA() {
+            const code = document.getElementById('2faCode').value;
+            
+            if (!code || code.length !== 6) {
+                alert('❌ Введите 6-значный код');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, code: code })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+                    document.getElementById('step3').classList.add('active');
+                    load2FAStatus();
+                } else {
+                    showError('Неверный код. Попробуйте ещё раз.');
+                }
+            } catch (e) {
+                showError('Ошибка соединения с сервером');
+            }
+        }
+
+        async function disable2FA() {
+            if (!confirm('Выключить двухфакторную аутентификацию?')) return;
+            
+            const code = prompt('Введите код из Google Authenticator для подтверждения:');
+            if (!code) return;
+            
+            try {
+                const response = await fetch('/api/2fa/disable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, code: code })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ 2FA отключена');
+                    load2FAStatus();
+                } else {
+                    alert('❌ Неверный код');
+                }
+            } catch (e) {
+                alert('❌ Ошибка соединения с сервером');
+            }
+        }
+
         function showChangePassword() {
             document.getElementById('passwordModal').style.display = 'flex';
         }
@@ -376,53 +556,6 @@
             closeModal();
         }
 
-        function enable2FA() {
-            document.getElementById('2faModal').style.display = 'flex';
-            
-            // Очищаем предыдущий QR если был
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-            
-            // Данные для QR
-            const secret = 'JBSWY3DPEHPK3PXP';
-            const otpauth = `otpauth://totp/SaaSPro:user@example.com?secret=${secret}&issuer=SaaSPro`;
-            
-            // Создаём QR-код
-            new QRCode(document.getElementById('qrcode'), {
-                text: otpauth,
-                width: 200,
-                height: 200,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        }
-
-        function confirm2FA() {
-            const code = document.getElementById('2faCode').value;
-            if (!code || code.length !== 6) {
-                alert('❌ Введите 6-значный код');
-                return;
-            }
-            
-            document.getElementById('2faStatus').innerHTML = '<i class="fas fa-check-circle"></i> Включено';
-            document.getElementById('2faStatus').className = 'badge badge-success';
-            document.getElementById('2faBtn').innerHTML = '<i class="fas fa-shield-alt"></i> Выключить';
-            document.getElementById('2faBtn').onclick = disable2FA;
-            closeModal();
-            alert('✅ 2FA успешно включена');
-        }
-
-        function disable2FA() {
-            if (confirm('Выключить двухфакторную аутентификацию?')) {
-                document.getElementById('2faStatus').innerHTML = '<i class="fas fa-times-circle"></i> Выключено';
-                document.getElementById('2faStatus').className = 'badge badge-warning';
-                document.getElementById('2faBtn').innerHTML = '<i class="fas fa-qrcode"></i> Включить';
-                document.getElementById('2faBtn').onclick = enable2FA;
-                alert('❌ 2FA выключена');
-            }
-        }
-
         function terminateSession() {
             if (confirm('Завершить эту сессию?')) {
                 alert('✅ Сессия завершена');
@@ -441,6 +574,9 @@
                 event.target.style.display = 'none';
             }
         }
+
+        // Загружаем статус при старте
+        load2FAStatus();
     </script>
 </body>
 </html>

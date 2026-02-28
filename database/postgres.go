@@ -38,6 +38,9 @@ func InitDB(cfg *config.Config) error {
     if err := createReferralsTable(); err != nil {
         return fmt.Errorf("failed to create referrals table: %w", err)
     }
+    if err := createTwoFATable(); err != nil {
+        return fmt.Errorf("failed to create twofa table: %w", err)
+    }
     if err := createTestUser(); err != nil {
         return err
     }
@@ -242,6 +245,35 @@ func createReferralsTable() error {
     }
 
     log.Println("✅ Таблица referrals готова")
+    return nil
+}
+
+// createTwoFATable создаёт таблицу для 2FA
+func createTwoFATable() error {
+    _, err := Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS twofa (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            secret VARCHAR(255) NOT NULL,
+            enabled BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW(),
+            UNIQUE(user_id)
+        );
+    `)
+    if err != nil {
+        return err
+    }
+
+    // Индекс для быстрого поиска
+    _, err = Pool.Exec(context.Background(), `
+        CREATE INDEX IF NOT EXISTS idx_twofa_user_id ON twofa(user_id);
+    `)
+    if err != nil {
+        return err
+    }
+
+    log.Println("✅ Таблица twofa готова")
     return nil
 }
 

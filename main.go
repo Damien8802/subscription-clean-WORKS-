@@ -233,6 +233,11 @@ func main() {
         api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
         api.GET("/referral/stats", handlers.GetReferralStatsHandler)
         api.GET("/referral/friends", handlers.GetReferralFriendsHandler)
+        // В блоке api добавь:
+        api.GET("/2fa/status", handlers.GetTwoFAStatus)
+        api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
+        api.POST("/2fa/verify", handlers.VerifyTwoFACode)
+        api.POST("/2fa/disable", handlers.DisableTwoFA)
         
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
