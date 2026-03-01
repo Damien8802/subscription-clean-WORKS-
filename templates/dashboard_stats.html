@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд статистики | SaaSPro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        .header h1 {
+            font-size: 32px;
+        }
+        .date-range {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .date-range select {
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+        .stat-trend {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .trend-up { color: #48bb78; }
+        .trend-down { color: #f56565; }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .chart-legend {
+            display: flex;
+            gap: 15px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        /* График (имитация) */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            margin: 20px 0;
+        }
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40px;
+        }
+        .bar {
+            width: 30px;
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            border-radius: 6px 6px 0 0;
+            transition: height 0.3s;
+        }
+        .bar-label {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .pie-chart {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 50%;
+            background: conic-gradient(
+                #667eea 0% 40%,
+                #48bb78 40% 65%,
+                #fbbf24 65% 85%,
+                #f87171 85% 100%
+            );
+        }
+        
+        .tables-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        .table-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th {
+            text-align: left;
+            padding: 12px;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #48bb78; color: white; }
+        .badge-warning { background: #fbbf24; color: white; }
+        .badge-danger { background: #f87171; color: white; }
+        
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Дашборд статистики</h1>
+            <div class="date-range">
+                <select id="period">
+                    <option value="today">Сегодня</option>
+                    <option value="week" selected>Эта неделя</option>
+                    <option value="month">Этот месяц</option>
+                    <option value="year">Год</option>
+                </select>
+                <button onclick="refreshData()" style="padding: 8px 16px; background: white; border: none; border-radius: 5px; cursor: pointer;">🔄 Обновить</button>
+            </div>
+        </div>
+        
+        <!-- Карточки статистики -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🤖</div>
+                <div class="stat-label">AI запросов</div>
+                <div class="stat-value">12,847</div>
+                <div class="stat-trend trend-up">↑ 12% vs прошлая неделя</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-label">Активные пользователи</div>
+                <div class="stat-value">1,432</div>
+                <div class="stat-trend trend-up">↑ 8% vs прошлая неделя</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-label">Доход</div>
+                <div class="stat-value">248,590 ₽</div>
+                <div class="stat-trend trend-up">↑ 15% vs прошлая неделя</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-label">Средняя длина ответа</div>
+                <div class="stat-value">847 токенов</div>
+                <div class="stat-trend trend-down">↓ 3% vs прошлая неделя</div>
+            </div>
+        </div>
+        
+        <!-- Графики -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Использование AI по дням</div>
+                    <div class="chart-legend">
+                        <div class="legend-item"><span class="legend-color" style="background: #667eea;"></span> Запросы</div>
+                        <div class="legend-item"><span class="legend-color" style="background: #48bb78;"></span> Токены</div>
+                    </div>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Распределение по тарифам</div>
+                </div>
+                <div class="pie-chart"></div>
+                <div style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Базовый</span>
+                        <span>40%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Семейный</span>
+                        <span>25%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Профессиональный</span>
+                        <span>20%</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Корпоративный</span>
+                        <span>15%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Таблицы -->
+        <div class="tables-grid">
+            <div class="table-card">
+                <div class="chart-title">🔥 Топ пользователей</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Пользователь</th>
+                            <th>Тариф</th>
+                            <th>Запросов</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ivan@mail.ru</td>
+                            <td>Корпоративный</td>
+                            <td>2,847</td>
+                            <td><span class="badge badge-success">Активен</span></td>
+                        </tr>
+                        <tr>
+                            <td>petr@mail.ru</td>
+                            <td>Профессиональный</td>
+                            <td>1,432</td>
+                            <td><span class="badge badge-success">Активен</span></td>
+                        </tr>
+                        <tr>
+                            <td>anna@mail.ru</td>
+                            <td>Семейный</td>
+                            <td>847</td>
+                            <td><span class="badge badge-warning">Близко к лимиту</span></td>
+                        </tr>
+                        <tr>
+                            <td>sergey@mail.ru</td>
+                            <td>Базовый</td>
+                            <td>234</td>
+                            <td><span class="badge badge-success">Активен</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-card">
+                <div class="chart-title">💰 Последние платежи</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Пользователь</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>01.03.2026</td>
+                            <td>ooo@company.ru</td>
+                            <td>99,900 ₽</td>
+                            <td><span class="badge badge-success">Оплачено</span></td>
+                        </tr>
+                        <tr>
+                            <td>28.02.2026</td>
+                            <td>startup@mail.ru</td>
+                            <td>29,900 ₽</td>
+                            <td><span class="badge badge-success">Оплачено</span></td>
+                        </tr>
+                        <tr>
+                            <td>27.02.2026</td>
+                            <td>family@mail.ru</td>
+                            <td>24,900 ₽</td>
+                            <td><span class="badge badge-success">Оплачено</span></td>
+                        </tr>
+                        <tr>
+                            <td>26.02.2026</td>
+                            <td>user@mail.ru</td>
+                            <td>9,900 ₽</td>
+                            <td><span class="badge badge-warning">В обработке</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- График использования квот -->
+        <div class="chart-card" style="margin-top: 25px;">
+            <div class="chart-header">
+                <div class="chart-title">Использование квот по тарифам</div>
+            </div>
+            <div class="bar-chart">
+                <div class="bar-group">
+                    <div class="bar" style="height: 160px;"></div>
+                    <div class="bar-label">Базовый</div>
+                    <div>78%</div>
+                </div>
+                <div class="bar-group">
+                    <div class="bar" style="height: 120px;"></div>
+                    <div class="bar-label">Семейный</div>
+                    <div>52%</div>
+                </div>
+                <div class="bar-group">
+                    <div class="bar" style="height: 90px;"></div>
+                    <div class="bar-label">Проф</div>
+                    <div>43%</div>
+                </div>
+                <div class="bar-group">
+                    <div class="bar" style="height: 60px;"></div>
+                    <div class="bar-label">Корп</div>
+                    <div>28%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function refreshData() {
+            const period = document.getElementById('period').value;
+            alert(`Обновление данных за ${period}`);
+            // Здесь будет загрузка реальных данных
+        }
+        
+        // Инициализация Chart.js графика
+        window.onload = function() {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [{
+                        label: 'Запросы',
+                        data: [1200, 1900, 1500, 2200, 2800, 1800, 2100],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102,126,234,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Токены',
+                        data: [45000, 68000, 52000, 81000, 105000, 67000, 79000],
+                        borderColor: '#48bb78',
+                        backgroundColor: 'rgba(72,187,120,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

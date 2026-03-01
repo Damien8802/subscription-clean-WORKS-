@@ -180,6 +180,7 @@ func main() {
         dashboards.GET("/revenue-dashboard", handlers.RevenueDashboardHandler)
         dashboards.GET("/partner-dashboard", handlers.PartnerDashboardHandler)
         dashboards.GET("/unified-dashboard", handlers.UnifiedDashboardHandler)
+        dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler) 
     }
 
     // ========== ПЛАТЕЖИ ==========
