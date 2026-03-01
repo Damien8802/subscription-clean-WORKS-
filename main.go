@@ -47,7 +47,7 @@ func main() {
     r.SetTrustedProxies(cfg.TrustedProxies)
     r.Use(middleware.SetupCORS(cfg))
 
-    // Загрузка шаблонов (без изменений) ...
+    // Загрузка шаблонов
     subFS, err := fs.Sub(templateFS, "templates")
     if err != nil {
         log.Fatalf("❌ Не удалось открыть встроенные шаблоны: %v", err)
@@ -103,7 +103,7 @@ func main() {
     r.SetHTMLTemplate(tmpl)
     log.Println("✅ Шаблоны загружены из embed.FS")
 
-    // ========== СТАТИКА, РЕДИРЕКТЫ, ПУБЛИЧНЫЕ И ЗАЩИЩЕННЫЕ МАРШРУТЫ (без изменений) ==========
+    // ========== СТАТИКА, РЕДИРЕКТЫ ==========
     r.Static("/static", cfg.StaticPath)
     r.Static("/frontend", cfg.FrontendPath)
     r.Static("/app", "C:/Projects/subscription-clean-WORKS/telegram-mini-app")
@@ -120,7 +120,7 @@ func main() {
     r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
 
-    // Публичные, защищенные, админские и другие группы маршрутов (без изменений) ...
+    // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
     public := r.Group("/")
     {
         public.GET("/", handlers.HomeHandler)
@@ -131,6 +131,7 @@ func main() {
         public.GET("/partner", handlers.PartnerHandler)
     }
 
+    // ========== СТРАНИЦЫ АВТОРИЗАЦИИ ==========
     authPages := r.Group("/")
     {
         authPages.GET("/login", handlers.LoginPageHandler)
@@ -138,6 +139,7 @@ func main() {
         authPages.GET("/forgot-password", handlers.ForgotPasswordHandler)
     }
 
+    // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
     protected := r.Group("/")
     protected.Use(middleware.AuthMiddleware(cfg))
     {
@@ -150,6 +152,7 @@ func main() {
         protected.GET("/profile", handlers.ProfilePageHandler)
     }
 
+    // ========== АДМИН СТРАНИЦЫ ==========
     admin := r.Group("/")
     admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
@@ -166,6 +169,7 @@ func main() {
         admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
     }
 
+    // ========== ДАШБОРДЫ ==========
     dashboards := r.Group("/")
     dashboards.Use(middleware.AuthMiddleware(cfg))
     {
@@ -176,6 +180,7 @@ func main() {
         dashboards.GET("/unified-dashboard", handlers.UnifiedDashboardHandler)
     }
 
+    // ========== ПЛАТЕЖИ ==========
     payments := r.Group("/")
     payments.Use(middleware.AuthMiddleware(cfg))
     {
@@ -186,6 +191,7 @@ func main() {
         payments.GET("/rub-payment", handlers.RUBPaymentHandler)
     }
 
+    // ========== ЛОГИСТИКА ==========
     logistics := r.Group("/")
     logistics.Use(middleware.AuthMiddleware(cfg))
     {
@@ -193,52 +199,83 @@ func main() {
         logistics.GET("/track", handlers.TrackHandler)
     }
 
+    // ========== API ДОСТАВКИ ==========
     deliveryAPI := r.Group("/api/delivery")
     deliveryAPI.Use(middleware.AuthMiddleware(cfg))
     {
         deliveryAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
     }
 
-    // API (JSON)
+    // ========== API (JSON) ==========
     api := r.Group("/api")
     {
+        // Публичные API
         api.GET("/health", handlers.HealthHandler)
         api.GET("/crm/health", handlers.CRMHealthHandler)
         api.GET("/system/stats", handlers.SystemStatsHandler)
         api.GET("/test", handlers.TestHandler)
+        
+        // Аутентификация
         api.POST("/auth/register", handlers.RegisterHandler)
         api.POST("/auth/login", handlers.LoginHandler)
         api.POST("/auth/refresh", handlers.RefreshHandler)
+        
+        // Пользователь
         api.POST("/user/profile", handlers.UpdateProfileHandler)
         api.POST("/user/password", handlers.UpdatePasswordHandler)
+        
+        // Планы и подписки
         api.GET("/plans", handlers.GetPlansHandler)
         api.POST("/subscriptions", handlers.CreateSubscriptionHandler)
+        
+        // AI
         api.POST("/ai/ask", handlers.AIAskHandler)
+        api.POST("/ai/ask-with-file", handlers.AskWithFileHandler)
+        
+        // Подписки пользователя
         api.GET("/user/subscriptions", handlers.GetUserSubscriptionsHandler)
         api.GET("/user/ai-usage", handlers.GetUserAIUsageHandler)
+        
+        // Telegram
         api.POST("/telegram/ensure-key", handlers.EnsureAPIKeyForTelegram)
         api.POST("/webapp/auth", handlers.WebAppAuthHandler)
+        
+        // Чат
         api.POST("/chat/save", handlers.SaveChatMessage)
         api.GET("/chat/history", handlers.GetChatHistory)
-        api.POST("/ai/ask-with-file", handlers.AskWithFileHandler)
+        
+        // База знаний
         api.POST("/knowledge/upload", handlers.UploadKnowledgeHandler)
         api.GET("/knowledge/list", handlers.ListKnowledgeHandler)
         api.DELETE("/knowledge/delete/:id", handlers.DeleteKnowledgeHandler)
-        // Рассылки (Email и SMS)
+        
+        // Уведомления
         api.POST("/notify", handlers.NotifyHandler)
-        // В блоке api добавь:
+        
+        // API ключи
         api.POST("/keys/create", handlers.CreateAPIKeyHandler)
         api.GET("/user/keys", handlers.GetUserAPIKeysHandler)
         api.POST("/keys/revoke", handlers.RevokeAPIKeyHandler)
         api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
+        
+        // Рефералы
         api.GET("/referral/stats", handlers.GetReferralStatsHandler)
         api.GET("/referral/friends", handlers.GetReferralFriendsHandler)
-        // В блоке api добавь:
+        
+        // ===== 2FA МАРШРУТЫ =====
         api.GET("/2fa/status", handlers.GetTwoFAStatus)
         api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
         api.POST("/2fa/verify", handlers.VerifyTwoFACode)
         api.POST("/2fa/disable", handlers.DisableTwoFA)
         
+        // НОВЫЕ РАСШИРЕННЫЕ 2FA МАРШРУТЫ
+        api.GET("/2fa/settings", handlers.Get2FASettings)
+        api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
+        api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
+        api.POST("/2fa/trust-device", handlers.TrustDevice)
+        api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+        
+        // Защищенные API
         authAPI := api.Group("/")
         authAPI.Use(middleware.AuthMiddleware(cfg))
         {
@@ -247,23 +284,24 @@ func main() {
         }
     }
 
+    // ========== УВЕДОМЛЕНИЯ ==========
     r.GET("/notify", handlers.NotifyPageHandler)
 
-    // ========== ДРУГИЕ ГРУППЫ МАРШРУТОВ (без изменений) ==========
+    // ========== ПОЛЬЗОВАТЕЛЬСКИЕ КЛЮЧИ ==========
     userKeys := r.Group("/api/user/keys")
     userKeys.Use(middleware.AuthMiddleware(cfg))
     {
-        //userKeys.GET("/", handlers.ListAPIKeysHandler)
-        //userKeys.POST("/", handlers.GenerateAPIKeyHandler)
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
+    // ========== API V1 ==========
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
-        //v1.POST("/chat/completions", handlers.ChatCompletionsHandler)
+        // Зарезервировано для будущих эндпоинтов
     }
 
+    // ========== АДМИН API ==========
     adminAPI := r.Group("/api/admin")
     adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
@@ -278,13 +316,9 @@ func main() {
         adminAPI.GET("/stats", handlers.AdminStatsHandler)
         adminAPI.GET("/users", handlers.AdminUsersHandler)
         adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
-        
     }
 
-   
-    
-
-    // 404
+    // ========== 404 ==========
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
             "Title":   "Страница не найдена - SaaSPro",
@@ -292,7 +326,7 @@ func main() {
         })
     })
 
-    // Баннер (без изменений) ...
+    // ========== БАННЕР ==========
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port
     fmt.Printf("\n============================================================\n")
