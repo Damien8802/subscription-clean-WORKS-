@@ -16,6 +16,45 @@
             max-width: 1400px;
             margin: 0 auto;
         }
+        
+        /* Навигационное меню */
+        .navbar {
+            background: white;
+            border-radius: 50px;
+            padding: 15px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 30px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            color: #667eea;
+            background: #f0f3ff;
+        }
+        
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
         .header {
             display: flex;
             justify-content: space-between;
@@ -25,19 +64,38 @@
         }
         .header h1 {
             font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .date-range {
             background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
             padding: 10px 20px;
-            border-radius: 10px;
+            border-radius: 50px;
             display: flex;
             gap: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
         }
         .date-range select {
-            padding: 8px;
-            border-radius: 5px;
+            padding: 8px 15px;
+            border-radius: 30px;
             border: none;
+            background: white;
+            font-weight: 500;
         }
+        .refresh-btn {
+            padding: 8px 16px;
+            background: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -50,11 +108,18 @@
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             transition: transform 0.3s;
+            animation: slideUp 0.5s ease;
         }
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .stat-icon {
             font-size: 24px;
             margin-bottom: 15px;
@@ -63,6 +128,8 @@
             color: #666;
             font-size: 14px;
             margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .stat-value {
             font-size: 28px;
@@ -72,6 +139,9 @@
         .stat-trend {
             font-size: 14px;
             margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         .trend-up { color: #48bb78; }
         .trend-down { color: #f56565; }
@@ -87,6 +157,7 @@
             border-radius: 20px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: slideUp 0.5s ease;
         }
         .chart-header {
             display: flex;
@@ -115,7 +186,6 @@
             border-radius: 3px;
         }
         
-        /* График (имитация) */
         .bar-chart {
             display: flex;
             align-items: flex-end;
@@ -164,6 +234,7 @@
             border-radius: 20px;
             padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: slideUp 0.5s ease;
         }
         table {
             width: 100%;
@@ -202,11 +273,43 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            .date-range {
+                justify-content: space-between;
+            }
+            .nav-links {
+                gap: 10px;
+            }
+            .nav-link {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
+        <!-- Навигационное меню -->
+        <div class="navbar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Главная</a>
+                <a href="/pricing" class="nav-link">💰 Тарифы</a>
+                <a href="/ai" class="nav-link">🤖 AI чат</a>
+                <a href="/ai-settings" class="nav-link">⚙️ Настройки AI</a>
+                <a href="/dashboard-stats" class="nav-link active">📊 Статистика</a>
+                <a href="/security" class="nav-link">🔐 Безопасность</a>
+                <a href="/trusted-devices" class="nav-link">📱 Устройства</a>
+                <a href="/profile" class="nav-link">👤 Профиль</a>
+            </div>
+        </div>
+        
         <div class="header">
             <h1>📊 Дашборд статистики</h1>
             <div class="date-range">
@@ -216,7 +319,7 @@
                     <option value="month">Этот месяц</option>
                     <option value="year">Год</option>
                 </select>
-                <button onclick="refreshData()" style="padding: 8px 16px; background: white; border: none; border-radius: 5px; cursor: pointer;">🔄 Обновить</button>
+                <button class="refresh-btn" onclick="refreshData()">🔄 Обновить</button>
             </div>
         </div>
         
@@ -405,7 +508,19 @@
     <script>
         function refreshData() {
             const period = document.getElementById('period').value;
-            alert(`Обновление данных за ${period}`);
+            const btn = document.querySelector('.refresh-btn');
+            btn.innerHTML = '⏳ Обновление...';
+            btn.disabled = true;
+            
+            // Имитация загрузки
+            setTimeout(() => {
+                btn.innerHTML = '✅ Обновлено';
+                setTimeout(() => {
+                    btn.innerHTML = '🔄 Обновить';
+                    btn.disabled = false;
+                }, 1000);
+            }, 1000);
+            
             // Здесь будет загрузка реальных данных
         }
         

@@ -16,11 +16,82 @@
             max-width: 1400px;
             margin: 0 auto;
         }
+        
+        /* Навигационное меню */
+        .navbar {
+            background: white;
+            border-radius: 50px;
+            padding: 15px 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 30px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            color: #667eea;
+            background: #f0f3ff;
+        }
+        
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        /* Быстрый доступ */
+        .quick-access {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .quick-link {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            background: rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .quick-link:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
         h1 {
             text-align: center;
             color: white;
             font-size: 48px;
             margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .subtitle {
             text-align: center;
@@ -150,29 +221,93 @@
             color: white;
             font-weight: bold;
         }
+        
+        /* Блок "Почему мы" */
+        .why-us {
+            margin-top: 60px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            color: white;
+        }
+        
+        .why-item {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .why-icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .why-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .why-text {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
         @media (max-width: 1200px) {
-            .plans {
+            .plans, .why-us {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
         @media (max-width: 768px) {
-            .plans {
+            .plans, .why-us {
                 grid-template-columns: 1fr;
             }
             h1 {
                 font-size: 36px;
+            }
+            .nav-links {
+                gap: 10px;
+            }
+            .nav-link {
+                font-size: 12px;
+                padding: 5px 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Навигационное меню -->
+        <div class="navbar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Главная</a>
+                <a href="/pricing" class="nav-link active">💰 Тарифы</a>
+                <a href="/ai" class="nav-link">🤖 AI чат</a>
+                <a href="/ai-settings" class="nav-link">⚙️ Настройки AI</a>
+                <a href="/dashboard-stats" class="nav-link">📊 Статистика</a>
+                <a href="/security" class="nav-link">🔐 Безопасность</a>
+                <a href="/trusted-devices" class="nav-link">📱 Устройства</a>
+                <a href="/profile" class="nav-link">👤 Профиль</a>
+            </div>
+        </div>
+        
+        <!-- Быстрый доступ к функциям -->
+        <div class="quick-access">
+            <a href="/ai" class="quick-link">🤖 AI ассистент</a>
+            <a href="/dashboard-stats" class="quick-link">📊 Моя статистика</a>
+            <a href="/security" class="quick-link">🔐 Безопасность</a>
+            <a href="/trusted-devices" class="quick-link">📱 Устройства</a>
+        </div>
+        
         <h1>💰 Выберите тариф</h1>
         <div class="subtitle">Прозрачные цены, никаких скрытых платежей. Все тарифы включают полный доступ к платформе.</div>
         
         <div class="plans">
             <!-- Базовый тариф -->
-            <div class="plan" onclick="location.href='/payment?plan=basic&price=990'">
+            <div class="plan" onclick="location.href='/payment?plan=basic&period=monthly'">
                 <div class="plan-name">Базовый</div>
                 <div class="plan-price">990 <span>₽/мес</span></div>
                 <div class="yearly-note">9 900 ₽/год</div>
@@ -183,11 +318,11 @@
                     <li>🤖 10 AI-запросов/день</li>
                     <li>📝 Базовая модель AI</li>
                 </ul>
-                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=basic&price=990'">Выбрать</button>
+                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=basic&period=monthly'">Выбрать</button>
             </div>
 
-            <!-- Семейный (НОВЫЙ) -->
-            <div class="plan" onclick="location.href='/payment?plan=family&price=2490'">
+            <!-- Семейный -->
+            <div class="plan" onclick="location.href='/payment?plan=family&period=monthly'">
                 <div class="family-badge">👪 Для семьи</div>
                 <div class="plan-name">Семейный</div>
                 <div class="plan-price">2 490 <span>₽/мес</span></div>
@@ -201,11 +336,11 @@
                     <li>👶 Детский режим</li>
                     <li>📚 Общая библиотека</li>
                 </ul>
-                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=family&price=2490'">Выбрать</button>
+                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=family&period=monthly'">Выбрать</button>
             </div>
 
             <!-- Профессиональный -->
-            <div class="plan" onclick="location.href='/payment?plan=pro&price=2990'">
+            <div class="plan" onclick="location.href='/payment?plan=pro&period=monthly'">
                 <div class="popular-badge">🔥 Популярный</div>
                 <div class="plan-name">Профессиональный</div>
                 <div class="plan-price">2 990 <span>₽/мес</span></div>
@@ -219,11 +354,11 @@
                     <li>🚀 Продвинутая модель AI</li>
                     <li>📎 Загрузка файлов</li>
                 </ul>
-                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=pro&price=2990'">Выбрать</button>
+                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=pro&period=monthly'">Выбрать</button>
             </div>
 
             <!-- Корпоративный -->
-            <div class="plan" onclick="location.href='/payment?plan=enterprise&price=9990'">
+            <div class="plan" onclick="location.href='/payment?plan=enterprise&period=monthly'">
                 <div class="plan-name">Корпоративный</div>
                 <div class="plan-price">9 990 <span>₽/мес</span></div>
                 <div class="yearly-note">99 900 ₽/год</div>
@@ -237,7 +372,31 @@
                     <li>📎 Загрузка файлов</li>
                     <li>🎤 Голосовой ввод</li>
                 </ul>
-                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=enterprise&price=9990'">Выбрать</button>
+                <button class="btn" onclick="event.stopPropagation(); location.href='/payment?plan=enterprise&period=monthly'">Выбрать</button>
+            </div>
+        </div>
+
+        <!-- Блок "Почему выбирают нас" -->
+        <div class="why-us">
+            <div class="why-item">
+                <div class="why-icon">🚀</div>
+                <div class="why-title">Мгновенная активация</div>
+                <div class="why-text">После оплаты доступ открывается автоматически</div>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">💳</div>
+                <div class="why-title">5 способов оплаты</div>
+                <div class="why-text">Карты, СБП, USDT, Bitcoin, CryptoBot</div>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">🤖</div>
+                <div class="why-title">AI разных уровней</div>
+                <div class="why-text">Выбирайте модель под свои задачи</div>
+            </div>
+            <div class="why-item">
+                <div class="why-icon">🔐</div>
+                <div class="why-title">Безопасность</div>
+                <div class="why-text">2FA, доверенные устройства, контроль доступа</div>
             </div>
         </div>
 

@@ -16,6 +16,81 @@
             max-width: 1000px;
             margin: 0 auto;
         }
+        
+        /* Навигационное меню */
+        .navbar {
+            background: white;
+            border-radius: 50px;
+            padding: 15px 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 30px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-link:hover {
+            color: #667eea;
+            background: #f0f3ff;
+        }
+        
+        .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        /* Хлебные крошки */
+        .breadcrumbs {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb-item.active {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .breadcrumb-item .number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .breadcrumb-item.active .number {
+            background: white;
+            color: #667eea;
+        }
+        
         .header {
             display: flex;
             justify-content: space-between;
@@ -25,6 +100,7 @@
         }
         .header h1 {
             font-size: 32px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .security-card {
             background: white;
@@ -32,7 +108,14 @@
             padding: 30px;
             box-shadow: 0 30px 60px rgba(0,0,0,0.3);
             margin-bottom: 30px;
+            animation: slideUp 0.5s ease;
         }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         .info-box {
             background: #f0f3ff;
             border-radius: 15px;
@@ -210,6 +293,7 @@
         .empty-state p {
             color: #666;
         }
+        
         @media (max-width: 768px) {
             .device-item {
                 flex-direction: column;
@@ -222,11 +306,53 @@
                 flex: 1;
                 text-align: center;
             }
+            .nav-links {
+                gap: 10px;
+            }
+            .nav-link {
+                font-size: 12px;
+                padding: 5px 10px;
+            }
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Навигационное меню -->
+        <div class="navbar">
+            <div class="nav-links">
+                <a href="/" class="nav-link">🏠 Главная</a>
+                <a href="/pricing" class="nav-link">💰 Тарифы</a>
+                <a href="/ai" class="nav-link">🤖 AI чат</a>
+                <a href="/ai-settings" class="nav-link">⚙️ Настройки AI</a>
+                <a href="/dashboard-stats" class="nav-link">📊 Статистика</a>
+                <a href="/security" class="nav-link">🔐 Безопасность</a>
+                <a href="/trusted-devices" class="nav-link active">📱 Устройства</a>
+                <a href="/profile" class="nav-link">👤 Профиль</a>
+            </div>
+        </div>
+        
+        <!-- Хлебные крошки -->
+        <div class="breadcrumbs">
+            <div class="breadcrumb-item">
+                <span class="number">1</span>
+                <span>Безопасность</span>
+            </div>
+            <div class="breadcrumb-item active">
+                <span class="number">2</span>
+                <span>Доверенные устройства</span>
+            </div>
+            <div class="breadcrumb-item">
+                <span class="number">3</span>
+                <span>Настройки</span>
+            </div>
+        </div>
+        
         <div class="header">
             <h1>🔐 Доверенные устройства</h1>
             <a href="/security" style="color: white;">← Назад к безопасности</a>
