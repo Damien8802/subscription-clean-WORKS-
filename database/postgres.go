@@ -2,7 +2,7 @@ package database
 
 import (
     "context"
-    "fmt"  // Раскомментировал!
+    "fmt"
     "log"
     "subscription-system/config"
 
@@ -161,6 +161,37 @@ func createSubscriptionsTables() error {
         return err
     }
 
+    // Добавляем поля для AI-квот, если их нет
+    _, err = Pool.Exec(context.Background(), `
+        DO $$ 
+        BEGIN 
+            BEGIN
+                ALTER TABLE user_subscriptions ADD COLUMN ai_quota_used INTEGER DEFAULT 0;
+            EXCEPTION
+                WHEN duplicate_column THEN 
+                    NULL;
+            END;
+        END $$;
+    `)
+    if err != nil {
+        log.Printf("⚠️ Не удалось добавить ai_quota_used: %v", err)
+    }
+
+    _, err = Pool.Exec(context.Background(), `
+        DO $$ 
+        BEGIN 
+            BEGIN
+                ALTER TABLE user_subscriptions ADD COLUMN ai_quota_reset TIMESTAMP DEFAULT NOW();
+            EXCEPTION
+                WHEN duplicate_column THEN 
+                    NULL;
+            END;
+        END $$;
+    `)
+    if err != nil {
+        log.Printf("⚠️ Не удалось добавить ai_quota_reset: %v", err)
+    }
+
     // Добавляем базовые тарифы, если таблица пуста
     var count int
     err = Pool.QueryRow(context.Background(), `SELECT COUNT(*) FROM subscription_plans`).Scan(&count)
@@ -168,17 +199,18 @@ func createSubscriptionsTables() error {
         return err
     }
     if count == 0 {
+        // Добавляем AI-возможности в тарифы
         _, err = Pool.Exec(context.Background(), `
-            INSERT INTO subscription_plans (name, code, description, price_monthly, price_yearly, features, max_users, sort_order) VALUES
-            ('Базовый', 'basic', 'Для небольших команд и стартапов', 299, 2990, '["1 пользователь", "5 проектов", "Базовая поддержка"]', 1, 1),
-            ('Профессиональный', 'pro', 'Для растущего бизнеса', 999, 9990, '["5 пользователей", "Неограниченно проектов", "Приоритетная поддержка", "API доступ"]', 5, 2),
-            ('Корпоративный', 'enterprise', 'Для крупных компаний', 2999, 29990, '["Неограниченно пользователей", "Персональный менеджер", "SLA 99.9%", "Интеграции"]', 999, 3),
-            ('Семейный', 'family', 'Для всей семьи', 1499, 14990, '["До 5 участников", "Общая библиотека", "Детский режим"]', 5, 4);
+            INSERT INTO subscription_plans (name, code, description, price_monthly, price_yearly, features, ai_capabilities, max_users, sort_order) VALUES
+            ('Базовый', 'basic', 'Для небольших команд и стартапов', 299, 2990, '["1 пользователь", "5 проектов", "Базовая поддержка"]', '{"max_requests": 10, "models": ["basic"]}', 1, 1),
+            ('Профессиональный', 'pro', 'Для растущего бизнеса', 999, 9990, '["5 пользователей", "Неограниченно проектов", "Приоритетная поддержка", "API доступ"]', '{"max_requests": 100, "models": ["basic", "advanced"]}', 5, 2),
+            ('Корпоративный', 'enterprise', 'Для крупных компаний', 2999, 29990, '["Неограниченно пользователей", "Персональный менеджер", "SLA 99.9%", "Интеграции"]', '{"max_requests": 1000, "models": ["basic", "advanced", "expert"]}', 999, 3),
+            ('Семейный', 'family', 'Для всей семьи', 1499, 14990, '["До 5 участников", "Общая библиотека", "Детский режим"]', '{"max_requests": 50, "models": ["basic"]}', 5, 4);
         `)
         if err != nil {
             return err
         }
-        log.Println("✅ Базовые тарифы добавлены")
+        log.Println("✅ Базовые тарифы с AI-возможностями добавлены")
     }
 
     log.Println("✅ Таблицы подписок готовы")

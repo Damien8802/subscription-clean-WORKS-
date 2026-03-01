@@ -146,9 +146,9 @@ func getWeather(city string) (string, error) {
 }
 
 // GetUserActivePlan получает активную подписку пользователя
-func GetUserActivePlan(userID string) (*models.Plan, int64, error) {
+func GetUserActivePlan(userID string) (*models.Plan, *models.UserSubscription, error) {
     var plan models.Plan
-    var used int64
+    var sub models.UserSubscription
     
     err := database.Pool.QueryRow(context.Background(), `
         SELECT 
@@ -156,10 +156,13 @@ func GetUserActivePlan(userID string) (*models.Plan, int64, error) {
             p.price_monthly, p.price_yearly, p.currency,
             p.features, p.ai_capabilities, p.max_users,
             p.is_active, p.sort_order,
-            COALESCE(us.ai_tokens_used, 0) as tokens_used
+            us.id, us.user_id, us.plan_id, us.status,
+            us.current_period_start, us.current_period_end,
+            us.ai_quota_used, us.ai_quota_reset,
+            us.created_at, us.updated_at
         FROM subscription_plans p
         JOIN user_subscriptions us ON us.plan_id = p.id
-        WHERE us.user_id = $1 AND us.status = 'active'
+        WHERE us.user_id = $1::uuid AND us.status = 'active'
         AND us.current_period_start <= NOW() 
         AND us.current_period_end >= NOW()
         ORDER BY us.created_at DESC
@@ -168,14 +171,18 @@ func GetUserActivePlan(userID string) (*models.Plan, int64, error) {
         &plan.ID, &plan.Name, &plan.Code, &plan.Description,
         &plan.PriceMonthly, &plan.PriceYearly, &plan.Currency,
         &plan.Features, &plan.AICapabilities, &plan.MaxUsers,
-        &plan.IsActive, &plan.SortOrder, &used,
+        &plan.IsActive, &plan.SortOrder,
+        &sub.ID, &sub.UserID, &sub.PlanID, &sub.Status,
+        &sub.CurrentPeriodStart, &sub.CurrentPeriodEnd,
+        &sub.AIQuotaUsed, &sub.AIQuotaReset,
+        &sub.CreatedAt, &sub.UpdatedAt,
     )
     
     if err != nil {
-        return nil, 0, err
+        return nil, nil, err
     }
     
-    return &plan, used, nil
+    return &plan, &sub, nil
 }
 
 func AIAskHandler(c *gin.Context) {
@@ -203,14 +210,14 @@ func AIAskHandler(c *gin.Context) {
 
     cfg := config.Load()
     var plan *models.Plan
-    var tokensUsed int64
+    var subscription *models.UserSubscription
     var isAdmin bool
 
     if !cfg.SkipAuth {
         role, _ := c.Get("userRole")
         isAdmin = role == "admin"
         if !isAdmin {
-            plan, tokensUsed, err = GetUserActivePlan(userID.(string))
+            plan, subscription, err = GetUserActivePlan(userID.(string))
             if err != nil {
                 c.JSON(http.StatusForbidden, gin.H{"error": "no active subscription"})
                 return
@@ -319,7 +326,7 @@ func AIAskHandler(c *gin.Context) {
 
     contextPrompt := sb.String()
 
-    // ПРОВЕРКА: выводим ключи для отладки (закомментируйте после исправления)
+    // ПРОВЕРКА: выводим ключи для отладки
     log.Printf("YandexFolderID: %s", cfg.YandexFolderID)
     log.Printf("YandexAPIKey: %s", maskString(cfg.YandexAPIKey))
 
@@ -328,16 +335,33 @@ func AIAskHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем лимиты если есть подписка
-    if plan != nil && !isAdmin {
+    // ========== ПРОВЕРКА КВОТЫ ==========
+    if plan != nil && !isAdmin && subscription != nil {
         caps := plan.GetAICapabilities()
-        maxRequests := int64(caps["max_requests"].(float64))
+        maxRequests := int(caps["max_requests"].(float64))
         
-        if tokensUsed >= maxRequests {
-            c.JSON(http.StatusForbidden, gin.H{"error": "AI quota exceeded"})
+        // Если квота обнулилась (прошёл день)
+        if time.Now().After(subscription.AIQuotaReset) {
+            _, err = database.Pool.Exec(c.Request.Context(), `
+                UPDATE user_subscriptions 
+                SET ai_quota_used = 0, ai_quota_reset = NOW() + interval '1 day'
+                WHERE user_id = $1::uuid AND status = 'active'
+            `, userID)
+            if err != nil {
+                log.Printf("❌ Ошибка сброса квоты: %v", err)
+            }
+            subscription.AIQuotaUsed = 0
+        }
+        
+        if subscription.AIQuotaUsed >= maxRequests {
+            c.JSON(http.StatusForbidden, gin.H{
+                "error":       "Превышен лимит бесплатных запросов. Купите подписку для продолжения.",
+                "upgrade_url": "/pricing",
+            })
             return
         }
     }
+    // ========== КОНЕЦ ПРОВЕРКИ КВОТЫ ==========
 
     yandexReq := YandexGPTRequest{
         ModelUri: fmt.Sprintf("gpt://%s/yandexgpt-lite", cfg.YandexFolderID),
@@ -370,9 +394,9 @@ func AIAskHandler(c *gin.Context) {
     }
     
     // ВАЖНО: правильный формат авторизации
-    apiReq.Header.Set("Authorization", "Api-Key " + cfg.YandexAPIKey)
+    apiReq.Header.Set("Authorization", "Api-Key "+cfg.YandexAPIKey)
     apiReq.Header.Set("Content-Type", "application/json")
-    apiReq.Header.Set("x-folder-id", cfg.YandexFolderID) // Добавляем folder-id в заголовок
+    apiReq.Header.Set("x-folder-id", cfg.YandexFolderID)
 
     resp, err := client.Do(apiReq)
     if err != nil {
@@ -384,7 +408,7 @@ func AIAskHandler(c *gin.Context) {
 
     bodyBytes, _ := io.ReadAll(resp.Body)
     log.Printf("📥 Код ответа от YandexGPT: %d", resp.StatusCode)
-    log.Printf("📥 Тело ответа: %s", string(bodyBytes)) // Добавляем лог тела ответа
+    log.Printf("📥 Тело ответа: %s", string(bodyBytes))
 
     if resp.StatusCode != http.StatusOK {
         c.JSON(http.StatusInternalServerError, gin.H{
@@ -412,22 +436,32 @@ func AIAskHandler(c *gin.Context) {
 
     answer := yandexResp.Result.Alternatives[0].Message.Text
 
-    // Списываем токены если есть подписка
-    if plan != nil && !isAdmin {
+    // ========== СПИСЫВАЕМ ТОКЕНЫ ==========
+    if plan != nil && !isAdmin && subscription != nil {
         totalTokens, _ := strconv.Atoi(yandexResp.Result.Usage.TotalTokens)
-        newUsed := tokensUsed + int64(totalTokens)
         
-        _, err = database.Pool.Exec(c.Request.Context(),
-            "UPDATE user_subscriptions SET ai_tokens_used = $1 WHERE user_id = $2 AND status = 'active'",
-            newUsed, userID)
+        // Обновляем квоту в базе
+        _, err = database.Pool.Exec(c.Request.Context(), `
+            UPDATE user_subscriptions 
+            SET ai_quota_used = ai_quota_used + $1 
+            WHERE user_id = $2::uuid AND status = 'active'
+        `, totalTokens, userID)
         if err != nil {
-            log.Printf("❌ Ошибка обновления ai_tokens_used: %v", err)
+            log.Printf("❌ Ошибка обновления ai_quota_used: %v", err)
         } else {
             caps := plan.GetAICapabilities()
-            maxRequests := int64(caps["max_requests"].(float64))
+            maxRequests := int(caps["max_requests"].(float64))
+            
+            // Получаем текущее использованное количество
+            var newUsed int
+            database.Pool.QueryRow(c.Request.Context(), 
+                "SELECT ai_quota_used FROM user_subscriptions WHERE user_id = $1::uuid AND status = 'active'",
+                userID).Scan(&newUsed)
+            
             log.Printf("✅ Списано %d токенов, осталось %d", totalTokens, maxRequests-newUsed)
         }
     }
+    // ========== КОНЕЦ СПИСЫВАНИЯ ТОКЕНОВ ==========
 
     c.JSON(http.StatusOK, gin.H{
         "answer": answer,
