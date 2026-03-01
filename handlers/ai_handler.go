@@ -319,6 +319,10 @@ func AIAskHandler(c *gin.Context) {
 
     contextPrompt := sb.String()
 
+    // ПРОВЕРКА: выводим ключи для отладки (закомментируйте после исправления)
+    log.Printf("YandexFolderID: %s", cfg.YandexFolderID)
+    log.Printf("YandexAPIKey: %s", maskString(cfg.YandexAPIKey))
+
     if cfg.YandexFolderID == "" || cfg.YandexAPIKey == "" {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "YandexGPT API key not configured"})
         return
@@ -364,8 +368,11 @@ func AIAskHandler(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
         return
     }
-    apiReq.Header.Set("Authorization", "Api-Key "+cfg.YandexAPIKey)
+    
+    // ВАЖНО: правильный формат авторизации
+    apiReq.Header.Set("Authorization", "Api-Key " + cfg.YandexAPIKey)
     apiReq.Header.Set("Content-Type", "application/json")
+    apiReq.Header.Set("x-folder-id", cfg.YandexFolderID) // Добавляем folder-id в заголовок
 
     resp, err := client.Do(apiReq)
     if err != nil {
@@ -377,6 +384,7 @@ func AIAskHandler(c *gin.Context) {
 
     bodyBytes, _ := io.ReadAll(resp.Body)
     log.Printf("📥 Код ответа от YandexGPT: %d", resp.StatusCode)
+    log.Printf("📥 Тело ответа: %s", string(bodyBytes)) // Добавляем лог тела ответа
 
     if resp.StatusCode != http.StatusOK {
         c.JSON(http.StatusInternalServerError, gin.H{
@@ -425,4 +433,12 @@ func AIAskHandler(c *gin.Context) {
         "answer": answer,
         "query":  req.Question,
     })
+}
+
+// Вспомогательная функция для маскировки ключа в логах
+func maskString(s string) string {
+    if len(s) <= 4 {
+        return "****"
+    }
+    return s[:4] + "..." + s[len(s)-4:]
 }

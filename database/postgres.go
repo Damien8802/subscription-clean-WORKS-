@@ -2,7 +2,7 @@ package database
 
 import (
     "context"
-    "fmt"
+    "fmt"  // Раскомментировал!
     "log"
     "subscription-system/config"
 
@@ -248,32 +248,54 @@ func createReferralsTable() error {
     return nil
 }
 
-// createTwoFATable создаёт таблицу для 2FA
+// createTwoFATable создаёт таблицу для 2FA с поддержкой резервных кодов и доверенных устройств
 func createTwoFATable() error {
+    // Обновляем таблицу twofa, добавляем поле для резервных кодов
     _, err := Pool.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS twofa (
+        -- Добавляем поле для резервных кодов, если его нет
+        DO $$ 
+        BEGIN 
+            BEGIN
+                ALTER TABLE twofa ADD COLUMN backup_codes TEXT[] DEFAULT '{}';
+            EXCEPTION
+                WHEN duplicate_column THEN 
+                    NULL;
+            END;
+        END $$;
+    `)
+    if err != nil {
+        log.Printf("⚠️ Не удалось добавить backup_codes: %v", err)
+    }
+
+    // Создаём таблицу доверенных устройств
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS trusted_devices (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            secret VARCHAR(255) NOT NULL,
-            enabled BOOLEAN DEFAULT false,
+            device_id VARCHAR(255) NOT NULL,
+            device_name VARCHAR(255),
+            ip_address VARCHAR(45),
+            user_agent TEXT,
+            expires_at TIMESTAMP NOT NULL,
+            last_used_at TIMESTAMP DEFAULT NOW(),
             created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-            UNIQUE(user_id)
+            UNIQUE(user_id, device_id)
         );
     `)
     if err != nil {
         return err
     }
 
-    // Индекс для быстрого поиска
+    // Индексы для быстрой работы
     _, err = Pool.Exec(context.Background(), `
-        CREATE INDEX IF NOT EXISTS idx_twofa_user_id ON twofa(user_id);
+        CREATE INDEX IF NOT EXISTS idx_trusted_devices_user_id ON trusted_devices(user_id);
+        CREATE INDEX IF NOT EXISTS idx_trusted_devices_expires ON trusted_devices(expires_at);
     `)
     if err != nil {
         return err
     }
 
-    log.Println("✅ Таблица twofa готова")
+    log.Println("✅ Таблицы 2FA, резервных кодов и доверенных устройств готовы")
     return nil
 }
 
