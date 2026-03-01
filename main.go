@@ -119,6 +119,8 @@ func main() {
     r.GET("/support", handlers.SupportPageHandler)
     r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
+    r.GET("/ai-settings", handlers.AISettingsPageHandler)
+  
 
     // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
     public := r.Group("/")
