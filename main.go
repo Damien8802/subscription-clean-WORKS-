@@ -149,6 +149,7 @@ func main() {
         protected.GET("/my-subscriptions", handlers.MySubscriptionsPageHandler)
         protected.GET("/security-hub", handlers.SecurityHubHandler)
         protected.GET("/security-panel", handlers.SecurityPanelHandler)
+        protected.GET("/trusted-devices", handlers.TrustedDevicesHandler) 
         protected.GET("/integrations", handlers.IntegrationsHandler)
         protected.GET("/monetization", handlers.MonetizationHandler)
         protected.GET("/profile", handlers.ProfilePageHandler)
