@@ -1,110 +1,291 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Оплата подписки - SaaSPro</title>
+    <title>Оплата подписки | SaaSPro</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 40px 20px;
         }
+        
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
         }
+        
+        /* Хлебные крошки */
+        .breadcrumbs {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .breadcrumb-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb-item.active {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .breadcrumb-item .number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .breadcrumb-item.active .number {
+            background: white;
+            color: #667eea;
+        }
+        
+        /* Основная карточка */
         .payment-card {
             background: white;
-            border-radius: 20px;
+            border-radius: 30px;
             padding: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease;
         }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
         h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             text-align: center;
-            margin-bottom: 30px;
-            color: #333;
         }
+        
+        /* Информация о тарифе */
         .plan-info {
-            background: #f0f3ff;
-            border-radius: 15px;
-            padding: 20px;
+            background: linear-gradient(135deg, #f0f3ff, #f9f9ff);
+            border-radius: 20px;
+            padding: 25px;
             margin-bottom: 30px;
             text-align: center;
+            border: 1px solid rgba(102,126,234,0.2);
         }
+        
         .plan-name {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 700;
-            color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
         }
+        
         .plan-price {
-            font-size: 20px;
+            font-size: 36px;
+            font-weight: 800;
             color: #333;
         }
+        
+        .plan-price small {
+            font-size: 16px;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        .yearly-save {
+            background: #48bb78;
+            color: white;
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
         h2 {
-            margin-bottom: 20px;
+            font-size: 18px;
             color: #333;
-            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        
+        /* Способы оплаты */
         .payment-methods {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
             margin-bottom: 30px;
         }
+        
         .payment-method {
             background: #f8f9fa;
-            border: 2px solid #dee2e6;
+            border: 2px solid #e2e8f0;
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px 5px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
+        
         .payment-method:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(102,126,234,0.2);
         }
+        
         .payment-method.selected {
             border-color: #667eea;
-            background: #f0f3ff;
+            background: #ebf4ff;
+            transform: scale(1.02);
         }
+        
         .method-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
+            font-size: 24px;
         }
+        
         .method-name {
             font-weight: 600;
             color: #333;
+            font-size: 12px;
         }
+        
+        /* Детали оплаты */
         .payment-details {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .detail-row {
+            margin-bottom: 20px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-size: 16px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            width: 100%;
+            transition: border-color 0.3s;
+        }
+        
+        .detail-value:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .crypto-address {
+            word-break: break-all;
+            font-family: monospace;
+            background: #2d3748;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: none;
+        }
+        
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .qr-code img {
+            width: 200px;
+            height: 200px;
+            border-radius: 15px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .copy-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Итого */
+        .total {
             background: #f8f9fa;
             border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
         }
-        .detail-row {
-            margin-bottom: 15px;
-        }
-        .detail-label {
-            font-size: 12px;
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
             color: #666;
-            margin-bottom: 5px;
         }
-        .detail-value {
-            font-size: 16px;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            width: 100%;
+        
+        .total-row.final {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #e2e8f0;
         }
-        input.detail-value {
-            font-family: inherit;
-        }
+        
+        /* Кнопка оплаты */
         .pay-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -116,172 +297,325 @@
             cursor: pointer;
             width: 100%;
             margin-top: 20px;
+            transition: all 0.3s;
         }
-        .pay-button:hover {
+        
+        .pay-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        
+        .pay-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .secure-badge {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
             opacity: 0.9;
         }
-        .crypto-address {
-            word-break: break-all;
-            font-family: monospace;
+        
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .payment-card { padding: 20px; }
+            .breadcrumbs { gap: 1rem; }
+            .payment-methods { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Хлебные крошки -->
+        <div class="breadcrumbs">
+            <div class="breadcrumb-item">
+                <span class="number">1</span>
+                <span>Тарифы</span>
+            </div>
+            <div class="breadcrumb-item active">
+                <span class="number">2</span>
+                <span>Оплата</span>
+            </div>
+            <div class="breadcrumb-item">
+                <span class="number">3</span>
+                <span>Подтверждение</span>
+            </div>
+        </div>
+        
+        <!-- Основная карточка -->
         <div class="payment-card">
-            <h1>Оплата подписки</h1>
+            <h1>💰 Оплата подписки</h1>
             
-            <div class="plan-info">
+            <!-- Информация о тарифе -->
+            <div class="plan-info" id="planInfo">
                 <div class="plan-name" id="planName">Базовый</div>
-                <div class="plan-price" id="planPrice">990 ₽/мес</div>
+                <div class="plan-price" id="planPrice">990 <small>₽/мес</small></div>
+                <div class="yearly-save" id="yearlySave">-20% при годовой оплате</div>
             </div>
             
-            <h2>Способ оплаты</h2>
+            <h2>🔸 Выберите способ оплаты</h2>
             <div class="payment-methods" id="paymentMethods">
                 <div class="payment-method selected" data-method="card" onclick="selectMethod('card')">
-                    <div class="method-icon">💳</div>
-                    <div class="method-name">Банковская карта</div>
-                </div>
-                <div class="payment-method" data-method="usdt" onclick="selectMethod('usdt')">
-                    <div class="method-icon">₮</div>
-                    <div class="method-name">USDT</div>
-                </div>
-                <div class="payment-method" data-method="btc" onclick="selectMethod('btc')">
-                    <div class="method-icon">₿</div>
-                    <div class="method-name">Bitcoin</div>
+                    <span class="method-icon">💳</span>
+                    <span class="method-name">Карта</span>
                 </div>
                 <div class="payment-method" data-method="sbp" onclick="selectMethod('sbp')">
-                    <div class="method-icon">📱</div>
-                    <div class="method-name">СБП</div>
+                    <span class="method-icon">📱</span>
+                    <span class="method-name">СБП</span>
+                </div>
+                <div class="payment-method" data-method="usdt" onclick="selectMethod('usdt')">
+                    <span class="method-icon">₮</span>
+                    <span class="method-name">USDT</span>
+                </div>
+                <div class="payment-method" data-method="btc" onclick="selectMethod('btc')">
+                    <span class="method-icon">₿</span>
+                    <span class="method-name">Bitcoin</span>
                 </div>
                 <div class="payment-method" data-method="crypto" onclick="selectMethod('crypto')">
-                    <div class="method-icon">🤖</div>
-                    <div class="method-name">CryptoBot</div>
+                    <span class="method-icon">🤖</span>
+                    <span class="method-name">CryptoBot</span>
                 </div>
             </div>
             
+            <!-- Динамическая область с деталями оплаты -->
             <div id="paymentDetails"></div>
             
-            <button class="pay-button" onclick="processPayment()" id="payBtn">💳 Оплатить</button>
+            <!-- Итого (только для card) -->
+            <div class="total" id="totalSection">
+                <div class="total-row">
+                    <span>Тариф <span id="summaryPlanName">Базовый</span></span>
+                    <span id="summaryPrice">990 ₽</span>
+                </div>
+                <div class="total-row">
+                    <span>НДС</span>
+                    <span>0 ₽</span>
+                </div>
+                <div class="total-row final">
+                    <span>Итого к оплате</span>
+                    <span id="totalAmount">990 ₽</span>
+                </div>
+            </div>
+            
+            <!-- Кнопка оплаты -->
+            <button class="pay-button" onclick="processPayment()" id="payBtn">
+                💳 Оплатить
+            </button>
+            
+            <div class="secure-badge">
+                <span>🔒</span> Безопасная оплата · Данные защищены
+            </div>
+            
+            <a href="/pricing" class="back-link">← Вернуться к тарифам</a>
         </div>
     </div>
     
     <script>
-        // Получаем параметры из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const plan = urlParams.get('plan') || 'basic';
-        const price = urlParams.get('price') || '990';
-        
-        // Данные тарифов
+        // Данные тарифов (4 тарифа + годовые цены)
         const plans = {
-            basic: { name: 'Базовый', price: 990, usdt: 11.00, btc: 0.00022 },
-            pro: { name: 'Профессиональный', price: 2990, usdt: 33.22, btc: 0.00066 },
-            enterprise: { name: 'Корпоративный', price: 9990, usdt: 111.00, btc: 0.00222 }
+            basic: { 
+                name: 'Базовый', 
+                monthly: 990, 
+                yearly: 9900,
+                usdt: 11.00, 
+                btc: 0.00022,
+                features: '👤 1 пользователь · 🤖 10 AI/день'
+            },
+            family: { 
+                name: 'Семейный', 
+                monthly: 2490, 
+                yearly: 24900,
+                usdt: 27.67, 
+                btc: 0.00055,
+                features: '👥 5 пользователей · 🤖 50 AI/день'
+            },
+            pro: { 
+                name: 'Профессиональный', 
+                monthly: 2990, 
+                yearly: 29900,
+                usdt: 33.22, 
+                btc: 0.00066,
+                features: '👥 1000 пользователей · 🤖 100 AI/день'
+            },
+            enterprise: { 
+                name: 'Корпоративный', 
+                monthly: 9990, 
+                yearly: 99900,
+                usdt: 111.00, 
+                btc: 0.00222,
+                features: '👥 ∞ · 🤖 1000 AI/день'
+            }
         };
         
+        // Адреса для крипты
         const USDTAddress = "TXmRt1UqWqfJ1XxqZQk3yL7vFhKpDnA2jB";
         const BTCAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
         
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const planCode = urlParams.get('plan') || 'basic';
+        const period = urlParams.get('period') || 'monthly';
+        
+        // Текущие значения
         let selectedMethod = 'card';
-        let currentPlan = plans[plan] || plans.basic;
+        let currentPlan = plans[planCode] || plans.basic;
+        let isYearly = period === 'yearly';
         
-        // Обновляем информацию о тарифе
+        // Цена в зависимости от периода
+        const currentPrice = isYearly ? currentPlan.yearly : currentPlan.monthly;
+        const priceText = isYearly ? '₽/год' : '₽/мес';
+        
+        // Обновляем информацию на странице
         document.getElementById('planName').textContent = currentPlan.name;
-        document.getElementById('planPrice').textContent = currentPlan.price.toLocaleString() + ' ₽/мес';
+        document.getElementById('planPrice').innerHTML = `${currentPrice.toLocaleString()} <small>${priceText}</small>`;
+        document.getElementById('summaryPlanName').textContent = currentPlan.name;
+        document.getElementById('summaryPrice').textContent = `${currentPrice.toLocaleString()} ₽`;
+        document.getElementById('totalAmount').textContent = `${currentPrice.toLocaleString()} ₽`;
+        document.getElementById('payBtn').innerHTML = `💳 Оплатить ${currentPrice.toLocaleString()} ₽`;
         
-        // Выбор метода
+        if (isYearly) {
+            const monthlyPrice = currentPlan.monthly;
+            const yearlyPrice = currentPlan.yearly;
+            const saveAmount = monthlyPrice * 12 - yearlyPrice;
+            document.getElementById('yearlySave').innerHTML = `💰 Экономия ${saveAmount.toLocaleString()} ₽ в год`;
+        }
+        
+        // Выбор метода оплаты
         window.selectMethod = function(method) {
             selectedMethod = method;
             
-            document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
-            document.querySelector(`.payment-method[data-method="${method}"]`).classList.add('selected');
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-method="${method}"]`).classList.add('selected');
             
             updatePaymentDetails();
         };
         
-        // Обновление деталей
+        // Обновление деталей оплаты
         function updatePaymentDetails() {
             const detailsDiv = document.getElementById('paymentDetails');
+            const totalSection = document.getElementById('totalSection');
             
             let html = '';
             
             switch(selectedMethod) {
                 case 'card':
+                    totalSection.style.display = 'block';
                     html = `
                         <div class="payment-details">
                             <div class="detail-row">
                                 <div class="detail-label">Номер карты</div>
-                                <input type="text" class="detail-value" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19">
+                                <input type="text" class="detail-value" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
                             </div>
-                            <div style="display: flex; gap: 10px;">
-                                <div class="detail-row" style="flex: 1;">
-                                    <div class="detail-label">Срок</div>
-                                    <input type="text" class="detail-value" id="cardExpiry" placeholder="MM/YY" maxlength="5">
+                            <div class="row">
+                                <div class="detail-row">
+                                    <div class="detail-label">ММ/ГГ</div>
+                                    <input type="text" class="detail-value" id="cardExpiry" placeholder="12/25" maxlength="5">
                                 </div>
-                                <div class="detail-row" style="flex: 1;">
+                                <div class="detail-row">
                                     <div class="detail-label">CVC</div>
                                     <input type="text" class="detail-value" id="cardCvc" placeholder="123" maxlength="3">
                                 </div>
                             </div>
-                        </div>
-                    `;
-                    break;
-                    
-                case 'usdt':
-                    html = `
-                        <div class="payment-details">
                             <div class="detail-row">
-                                <div class="detail-label">Адрес USDT (TRC-20)</div>
-                                <div class="detail-value crypto-address">${USDTAddress}</div>
-                                <button class="pay-button" style="margin-top: 10px;" onclick="copyText('${USDTAddress}')">📋 Копировать адрес</button>
-                            </div>
-                            <div class="detail-row">
-                                <div class="detail-label">Сумма к оплате</div>
-                                <div class="detail-value">${currentPlan.usdt.toFixed(2)} USDT</div>
-                            </div>
-                        </div>
-                    `;
-                    break;
-                    
-                case 'btc':
-                    html = `
-                        <div class="payment-details">
-                            <div class="detail-row">
-                                <div class="detail-label">Bitcoin адрес</div>
-                                <div class="detail-value crypto-address">${BTCAddress}</div>
-                                <button class="pay-button" style="margin-top: 10px;" onclick="copyText('${BTCAddress}')">📋 Копировать адрес</button>
-                            </div>
-                            <div class="detail-row">
-                                <div class="detail-label">Сумма к оплате</div>
-                                <div class="detail-value">${currentPlan.btc.toFixed(5)} BTC</div>
+                                <div class="detail-label">Владелец карты</div>
+                                <input type="text" class="detail-value" id="cardName" placeholder="IVAN PETROV">
                             </div>
                         </div>
                     `;
                     break;
                     
                 case 'sbp':
+                    totalSection.style.display = 'none';
                     html = `
                         <div class="payment-details">
-                            <div class="qr-code" style="text-align: center;">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=СБП ${currentPlan.price} руб" alt="QR-код">
+                            <div class="qr-code">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=СБП-${currentPrice}" alt="QR-код СБП">
                             </div>
                             <div class="detail-row">
-                                <div class="detail-label">Сумма</div>
-                                <div class="detail-value">${currentPlan.price.toLocaleString()} ₽</div>
+                                <div class="detail-label">Сумма к оплате</div>
+                                <div class="detail-value">${currentPrice.toLocaleString()} ₽</div>
+                            </div>
+                            <button class="copy-btn" onclick="copyText('${currentPrice}')">
+                                📋 Скопировать сумму
+                            </button>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'usdt':
+                    totalSection.style.display = 'none';
+                    html = `
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Адрес USDT (TRC-20)</div>
+                                <div class="detail-value crypto-address">${USDTAddress}</div>
+                                <button class="copy-btn" onclick="copyText('${USDTAddress}')">
+                                    📋 Копировать адрес
+                                </button>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Сумма к оплате</div>
+                                <div class="detail-value">${(currentPrice / 90).toFixed(2)} USDT</div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'btc':
+                    totalSection.style.display = 'none';
+                    html = `
+                        <div class="payment-details">
+                            <div class="detail-row">
+                                <div class="detail-label">Bitcoin адрес</div>
+                                <div class="detail-value crypto-address">${BTCAddress}</div>
+                                <button class="copy-btn" onclick="copyText('${BTCAddress}')">
+                                    📋 Копировать адрес
+                                </button>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-label">Сумма к оплате</div>
+                                <div class="detail-value">${(currentPrice / 4500000).toFixed(6)} BTC</div>
                             </div>
                         </div>
                     `;
                     break;
                     
                 case 'crypto':
+                    totalSection.style.display = 'none';
                     html = `
-                        <div class="payment-details">
-                            <div style="text-align: center;">
-                                <div style="font-size: 48px; margin-bottom: 15px;">🤖</div>
-                                <h3>Оплата через CryptoBot</h3>
-                                <p style="color: #666;">Нажмите кнопку для перехода в CryptoBot</p>
-                                <button class="pay-button" style="margin-top: 10px;" onclick="window.open('https://t.me/CryptoBot', '_blank')">Перейти в CryptoBot</button>
-                            </div>
+                        <div class="payment-details" style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">🤖</div>
+                            <h3 style="margin-bottom: 10px;">Оплата через CryptoBot</h3>
+                            <p style="color: #666; margin-bottom: 20px;">Нажмите кнопку для перехода в Telegram</p>
+                            <button class="copy-btn" onclick="window.open('https://t.me/CryptoBot', '_blank')">
+                                🚀 Перейти в CryptoBot
+                            </button>
                         </div>
                     `;
                     break;
@@ -289,50 +623,76 @@
             
             detailsDiv.innerHTML = html;
             
-            // Форматирование карты
+            // Форматирование полей карты
             if (selectedMethod === 'card') {
                 setTimeout(() => {
-                    document.getElementById('cardNumber')?.addEventListener('input', function(e) {
-                        let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
-                        e.target.value = v;
-                    });
-                    document.getElementById('cardExpiry')?.addEventListener('input', function(e) {
-                        let v = e.target.value.replace(/\D/g, '');
-                        if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4);
-                        e.target.value = v;
-                    });
-                    document.getElementById('cardCvc')?.addEventListener('input', function(e) {
-                        e.target.value = e.target.value.replace(/\D/g, '');
-                    });
+                    const cardNumber = document.getElementById('cardNumber');
+                    const cardExpiry = document.getElementById('cardExpiry');
+                    const cardCvc = document.getElementById('cardCvc');
+                    
+                    if (cardNumber) {
+                        cardNumber.addEventListener('input', (e) => {
+                            let v = e.target.value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ');
+                            e.target.value = v;
+                        });
+                    }
+                    
+                    if (cardExpiry) {
+                        cardExpiry.addEventListener('input', (e) => {
+                            let v = e.target.value.replace(/\D/g, '');
+                            if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2,4);
+                            e.target.value = v;
+                        });
+                    }
+                    
+                    if (cardCvc) {
+                        cardCvc.addEventListener('input', (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '');
+                        });
+                    }
                 }, 100);
             }
         }
         
-        // Копирование
+        // Копирование текста
         window.copyText = function(text) {
             navigator.clipboard.writeText(text).then(() => {
-                alert('✅ Адрес скопирован');
+                alert('✅ Скопировано в буфер обмена');
             });
         };
         
         // Обработка платежа
         window.processPayment = function() {
             const btn = document.getElementById('payBtn');
-            btn.textContent = '⏳ Обработка...';
+            btn.innerHTML = '⏳ Обработка...';
             btn.disabled = true;
             
             setTimeout(() => {
                 if (selectedMethod === 'crypto') {
                     window.open('https://t.me/CryptoBot', '_blank');
+                } else {
+                    alert(`✅ Платёж на сумму ${currentPrice.toLocaleString()} ₽ создан`);
                 }
-                alert('✅ Платёж создан');
-                btn.textContent = '💳 Оплатить';
+                
+                btn.innerHTML = `💳 Оплатить ${currentPrice.toLocaleString()} ₽`;
                 btn.disabled = false;
             }, 1500);
         };
         
         // Инициализация
         updatePaymentDetails();
+        
+        // Маска для ввода карты
+        setTimeout(() => {
+            const cardInput = document.getElementById('cardNumber');
+            if (cardInput) {
+                cardInput.addEventListener('input', function(e) {
+                    let v = e.target.value.replace(/\D/g, '');
+                    v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+                    e.target.value = v;
+                });
+            }
+        }, 100);
     </script>
 </body>
 </html>
