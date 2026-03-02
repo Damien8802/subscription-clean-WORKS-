@@ -168,8 +168,7 @@ func main() {
         authAPI.POST("/register", handlers.RegisterHandler)
         authAPI.POST("/login", handlers.LoginHandler)
         authAPI.POST("/refresh", handlers.RefreshHandler)
-        authAPI.POST("/logout", handlers.LogoutHandler) // ДОБАВЛЕНО
-        // Добавьте в группу защищенных API
+        authAPI.POST("/logout", handlers.LogoutHandler)
         authAPI.POST("/trusted-devices/add", handlers.AddTrustedDevice)
         authAPI.POST("/trusted-devices/revoke", handlers.RevokeTrustedDevice)
         authAPI.GET("/trusted-devices/list", handlers.GetTrustedDevices)
@@ -269,7 +268,6 @@ func main() {
     // ========== API (JSON) С ЗАЩИТОЙ ==========
     api := r.Group("/api")
     api.Use(func(c *gin.Context) {
-        // Общий rate limiting для API
         ip := c.ClientIP()
         if rateLimiter.Limit(ip) {
             c.JSON(http.StatusTooManyRequests, gin.H{
@@ -281,61 +279,48 @@ func main() {
         c.Next()
     })
     {
-        // Публичные API
         api.GET("/health", handlers.HealthHandler)
         api.GET("/crm/health", handlers.CRMHealthHandler)
         api.GET("/system/stats", handlers.SystemStatsHandler)
         api.GET("/test", handlers.TestHandler)
         
-        // Пользователь (требует авторизации)
         api.POST("/user/profile", handlers.UpdateProfileHandler)
         api.POST("/user/password", handlers.UpdatePasswordHandler)
         
-        // Планы и подписки
         api.GET("/plans", handlers.GetPlansHandler)
         api.POST("/subscriptions", handlers.CreateSubscriptionHandler)
         
-        // AI
         api.POST("/ai/ask", handlers.AIAskHandler)
         api.POST("/ai/ask-with-file", handlers.AskWithFileHandler)
         
-        // Подписки пользователя
         api.GET("/user/subscriptions", handlers.GetUserSubscriptionsHandler)
         api.GET("/user/ai-usage", handlers.GetUserAIUsageHandler)
         
-        // Telegram
         api.POST("/telegram/ensure-key", handlers.EnsureAPIKeyForTelegram)
         api.POST("/webapp/auth", handlers.WebAppAuthHandler)
         
-        // Чат
         api.POST("/chat/save", handlers.SaveChatMessage)
         api.GET("/chat/history", handlers.GetChatHistory)
         
-        // База знаний
         api.POST("/knowledge/upload", handlers.UploadKnowledgeHandler)
         api.GET("/knowledge/list", handlers.ListKnowledgeHandler)
         api.DELETE("/knowledge/delete/:id", handlers.DeleteKnowledgeHandler)
         
-        // Уведомления
         api.POST("/notify", handlers.NotifyHandler)
         
-        // API ключи
         api.POST("/keys/create", handlers.CreateAPIKeyHandler)
         api.GET("/user/keys", handlers.GetUserAPIKeysHandler)
         api.POST("/keys/revoke", handlers.RevokeAPIKeyHandler)
         api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
         
-        // Рефералы (публичная статистика)
         api.GET("/referral/stats", handlers.GetReferralStatsHandler)
         api.GET("/referral/friends", handlers.GetReferralFriendsHandler)
         
-        // ===== 2FA МАРШРУТЫ =====
         api.GET("/2fa/status", handlers.GetTwoFAStatus)
         api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
         api.POST("/2fa/verify", handlers.VerifyTwoFACode)
         api.POST("/2fa/disable", handlers.DisableTwoFA)
         
-        // НОВЫЕ РАСШИРЕННЫЕ 2FA МАРШРУТЫ
         api.GET("/2fa/settings", handlers.Get2FASettings)
         api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
         api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
@@ -383,6 +368,15 @@ func main() {
         adminAPI.GET("/stats", handlers.AdminStatsHandler)
         adminAPI.GET("/users", handlers.AdminUsersHandler)
         adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
+        
+        // НОВЫЕ АДМИН РОУТЫ
+        adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
+        adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
+        adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
+        adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
+        adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
+        adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
+        adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
     }
 
     // ========== 404 ==========

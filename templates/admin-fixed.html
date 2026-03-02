@@ -1,39 +1,943 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>{{if .Title}}{{.Title}}{{else}}Subscription System{{end}}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Title}}{{.Title}}{{else}}Админ-панель | SaaSPro{{end}}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header { background: #f0f0f0; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
-        .content { padding: 20px; background: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        footer { margin-top: 20px; text-align: center; color: #666; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        /* Боковое меню */
+        .sidebar {
+            width: 280px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 30px 0;
+        }
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        .logo h1 {
+            font-size: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover {
+            background: #f7fafc;
+            border-left-color: #667eea;
+        }
+        .nav-item.active {
+            background: #ebf4ff;
+            border-left-color: #667eea;
+            color: #667eea;
+            font-weight: 500;
+        }
+        /* Основной контент */
+        .content {
+            flex: 1;
+            padding: 30px;
+        }
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .header h2 {
+            color: #333;
+        }
+        .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        /* Карточки статистики */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        .stat-title {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-change {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .stat-change.positive { color: #48bb78; }
+        .stat-change.negative { color: #f56565; }
+        /* Таблицы */
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .card-header h3 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 12px;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #48bb78; color: white; }
+        .badge-warning { background: #fbbf24; color: white; }
+        .badge-danger { background: #f87171; color: white; }
+        .badge-info { background: #4299e1; color: white; }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #333;
+        }
+        .role-badge.admin {
+            background: #667eea;
+            color: white;
+        }
+        .role-badge.manager {
+            background: #9f7aea;
+            color: white;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #a0aec0;
+        }
+        /* Контент для разных разделов */
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>{{if .Title}}{{.Title}}{{else}}Subscription System{{end}}</h1>
-            <nav>
-                <a href="/">Главная</a>
-                <a href="/dashboard">Дашборд</a>
-                <a href="/pricing">Тарифы</a>
-                <a href="/admin">Админка</a>
-                <a href="/health">Мониторинг</a>
-                <a href="/crm">CRM</a>
-            </nav>
-        </header>
-        <div class="content">
-            <h2>Страница: admin-fixed.html</h2>
-            <p>Система подписок работает в штатном режиме.</p>
-            <p>Все функции доступны через API.</p>
+        <!-- Боковое меню -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>SaaSPro Admin</h1>
+            </div>
+            <div class="nav-item active" data-section="dashboard">
+                <span>📊</span> Дашборд
+            </div>
+            <div class="nav-item" data-section="analytics">
+                <span>📈</span> Аналитика
+            </div>
+            <div class="nav-item" data-section="finance">
+                <span>💰</span> Финансы
+            </div>
+            <div class="nav-item" data-section="marketing">
+                <span>📢</span> Маркетинг
+            </div>
+            <div class="nav-item" data-section="users">
+                <span>👥</span> Пользователи
+            </div>
+            <div class="nav-item" data-section="payments">
+                <span>💳</span> Платежи
+            </div>
+            <div class="nav-item" data-section="subscriptions">
+                <span>📦</span> Подписки
+            </div>
+            <div class="nav-item" data-section="security">
+                <span>🔐</span> Безопасность
+            </div>
+            <div class="nav-item" data-section="settings">
+                <span>⚙️</span> Настройки
+            </div>
+            <div class="nav-item" data-section="stats">
+                <span>📊</span> Статистика
+            </div>
+            <div class="nav-item" data-section="logs">
+                <span>📝</span> Логи
+            </div>
+            <div class="nav-item" id="logoutBtn">
+                <span>🚪</span> Выйти
+            </div>
         </div>
-        <footer>
-            <p>© 2026 Subscription System v3.0</p>
-        </footer>
+
+        <!-- Основной контент -->
+        <div class="content">
+            <div class="header">
+                <h2 id="pageTitle">Дашборд</h2>
+                <div class="admin-info">
+                    <span>Администратор</span>
+                    <div class="avatar">A</div>
+                </div>
+            </div>
+
+            <!-- Секция Дашборд -->
+            <div id="section-dashboard" class="section active">
+                <!-- Статистика -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Всего пользователей</div>
+                        <div class="stat-value">1,234</div>
+                        <div class="stat-change positive">↑ 12% за месяц</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Активных подписок</div>
+                        <div class="stat-value">856</div>
+                        <div class="stat-change positive">↑ 8% за месяц</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">MRR (месяц)</div>
+                        <div class="stat-value">248,590 ₽</div>
+                        <div class="stat-change positive">↑ 15% за месяц</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Новых сегодня</div>
+                        <div class="stat-value">24</div>
+                        <div class="stat-change positive">↑ 3</div>
+                    </div>
+                </div>
+
+                <!-- Таблица пользователей -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Последние пользователи</h3>
+                        <button class="btn btn-primary" onclick="switchSection('users')">Все пользователи</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Пользователь</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Статус</th>
+                                <th>Подписка</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Иван Петров</td>
+                                <td>ivan@example.com</td>
+                                <td><span class="role-badge admin">Админ</span></td>
+                                <td><span class="badge badge-success">Активен</span></td>
+                                <td>Корпоративный</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Редактирование пользователя')">✏️</button>
+                                    <button class="btn btn-sm btn-danger" onclick="if(confirm('Удалить пользователя?')) alert('Пользователь удален')">🗑️</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Анна Смирнова</td>
+                                <td>anna@example.com</td>
+                                <td><span class="role-badge manager">Менеджер</span></td>
+                                <td><span class="badge badge-success">Активен</span></td>
+                                <td>Профессиональный</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Редактирование пользователя')">✏️</button>
+                                    <button class="btn btn-sm btn-danger" onclick="if(confirm('Удалить пользователя?')) alert('Пользователь удален')">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Последние платежи -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Последние платежи</h3>
+                        <button class="btn btn-primary" onclick="switchSection('payments')">Все платежи</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Пользователь</th>
+                                <th>Тариф</th>
+                                <th>Сумма</th>
+                                <th>Способ</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>02.03.2026</td>
+                                <td>ООО "Ромашка"</td>
+                                <td>Корпоративный</td>
+                                <td>49,900 ₽</td>
+                                <td>Карта</td>
+                                <td><span class="badge badge-success">Оплачено</span></td>
+                            </tr>
+                            <tr>
+                                <td>01.03.2026</td>
+                                <td>Иван Петров</td>
+                                <td>Профессиональный</td>
+                                <td>29,900 ₽</td>
+                                <td>USDT</td>
+                                <td><span class="badge badge-success">Оплачено</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Аналитика -->
+            <div id="section-analytics" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">MRR (месяц)</div>
+                        <div class="stat-value">248,590 ₽</div>
+                        <div class="stat-change positive">↑ 15%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">ARR (год)</div>
+                        <div class="stat-value">2,983,080 ₽</div>
+                        <div class="stat-change positive">↑ 12%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">LTV</div>
+                        <div class="stat-value">45,230 ₽</div>
+                        <div class="stat-change positive">↑ 8%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Churn rate</div>
+                        <div class="stat-value">3.2%</div>
+                        <div class="stat-change negative">↓ 0.5%</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Динамика выручки</h3>
+                        <select id="chartPeriod" class="btn" style="width: auto;">
+                            <option>За месяц</option>
+                            <option>За квартал</option>
+                            <option>За год</option>
+                        </select>
+                    </div>
+                    <div style="height: 300px; background: #f7fafc; border-radius: 10px; display: flex; align-items: flex-end; padding: 20px;">
+                        <!-- Простая визуализация графика -->
+                        <div style="width: 100%; display: flex; justify-content: space-around; align-items: flex-end; height: 250px;">
+                            <div style="width: 40px; background: #667eea; height: 150px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 180px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 200px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 170px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 220px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 190px; border-radius: 8px 8px 0 0;"></div>
+                            <div style="width: 40px; background: #667eea; height: 210px; border-radius: 8px 8px 0 0;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-around; margin-top: 10px; color: #666;">
+                        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">CAC</div>
+                        <div class="stat-value">3,450 ₽</div>
+                        <div class="stat-change positive">↓ 5%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Конверсия</div>
+                        <div class="stat-value">18.5%</div>
+                        <div class="stat-change positive">↑ 2.3%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">DAU</div>
+                        <div class="stat-value">1,245</div>
+                        <div class="stat-change positive">↑ 7%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">MAU</div>
+                        <div class="stat-value">8,432</div>
+                        <div class="stat-change positive">↑ 11%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Секция Финансы -->
+            <div id="section-finance" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Баланс</div>
+                        <div class="stat-value">1,245,890 ₽</div>
+                        <div class="stat-change positive">доступно</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Выплаты партнёрам</div>
+                        <div class="stat-value">124,500 ₽</div>
+                        <div class="stat-change">за месяц</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Комиссии</div>
+                        <div class="stat-value">37,350 ₽</div>
+                        <div class="stat-change">5%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Налоги</div>
+                        <div class="stat-value">74,700 ₽</div>
+                        <div class="stat-change">6%</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Последние выплаты партнёрам</h3>
+                        <button class="btn btn-primary" onclick="alert('Экспорт отчёта')">📥 Экспорт</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Партнёр</th>
+                                <th>Сумма</th>
+                                <th>Комиссия</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>02.03.2026</td>
+                                <td>Иван Петров</td>
+                                <td>12,450 ₽</td>
+                                <td>2,490 ₽</td>
+                                <td><span class="badge badge-success">Выплачено</span></td>
+                            </tr>
+                            <tr>
+                                <td>01.03.2026</td>
+                                <td>Анна Смирнова</td>
+                                <td>8,900 ₽</td>
+                                <td>1,780 ₽</td>
+                                <td><span class="badge badge-success">Выплачено</span></td>
+                            </tr>
+                            <tr>
+                                <td>28.02.2026</td>
+                                <td>ООО "Партнёр"</td>
+                                <td>24,500 ₽</td>
+                                <td>4,900 ₽</td>
+                                <td><span class="badge badge-warning">Ожидает</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Маркетинг -->
+            <div id="section-marketing" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Email рассылки</h3>
+                        <button class="btn btn-primary" onclick="alert('Создать новую рассылку')">➕ Создать</button>
+                    </div>
+                    
+                    <!-- Статистика рассылок -->
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-title">Всего рассылок</div>
+                            <div class="stat-value">24</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">Открытий</div>
+                            <div class="stat-value">45.2%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">Кликов</div>
+                            <div class="stat-value">12.8%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">Конверсия</div>
+                            <div class="stat-value">3.4%</div>
+                        </div>
+                    </div>
+
+                    <!-- Список рассылок -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Тема</th>
+                                <th>Получателей</th>
+                                <th>Открытий</th>
+                                <th>Кликов</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>02.03.2026</td>
+                                <td>🔥 Новые AI функции</td>
+                                <td>1,245</td>
+                                <td>48%</td>
+                                <td>15%</td>
+                                <td><span class="badge badge-success">Отправлено</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Просмотр статистики')">📊</button>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Копировать')">📋</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>28.02.2026</td>
+                                <td>🎉 Специальное предложение</td>
+                                <td>2,567</td>
+                                <td>52%</td>
+                                <td>18%</td>
+                                <td><span class="badge badge-success">Отправлено</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Просмотр статистики')">📊</button>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Копировать')">📋</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>25.02.2026</td>
+                                <td>💎 Как выбрать тариф</td>
+                                <td>3,890</td>
+                                <td>38%</td>
+                                <td>9%</td>
+                                <td><span class="badge badge-success">Отправлено</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Просмотр статистики')">📊</button>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Копировать')">📋</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Создание новой рассылки -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Быстрая рассылка</h3>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: #333;">Тема письма</label>
+                            <input type="text" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px;" placeholder="Введите тему">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: #333;">Получатели</label>
+                            <select style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px;">
+                                <option>Все пользователи</option>
+                                <option>Только активные</option>
+                                <option>Только с подпиской</option>
+                                <option>Партнёры</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; color: #333;">Текст письма</label>
+                            <textarea style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; height: 150px;" placeholder="Введите текст..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="alert('Рассылка запущена!')">📨 Отправить рассылку</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Секция Пользователи -->
+            <div id="section-users" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Управление пользователями</h3>
+                        <button class="btn btn-primary" onclick="alert('Добавить пользователя')">➕ Добавить</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Имя</th>
+                                <th>Email</th>
+                                <th>Роль</th>
+                                <th>Статус</th>
+                                <th>Подписка</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>Иван Петров</td>
+                                <td>ivan@example.com</td>
+                                <td><span class="role-badge admin">Админ</span></td>
+                                <td><span class="badge badge-success">Активен</span></td>
+                                <td>Корпоративный</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Редактирование пользователя')">✏️</button>
+                                    <button class="btn btn-sm btn-danger" onclick="if(confirm('Удалить пользователя?')) alert('Пользователь удален')">🗑️</button>
+                                    <button class="btn btn-sm btn-warning" onclick="alert('Блокировка пользователя')">🔒</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>Анна Смирнова</td>
+                                <td>anna@example.com</td>
+                                <td><span class="role-badge manager">Менеджер</span></td>
+                                <td><span class="badge badge-success">Активен</span></td>
+                                <td>Профессиональный</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Редактирование пользователя')">✏️</button>
+                                    <button class="btn btn-sm btn-danger" onclick="if(confirm('Удалить пользователя?')) alert('Пользователь удален')">🗑️</button>
+                                    <button class="btn btn-sm btn-warning" onclick="alert('Блокировка пользователя')">🔒</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>Сергей Иванов</td>
+                                <td>sergey@example.com</td>
+                                <td><span class="role-badge">Пользователь</span></td>
+                                <td><span class="badge badge-warning">Заморожен</span></td>
+                                <td>Базовый</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="alert('Редактирование пользователя')">✏️</button>
+                                    <button class="btn btn-sm btn-danger" onclick="if(confirm('Удалить пользователя?')) alert('Пользователь удален')">🗑️</button>
+                                    <button class="btn btn-sm btn-success" onclick="alert('Разблокировка пользователя')">🔓</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Платежи -->
+            <div id="section-payments" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>История платежей</h3>
+                        <button class="btn btn-primary" onclick="alert('Экспорт в CSV')">📥 Экспорт</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Дата</th>
+                                <th>Пользователь</th>
+                                <th>Тариф</th>
+                                <th>Сумма</th>
+                                <th>Способ</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#1001</td>
+                                <td>02.03.2026</td>
+                                <td>ООО "Ромашка"</td>
+                                <td>Корпоративный</td>
+                                <td>49,900 ₽</td>
+                                <td>Карта</td>
+                                <td><span class="badge badge-success">Оплачено</span></td>
+                            </tr>
+                            <tr>
+                                <td>#1002</td>
+                                <td>01.03.2026</td>
+                                <td>Иван Петров</td>
+                                <td>Профессиональный</td>
+                                <td>29,900 ₽</td>
+                                <td>USDT</td>
+                                <td><span class="badge badge-success">Оплачено</span></td>
+                            </tr>
+                            <tr>
+                                <td>#1003</td>
+                                <td>28.02.2026</td>
+                                <td>Анна Смирнова</td>
+                                <td>Семейный</td>
+                                <td>9,900 ₽</td>
+                                <td>СБП</td>
+                                <td><span class="badge badge-warning">Ожидает</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Подписки -->
+            <div id="section-subscriptions" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Активные подписки</h3>
+                        <button class="btn btn-primary" onclick="alert('Создать подписку')">➕ Создать</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Пользователь</th>
+                                <th>Тариф</th>
+                                <th>Начало</th>
+                                <th>Окончание</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Иван Петров</td>
+                                <td>Корпоративный</td>
+                                <td>01.03.2026</td>
+                                <td>01.04.2026</td>
+                                <td><span class="badge badge-success">Активна</span></td>
+                                <td><button class="btn btn-sm btn-danger" onclick="if(confirm('Отменить подписку?')) alert('Подписка отменена')">Отменить</button></td>
+                            </tr>
+                            <tr>
+                                <td>Анна Смирнова</td>
+                                <td>Профессиональный</td>
+                                <td>15.02.2026</td>
+                                <td>15.03.2026</td>
+                                <td><span class="badge badge-success">Активна</span></td>
+                                <td><button class="btn btn-sm btn-danger" onclick="if(confirm('Отменить подписку?')) alert('Подписка отменена')">Отменить</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Безопасность -->
+            <div id="section-security" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Логи безопасности</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>IP</th>
+                                <th>Пользователь</th>
+                                <th>Событие</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>02.03.2026 10:23</td>
+                                <td>95.139.45.50</td>
+                                <td>Иван Петров</td>
+                                <td>Вход с нового устройства</td>
+                                <td><span class="badge badge-info">Обработано</span></td>
+                            </tr>
+                            <tr>
+                                <td>01.03.2026 22:15</td>
+                                <td>85.249.23.12</td>
+                                <td>Анна Смирнова</td>
+                                <td>Неудачная попытка входа</td>
+                                <td><span class="badge badge-warning">Проверить</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Секция Настройки -->
+            <div id="section-settings" class="section">
+                <div class="card">
+                    <h3>Настройки системы</h3>
+                    <p>Здесь будут настройки админ-панели</p>
+                </div>
+            </div>
+
+            <!-- Секция Статистика -->
+            <div id="section-stats" class="section">
+                <div class="card">
+                    <h3>Детальная статистика</h3>
+                    <p>Здесь будут графики и аналитика</p>
+                </div>
+            </div>
+
+            <!-- Секция Логи -->
+            <div id="section-logs" class="section">
+                <div class="card">
+                    <h3>Системные логи</h3>
+                    <p>Здесь будут логи сервера</p>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>© 2026 SaaSPro v3.0 | Система работает в штатном режиме</p>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Функция переключения разделов
+        function switchSection(sectionName) {
+            // Скрываем все секции
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Показываем выбранную секцию
+            document.getElementById('section-' + sectionName).classList.add('active');
+            
+            // Обновляем активный пункт меню
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if(item.getAttribute('data-section') === sectionName) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Обновляем заголовок
+            const titles = {
+                'dashboard': 'Дашборд',
+                'analytics': 'Аналитика',
+                'finance': 'Финансы',
+                'marketing': 'Маркетинг',
+                'users': 'Управление пользователями',
+                'payments': 'Платежи',
+                'subscriptions': 'Подписки',
+                'security': 'Безопасность',
+                'settings': 'Настройки',
+                'stats': 'Статистика',
+                'logs': 'Логи'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionName] || sectionName;
+        }
+
+        // Добавляем обработчики для всех пунктов меню
+        document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+            item.addEventListener('click', function() {
+                const section = this.getAttribute('data-section');
+                switchSection(section);
+            });
+        });
+
+        // Обработка кнопки выхода
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if(confirm('Вы действительно хотите выйти?')) {
+                // Здесь будет реальный выход
+                fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                }).then(() => {
+                    window.location.href = '/login';
+                }).catch(() => {
+                    window.location.href = '/login';
+                });
+            }
+        });
+
+        // Обработка всех кнопок действий
+        document.querySelectorAll('.btn-primary, .btn-danger, .btn-sm').forEach(btn => {
+            if(!btn.onclick) { // Если обработчик ещё не назначен
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const text = this.textContent.trim();
+                    if(text.includes('✏️')) {
+                        alert('Редактирование (демо-режим)');
+                    } else if(text.includes('🗑️')) {
+                        if(confirm('Удалить?')) alert('Удалено (демо-режим)');
+                    } else if(text.includes('🔒') || text.includes('🔓')) {
+                        alert('Блокировка/разблокировка (демо-режим)');
+                    } else if(this.classList.contains('btn-primary') && this.textContent.includes('Все')) {
+                        // Это кнопки "Все пользователи/платежи" - они уже работают через switchSection
+                    } else {
+                        console.log('Клик по кнопке:', this.textContent);
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

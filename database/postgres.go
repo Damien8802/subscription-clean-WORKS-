@@ -47,8 +47,11 @@ func InitDB(cfg *config.Config) error {
     if err := createVerificationTables(); err != nil {
         return fmt.Errorf("failed to create verification tables: %w", err)
     }
-    if err := createUserTokensTable(); err != nil { // ДОБАВЛЕНО
+    if err := createUserTokensTable(); err != nil {
         return fmt.Errorf("failed to create user tokens table: %w", err)
+    }
+    if err := createAdminTables(); err != nil { // ДОБАВЛЕНО
+        return fmt.Errorf("failed to create admin tables: %w", err)
     }
     if err := createTestUser(); err != nil {
         return err
@@ -430,6 +433,79 @@ func createUserTokensTable() error {
         return err
     }
     log.Println("✅ Таблица пользовательских токенов готова")
+    return nil
+}
+
+// createAdminTables создаёт таблицы для админ-панели
+func createAdminTables() error {
+    // Таблица заблокированных пользователей
+    _, err := Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS blocked_users (
+            user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            blocked_at TIMESTAMP DEFAULT NOW(),
+            reason TEXT
+        );
+    `)
+    if err != nil {
+        return err
+    }
+
+    // Таблица заблокированных IP
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS blocked_ips (
+            ip VARCHAR(45) PRIMARY KEY,
+            reason TEXT,
+            blocked_at TIMESTAMP DEFAULT NOW(),
+            expires_at TIMESTAMP
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_blocked_ips_expires ON blocked_ips(expires_at);
+    `)
+    if err != nil {
+        return err
+    }
+
+    // Таблица для платежей
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS payments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            amount DECIMAL(10,2) NOT NULL,
+            currency VARCHAR(10) DEFAULT 'RUB',
+            method VARCHAR(50) NOT NULL,
+            status VARCHAR(20) DEFAULT 'pending',
+            plan_name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT NOW(),
+            completed_at TIMESTAMP
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+        CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+    `)
+    if err != nil {
+        return err
+    }
+
+    // Таблица для логов безопасности (если ещё нет)
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS security_alerts (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            ip VARCHAR(45),
+            user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            path TEXT,
+            status INTEGER,
+            reason TEXT,
+            timestamp TIMESTAMP DEFAULT NOW()
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_security_alerts_timestamp ON security_alerts(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_security_alerts_ip ON security_alerts(ip);
+    `)
+    if err != nil {
+        return err
+    }
+
+    log.Println("✅ Таблицы админ-панели готовы")
     return nil
 }
 
