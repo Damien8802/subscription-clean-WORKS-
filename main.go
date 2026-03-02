@@ -9,6 +9,7 @@ import (
     "log"
     "net/http"
     "strings"
+    "time"
 
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
@@ -46,6 +47,16 @@ func main() {
     r.Use(middleware.Logger())
     r.SetTrustedProxies(cfg.TrustedProxies)
     r.Use(middleware.SetupCORS(cfg))
+
+    // ========== НОВЫЕ MIDDLEWARE БЕЗОПАСНОСТИ ==========
+    // Rate limiting для защиты от брутфорса
+    rateLimiter := middleware.NewRateLimiter(5, time.Minute) // 5 попыток в минуту
+    
+    // Security monitor для отслеживания подозрительной активности
+    r.Use(middleware.SecurityMonitor())
+    
+    // Защита от брутфорса на роутах авторизации
+    authLimiter := middleware.NewRateLimiter(3, time.Minute) // 3 попытки в минуту для входа
 
     // Загрузка шаблонов
     subFS, err := fs.Sub(templateFS, "templates")
@@ -121,7 +132,6 @@ func main() {
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
   
-
     // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
     public := r.Group("/")
     {
@@ -133,12 +143,31 @@ func main() {
         public.GET("/partner", handlers.PartnerHandler)
     }
 
-    // ========== СТРАНИЦЫ АВТОРИЗАЦИИ ==========
+    // ========== СТРАНИЦЫ АВТОРИЗАЦИИ (ТОЛЬКО GET) ==========
     authPages := r.Group("/")
     {
         authPages.GET("/login", handlers.LoginPageHandler)
         authPages.GET("/register", handlers.RegisterPageHandler)
         authPages.GET("/forgot-password", handlers.ForgotPasswordHandler)
+    }
+
+    // ========== API АВТОРИЗАЦИИ С ЗАЩИТОЙ ОТ БРУТФОРСА ==========
+    authAPI := r.Group("/api/auth")
+    authAPI.Use(func(c *gin.Context) {
+        ip := c.ClientIP()
+        if authLimiter.Limit(ip) {
+            c.JSON(http.StatusTooManyRequests, gin.H{
+                "error": "Слишком много попыток входа. Попробуйте через минуту.",
+            })
+            c.Abort()
+            return
+        }
+        c.Next()
+    })
+    {
+        authAPI.POST("/register", handlers.RegisterHandler)
+        authAPI.POST("/login", handlers.LoginHandler)
+        authAPI.POST("/refresh", handlers.RefreshHandler)
     }
 
     // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
@@ -210,8 +239,20 @@ func main() {
         deliveryAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
     }
 
-    // ========== API (JSON) ==========
+    // ========== API (JSON) С ЗАЩИТОЙ ==========
     api := r.Group("/api")
+    api.Use(func(c *gin.Context) {
+        // Общий rate limiting для API
+        ip := c.ClientIP()
+        if rateLimiter.Limit(ip) {
+            c.JSON(http.StatusTooManyRequests, gin.H{
+                "error": "Слишком много запросов. Попробуйте позже.",
+            })
+            c.Abort()
+            return
+        }
+        c.Next()
+    })
     {
         // Публичные API
         api.GET("/health", handlers.HealthHandler)
@@ -219,12 +260,7 @@ func main() {
         api.GET("/system/stats", handlers.SystemStatsHandler)
         api.GET("/test", handlers.TestHandler)
         
-        // Аутентификация
-        api.POST("/auth/register", handlers.RegisterHandler)
-        api.POST("/auth/login", handlers.LoginHandler)
-        api.POST("/auth/refresh", handlers.RefreshHandler)
-        
-        // Пользователь
+        // Пользователь (требует авторизации)
         api.POST("/user/profile", handlers.UpdateProfileHandler)
         api.POST("/user/password", handlers.UpdatePasswordHandler)
         
@@ -278,14 +314,14 @@ func main() {
         api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.POST("/2fa/trust-device", handlers.TrustDevice)
         api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
-        
-        // Защищенные API
-        authAPI := api.Group("/")
-        authAPI.Use(middleware.AuthMiddleware(cfg))
-        {
-            authAPI.GET("/user/profile", handlers.GetUserProfile)
-            authAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
-        }
+    }
+
+    // ========== ЗАЩИЩЕННЫЕ API ==========
+    secureAPI := r.Group("/api")
+    secureAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        secureAPI.GET("/user/profile", handlers.GetUserProfile)
+        secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
     }
 
     // ========== УВЕДОМЛЕНИЯ ==========
