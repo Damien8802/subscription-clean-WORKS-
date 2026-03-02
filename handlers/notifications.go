@@ -10,8 +10,15 @@ import (
     "os"
     "time"
 
+    "subscription-system/config"
     "subscription-system/database"
+    "subscription-system/utils"
     "github.com/gin-gonic/gin"
+)
+
+var (
+    cfg          = config.Load()
+    emailService = utils.NewEmailService(cfg)
 )
 
 // Notification types
@@ -27,7 +34,6 @@ const (
 
 // SendTelegramNotification отправляет уведомление пользователю в Telegram
 func SendTelegramNotification(userID string, message string) error {
-    // Получаем Telegram ID пользователя из БД
     var telegramID int64
     err := database.Pool.QueryRow(context.Background(),
         "SELECT telegram_id FROM users WHERE id = $1", userID).Scan(&telegramID)
@@ -59,7 +65,40 @@ func SendTelegramNotification(userID string, message string) error {
     return nil
 }
 
-// LogAndNotify логирует событие и отправляет уведомление
+// SendEmailNotification отправляет уведомление по email
+func SendEmailNotification(userID string, notifType string, details map[string]interface{}) error {
+    // Получаем email пользователя
+    var email, name string
+    err := database.Pool.QueryRow(context.Background(),
+        "SELECT email, name FROM users WHERE id = $1", userID).Scan(&email, &name)
+    if err != nil {
+        return err
+    }
+
+    switch notifType {
+    case NotifLoginNewDevice:
+        return emailService.SendLoginNotification(email, name,
+            details["ip"].(string),
+            details["location"].(string),
+            details["device"].(string))
+    case Notif2FAEnabled:
+        return emailService.Send2FANotification(email, name, "Включена")
+    case Notif2FADisabled:
+        return emailService.Send2FANotification(email, name, "Отключена")
+    default:
+        return emailService.SendSecurityAlert(email, name, notifType, convertDetails(details))
+    }
+}
+
+func convertDetails(details map[string]interface{}) map[string]string {
+    result := make(map[string]string)
+    for k, v := range details {
+        result[k] = fmt.Sprintf("%v", v)
+    }
+    return result
+}
+
+// LogAndNotify логирует событие и отправляет уведомления
 func LogAndNotify(c *gin.Context, userID string, notifType string, details map[string]interface{}) {
     // Логируем в БД
     _, err := database.Pool.Exec(context.Background(),
@@ -71,11 +110,14 @@ func LogAndNotify(c *gin.Context, userID string, notifType string, details map[s
         log.Printf("❌ Ошибка логирования уведомления: %v", err)
     }
     
-    // Формируем текст уведомления
+    // Формируем текст для Telegram
     message := formatNotificationMessage(notifType, details)
     
     // Отправляем в Telegram
     go SendTelegramNotification(userID, message)
+    
+    // Отправляем на email
+    go SendEmailNotification(userID, notifType, details)
 }
 
 func formatNotificationMessage(notifType string, details map[string]interface{}) string {
