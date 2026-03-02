@@ -174,6 +174,19 @@ func main() {
         authAPI.GET("/trusted-devices/list", handlers.GetTrustedDevices)
     }
 
+    // ========== ПАРТНЁРСКАЯ ПРОГРАММА (TELEGRAM STARS) ==========
+    referralAPI := r.Group("/api/referral")
+    referralAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        referralAPI.POST("/program/create", handlers.CreateReferralProgram)
+        referralAPI.GET("/program", handlers.GetReferralProgram)
+        referralAPI.GET("/commissions", handlers.GetReferralCommissions)
+        referralAPI.POST("/commissions/pay", handlers.PayCommission)
+    }
+
+    // Публичный эндпоинт для отслеживания переходов
+    r.GET("/ref", handlers.ProcessReferral)
+
     // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
     protected := r.Group("/")
     protected.Use(middleware.AuthMiddleware(cfg))
@@ -302,7 +315,7 @@ func main() {
         api.POST("/keys/revoke", handlers.RevokeAPIKeyHandler)
         api.POST("/keys/validate", handlers.ValidateAPIKeyHandler)
         
-        // Рефералы
+        // Рефералы (публичная статистика)
         api.GET("/referral/stats", handlers.GetReferralStatsHandler)
         api.GET("/referral/friends", handlers.GetReferralFriendsHandler)
         

@@ -41,6 +41,9 @@ func InitDB(cfg *config.Config) error {
     if err := createTwoFATable(); err != nil {
         return fmt.Errorf("failed to create twofa table: %w", err)
     }
+    if err := createReferralProgramTables(); err != nil {
+        return fmt.Errorf("failed to create referral program tables: %w", err)
+    }
     if err := createTestUser(); err != nil {
         return err
     }
@@ -328,6 +331,55 @@ func createTwoFATable() error {
     }
 
     log.Println("✅ Таблицы 2FA, резервных кодов и доверенных устройств готовы")
+    return nil
+}
+
+// createReferralProgramTables создаёт таблицы для партнёрской программы (Telegram Stars)
+func createReferralProgramTables() error {
+    // Таблица партнёрских программ
+    _, err := Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS referral_programs (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+            referral_link TEXT NOT NULL,
+            commission_percent INT NOT NULL DEFAULT 20,
+            total_earned BIGINT DEFAULT 0,
+            total_referred INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW(),
+            updated_at TIMESTAMP DEFAULT NOW()
+        );
+    `)
+    if err != nil {
+        return err
+    }
+    
+    // Таблица комиссий
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS referral_commissions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            referrer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            referred_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            amount BIGINT NOT NULL,
+            status VARCHAR(20) DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT NOW(),
+            paid_at TIMESTAMP
+        );
+    `)
+    if err != nil {
+        return err
+    }
+    
+    // Индексы для быстрого поиска
+    _, err = Pool.Exec(context.Background(), `
+        CREATE INDEX IF NOT EXISTS idx_referral_programs_user ON referral_programs(user_id);
+        CREATE INDEX IF NOT EXISTS idx_referral_commissions_referrer ON referral_commissions(referrer_id);
+        CREATE INDEX IF NOT EXISTS idx_referral_commissions_referred ON referral_commissions(referred_id);
+    `)
+    if err != nil {
+        return err
+    }
+    
+    log.Println("✅ Таблицы партнёрских программ готовы")
     return nil
 }
 
