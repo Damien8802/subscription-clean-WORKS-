@@ -168,6 +168,7 @@ func main() {
         authAPI.POST("/register", handlers.RegisterHandler)
         authAPI.POST("/login", handlers.LoginHandler)
         authAPI.POST("/refresh", handlers.RefreshHandler)
+        authAPI.POST("/logout", handlers.LogoutHandler) // ДОБАВЛЕНО
         // Добавьте в группу защищенных API
         authAPI.POST("/trusted-devices/add", handlers.AddTrustedDevice)
         authAPI.POST("/trusted-devices/revoke", handlers.RevokeTrustedDevice)

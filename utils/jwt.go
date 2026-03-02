@@ -16,14 +16,19 @@ type Claims struct {
     jwt.RegisteredClaims
 }
 
-// GenerateTokens создаёт access и refresh токены
+// GenerateTokens создаёт access и refresh токены (стандартные сроки)
 func GenerateTokens(userID, role string) (string, string, error) {
-    // Access token (15 минут)
+    return GenerateTokensWithExpiry(userID, role, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+}
+
+// GenerateTokensWithExpiry создаёт токены с указанными сроками
+func GenerateTokensWithExpiry(userID, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
+    // Access token
     accessClaims := Claims{
         userID,
         role,
         jwt.RegisteredClaims{
-            ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
         },
     }
@@ -33,10 +38,14 @@ func GenerateTokens(userID, role string) (string, string, error) {
         return "", "", err
     }
 
-    // Refresh token (30 дней)
-    refreshClaims := jwt.RegisteredClaims{
-        ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTRefreshExpiry)),
-        IssuedAt:  jwt.NewNumericDate(time.Now()),
+    // Refresh token
+    refreshClaims := Claims{
+        userID,
+        role,
+        jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
+        },
     }
     refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
     refreshString, err := refreshToken.SignedString([]byte(cfg.JWTRefreshSecret))
@@ -80,10 +89,13 @@ func RefreshToken(refreshToken string) (string, error) {
         return "", errors.New("invalid claims")
     }
 
+    userID, _ := claims["user_id"].(string)
+    role, _ := claims["role"].(string)
+
     // Создаём новый access token
     accessClaims := Claims{
-        UserID: claims["user_id"].(string),
-        Role:   claims["role"].(string),
+        UserID: userID,
+        Role:   role,
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),

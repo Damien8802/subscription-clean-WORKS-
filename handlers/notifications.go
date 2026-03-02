@@ -5,6 +5,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    "io"
     "log"
     "net/http"
     "os"
@@ -31,6 +32,45 @@ const (
     NotifDeviceRevoked    = "device_revoked"
     NotifSuspiciousLogin  = "suspicious_login"
 )
+
+// ========== НОВАЯ ФУНКЦИЯ ==========
+// GetLocationByIP определяет местоположение по IP
+func GetLocationByIP(ip string) string {
+    // Если IP локальный, не проверяем
+    if ip == "::1" || ip == "127.0.0.1" {
+        return "Локальный доступ"
+    }
+
+    // Используем бесплатный API ip-api.com
+    client := &http.Client{Timeout: 3 * time.Second}
+    resp, err := client.Get("http://ip-api.com/json/" + ip + "?lang=ru&fields=status,country,city,isp,query")
+    if err != nil {
+        log.Printf("⚠️ Ошибка определения местоположения для IP %s: %v", ip, err)
+        return "Неизвестно"
+    }
+    defer resp.Body.Close()
+    
+    body, _ := io.ReadAll(resp.Body)
+    
+    var result struct {
+        Status  string `json:"status"`
+        Country string `json:"country"`
+        City    string `json:"city"`
+        ISP     string `json:"isp"`
+    }
+    
+    if err := json.Unmarshal(body, &result); err != nil || result.Status != "success" {
+        return "Неизвестно"
+    }
+    
+    if result.City != "" && result.Country != "" {
+        return fmt.Sprintf("%s, %s (%s)", result.City, result.Country, result.ISP)
+    }
+    if result.Country != "" {
+        return result.Country
+    }
+    return "Неизвестно"
+}
 
 // SendTelegramNotification отправляет уведомление пользователю в Telegram
 func SendTelegramNotification(userID string, message string) error {
@@ -100,6 +140,14 @@ func convertDetails(details map[string]interface{}) map[string]string {
 
 // LogAndNotify логирует событие и отправляет уведомления
 func LogAndNotify(c *gin.Context, userID string, notifType string, details map[string]interface{}) {
+    // Определяем местоположение для IP (только для логина)
+    if notifType == NotifLoginNewDevice || notifType == NotifSuspiciousLogin {
+        if ip, ok := details["ip"].(string); ok && ip != "" {
+            location := GetLocationByIP(ip)
+            details["location"] = location
+        }
+    }
+
     // Логируем в БД
     _, err := database.Pool.Exec(context.Background(),
         `INSERT INTO notification_log (user_id, type, details, created_at) 
@@ -123,48 +171,58 @@ func LogAndNotify(c *gin.Context, userID string, notifType string, details map[s
 func formatNotificationMessage(notifType string, details map[string]interface{}) string {
     switch notifType {
     case NotifLoginNewDevice:
-        return fmt.Sprintf(`🔐 <b>Новый вход в аккаунт</b>
-        
-📍 IP: %v
-🌍 Локация: %v
-🖥️ Устройство: %v
-⏰ Время: %v
+        return fmt.Sprintf(`🚨 <b>НОВЫЙ ВХОД В АККАУНТ</b>
 
-Если это были не вы, немедленно смените пароль!`,
+📍 <b>IP:</b> <code>%v</code>
+🌍 <b>Местоположение:</b> %v
+💻 <b>Устройство:</b> %v
+⏰ <b>Время:</b> %v
+
+⚠️ <b>Если это были не вы:</b>
+1️⃣ Немедленно смените пароль
+2️⃣ Проверьте доверенные устройства
+3️⃣ Включите 2FA
+
+✅ <b>Если это вы</b> — можете добавить устройство в доверенные в настройках безопасности.`,
             details["ip"], details["location"], details["device"], details["time"])
 
     case Notif2FAEnabled:
-        return "🔒 <b>2FA включена</b>\n\nДвухфакторная аутентификация успешно активирована для вашего аккаунта."
+        return "🔒 <b>✅ 2FA ВКЛЮЧЕНА</b>\n\nДвухфакторная аутентификация успешно активирована для вашего аккаунта. Ваш аккаунт теперь под дополнительной защитой!"
 
     case Notif2FADisabled:
-        return "🔓 <b>2FA отключена</b>\n\nДвухфакторная аутентификация была отключена. Если это были не вы, срочно примите меры!"
+        return "🔓 <b>⚠️ 2FA ОТКЛЮЧЕНА</b>\n\nДвухфакторная аутентификация была отключена. Если это были не вы, срочно примите меры!"
 
     case NotifPasswordChanged:
-        return "🔑 <b>Пароль изменён</b>\n\nПароль от вашего аккаунта был успешно изменён."
+        return "🔑 <b>✅ ПАРОЛЬ ИЗМЕНЁН</b>\n\nПароль от вашего аккаунта был успешно изменён."
 
     case NotifDeviceTrusted:
-        return fmt.Sprintf(`📱 <b>Новое доверенное устройство</b>
+        return fmt.Sprintf(`📱 <b>✅ НОВОЕ ДОВЕРЕННОЕ УСТРОЙСТВО</b>
         
-Устройство: %v
-IP: %v
-Срок действия: 30 дней`,
+<b>Устройство:</b> %v
+<b>IP:</b> <code>%v</code>
+<b>Срок действия:</b> 30 дней
+
+Теперь вход с этого устройства не требует подтверждения.`,
             details["device"], details["ip"])
 
     case NotifDeviceRevoked:
-        return fmt.Sprintf(`🚫 <b>Доступ устройства отозван</b>
+        return fmt.Sprintf(`🚫 <b>🔐 ДОСТУП УСТРОЙСТВА ОТОЗВАН</b>
         
-Устройство: %v больше не имеет доступа к аккаунту.`,
+<b>Устройство:</b> %v больше не имеет доступа к вашему аккаунту.`,
             details["device"])
 
     case NotifSuspiciousLogin:
-        return fmt.Sprintf(`🚨 <b>Подозрительная активность</b>
+        return fmt.Sprintf(`🚨 <b>⚠️ ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ</b>
         
 Обнаружена подозрительная попытка входа:
-📍 IP: %v
-🌍 Локация: %v
-🖥️ Устройство: %v
+📍 <b>IP:</b> <code>%v</code>
+🌍 <b>Местоположение:</b> %v
+💻 <b>Устройство:</b> %v
 
-Рекомендуем сменить пароль.`,
+<b>Рекомендуем:</b>
+• Немедленно сменить пароль
+• Проверить список доверенных устройств
+• Включить 2FA, если ещё не сделано`,
             details["ip"], details["location"], details["device"])
 
     default:

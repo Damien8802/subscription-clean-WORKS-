@@ -47,6 +47,9 @@ func InitDB(cfg *config.Config) error {
     if err := createVerificationTables(); err != nil {
         return fmt.Errorf("failed to create verification tables: %w", err)
     }
+    if err := createUserTokensTable(); err != nil { // ДОБАВЛЕНО
+        return fmt.Errorf("failed to create user tokens table: %w", err)
+    }
     if err := createTestUser(); err != nil {
         return err
     }
@@ -406,6 +409,27 @@ func createVerificationTables() error {
         return err
     }
     log.Println("✅ Таблицы верификации готовы")
+    return nil
+}
+
+// createUserTokensTable создаёт таблицу для хранения refresh токенов
+func createUserTokensTable() error {
+    _, err := Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS user_tokens (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            token TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_user_tokens_token ON user_tokens(token);
+        CREATE INDEX IF NOT EXISTS idx_user_tokens_user ON user_tokens(user_id);
+    `)
+    if err != nil {
+        return err
+    }
+    log.Println("✅ Таблица пользовательских токенов готова")
     return nil
 }
 

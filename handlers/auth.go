@@ -23,11 +23,12 @@ func InitAuthHandler(cfg *config.Config) {
     log.Println("✅ Auth handler initialized")
 }
 
-// LoginHandler обрабатывает вход пользователя
+// LoginHandler обрабатывает вход пользователя с поддержкой "Запомнить меня"
 func LoginHandler(c *gin.Context) {
     var req struct {
-        Email    string `json:"email" binding:"required,email"`
-        Password string `json:"password" binding:"required"`
+        Email     string `json:"email" binding:"required,email"`
+        Password  string `json:"password" binding:"required"`
+        Remember  bool   `json:"remember"` // флаг "Запомнить меня"
     }
 
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -64,11 +65,32 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
-    // Генерируем JWT токены
-    accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
+    // Определяем срок действия токена в зависимости от флага Remember
+    var accessExpiry, refreshExpiry time.Duration
+    if req.Remember {
+        // Если "Запомнить меня" - токен на 30 дней
+        accessExpiry = 30 * 24 * time.Hour
+        refreshExpiry = 90 * 24 * time.Hour
+    } else {
+        // Обычный вход - токен на 15 минут
+        accessExpiry = 15 * time.Minute
+        refreshExpiry = 24 * time.Hour
+    }
+
+    // Генерируем JWT токены с учётом срока
+    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID, user.Role, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
+    }
+
+    // Сохраняем refresh token в БД для возможности инвалидации
+    _, err = database.Pool.Exec(c.Request.Context(),
+        `INSERT INTO user_tokens (user_id, token, expires_at, created_at) 
+         VALUES ($1, $2, NOW() + $3 * interval '1 second', NOW())`,
+        user.ID, refreshToken, int(refreshExpiry.Seconds()))
+    if err != nil {
+        log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
     // Проверяем устройство
@@ -100,12 +122,42 @@ func LoginHandler(c *gin.Context) {
         "success":       true,
         "access_token":  accessToken,
         "refresh_token": refreshToken,
+        "remember":      req.Remember,
+        "expires_in":    accessExpiry.Seconds(),
         "user": gin.H{
             "id":    user.ID,
             "email": user.Email,
             "name":  user.Name,
             "role":  user.Role,
         },
+    })
+}
+
+// LogoutHandler обрабатывает выход пользователя
+func LogoutHandler(c *gin.Context) {
+    var req struct {
+        RefreshToken string `json:"refresh_token" binding:"required"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Удаляем refresh token из БД (инвалидация)
+    _, err := database.Pool.Exec(c.Request.Context(),
+        "DELETE FROM user_tokens WHERE token = $1", req.RefreshToken)
+    if err != nil {
+        log.Printf("⚠️ Failed to delete refresh token: %v", err)
+    }
+
+    // Очищаем куки, если они используются
+    c.SetCookie("access_token", "", -1, "/", "", false, true)
+    c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Successfully logged out",
     })
 }
 
@@ -203,6 +255,16 @@ func RefreshHandler(c *gin.Context) {
 
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Проверяем, существует ли refresh token в БД (не был ли отозван)
+    var exists bool
+    err := database.Pool.QueryRow(c.Request.Context(),
+        "SELECT EXISTS(SELECT 1 FROM user_tokens WHERE token = $1 AND expires_at > NOW())",
+        req.RefreshToken).Scan(&exists)
+    if err != nil || !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
         return
     }
 
