@@ -3,6 +3,7 @@ package handlers
 import (
     "encoding/base64"
     "net/http"
+    "time"
 
     "github.com/gin-gonic/gin"
     "github.com/pquerna/otp/totp"
@@ -103,6 +104,11 @@ func VerifyTwoFACode(c *gin.Context) {
         return
     }
 
+    // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
+    go LogAndNotify(c, req.UserID, Notif2FAEnabled, map[string]interface{}{
+        "time": time.Now().Format("02.01.2006 15:04"),
+    })
+
     c.JSON(http.StatusOK, gin.H{
         "success": true,
         "message": "2FA enabled successfully",
@@ -144,6 +150,11 @@ func DisableTwoFA(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disable 2FA"})
         return
     }
+
+    // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
+    go LogAndNotify(c, req.UserID, Notif2FADisabled, map[string]interface{}{
+        "time": time.Now().Format("02.01.2006 15:04"),
+    })
 
     c.JSON(http.StatusOK, gin.H{
         "success": true,

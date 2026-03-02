@@ -168,6 +168,10 @@ func main() {
         authAPI.POST("/register", handlers.RegisterHandler)
         authAPI.POST("/login", handlers.LoginHandler)
         authAPI.POST("/refresh", handlers.RefreshHandler)
+        // Добавьте в группу защищенных API
+        authAPI.POST("/trusted-devices/add", handlers.AddTrustedDevice)
+        authAPI.POST("/trusted-devices/revoke", handlers.RevokeTrustedDevice)
+        authAPI.GET("/trusted-devices/list", handlers.GetTrustedDevices)
     }
 
     // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
