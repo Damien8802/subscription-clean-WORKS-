@@ -76,3 +76,20 @@ func (s *EmailService) Send2FANotification(to, username, action string) error {
     }
     return s.SendSecurityAlert(to, username, "Изменение 2FA", details)
 }
+
+// SendVerificationEmail отправляет код подтверждения
+func (s *EmailService) SendVerificationEmail(to, name, code string) error {
+    subject := "🔐 Подтверждение регистрации - SaaSPro"
+    
+    body := fmt.Sprintf(`
+        <h2>Добро пожаловать в SaaSPro!</h2>
+        <p>Здравствуйте, <strong>%s</strong>!</p>
+        <p>Ваш код подтверждения:</p>
+        <h1 style="font-size: 32px; letter-spacing: 5px; background: #f0f0f0; padding: 10px; text-align: center;">%s</h1>
+        <p>Код действителен в течение 15 минут.</p>
+        <p>Если вы не регистрировались на нашем сайте, проигнорируйте это письмо.</p>
+        <p>С уважением,<br>Команда SaaSPro</p>
+    `, name, code)
+    
+    return s.SendEmail(to, subject, body)
+}

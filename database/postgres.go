@@ -44,6 +44,9 @@ func InitDB(cfg *config.Config) error {
     if err := createReferralProgramTables(); err != nil {
         return fmt.Errorf("failed to create referral program tables: %w", err)
     }
+    if err := createVerificationTables(); err != nil {
+        return fmt.Errorf("failed to create verification tables: %w", err)
+    }
     if err := createTestUser(); err != nil {
         return err
     }
@@ -380,6 +383,29 @@ func createReferralProgramTables() error {
     }
     
     log.Println("✅ Таблицы партнёрских программ готовы")
+    return nil
+}
+
+// createVerificationTables создаёт таблицы для верификации
+func createVerificationTables() error {
+    _, err := Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS verification_codes (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            code VARCHAR(10) NOT NULL,
+            type VARCHAR(20) NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW(),
+            used_at TIMESTAMP
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_verification_codes_user ON verification_codes(user_id);
+        CREATE INDEX IF NOT EXISTS idx_verification_codes_code ON verification_codes(code);
+    `)
+    if err != nil {
+        return err
+    }
+    log.Println("✅ Таблицы верификации готовы")
     return nil
 }
 

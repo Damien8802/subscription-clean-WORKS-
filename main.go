@@ -187,6 +187,15 @@ func main() {
     // Публичный эндпоинт для отслеживания переходов
     r.GET("/ref", handlers.ProcessReferral)
 
+    // ========== ВЕРИФИКАЦИЯ ==========
+    verificationAPI := r.Group("/api/verification")
+    {
+        verificationAPI.POST("/send-email", handlers.SendVerificationEmail)
+        verificationAPI.POST("/send-telegram", handlers.SendVerificationTelegram)
+        verificationAPI.POST("/verify", handlers.VerifyCode)
+        verificationAPI.GET("/status", handlers.CheckVerificationStatus)
+    }
+
     // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
     protected := r.Group("/")
     protected.Use(middleware.AuthMiddleware(cfg))

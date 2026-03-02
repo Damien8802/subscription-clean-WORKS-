@@ -38,12 +38,23 @@ func LoginHandler(c *gin.Context) {
     // Получаем пользователя из БД
     var user models.User
     var passwordHash string
+    var emailVerified bool
     err := database.Pool.QueryRow(c.Request.Context(),
-        "SELECT id, email, password_hash, name, role FROM users WHERE email = $1",
-        req.Email).Scan(&user.ID, &user.Email, &passwordHash, &user.Name, &user.Role)
+        "SELECT id, email, password_hash, name, role, email_verified FROM users WHERE email = $1",
+        req.Email).Scan(&user.ID, &user.Email, &passwordHash, &user.Name, &user.Role, &emailVerified)
     
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+        return
+    }
+
+    // Проверяем, подтверждён ли email
+    if !emailVerified {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "error": "Email not verified. Please check your email for verification code.",
+            "requires_verification": true,
+            "user_id": user.ID,
+        })
         return
     }
 
@@ -111,6 +122,19 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
+    // Проверяем, не занят ли email
+    var exists bool
+    err := database.Pool.QueryRow(c.Request.Context(),
+        "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    if exists {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Email already registered"})
+        return
+    }
+
     // Хешируем пароль
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
     if err != nil {
@@ -118,11 +142,11 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Создаём пользователя в БД
+    // Создаём пользователя в БД (email_verified = false по умолчанию)
     var user models.User
     err = database.Pool.QueryRow(c.Request.Context(),
-        `INSERT INTO users (email, password_hash, name, role) 
-         VALUES ($1, $2, $3, 'user') 
+        `INSERT INTO users (email, password_hash, name, role, email_verified) 
+         VALUES ($1, $2, $3, 'user', false) 
          RETURNING id, email, name, role`,
         req.Email, string(hashedPassword), req.Name).Scan(
         &user.ID, &user.Email, &user.Name, &user.Role)
@@ -132,7 +156,24 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Генерируем токены
+    // Генерируем код подтверждения
+    verificationCode, err := GenerateVerificationCode(user.ID, "email")
+    if err != nil {
+        log.Printf("❌ Failed to generate verification code: %v", err)
+    } else {
+        // Отправляем код на email (в фоне)
+        go func() {
+            emailService := utils.NewEmailService(config.Load())
+            err := emailService.SendVerificationEmail(user.Email, user.Name, verificationCode)
+            if err != nil {
+                log.Printf("❌ Failed to send verification email: %v", err)
+            } else {
+                log.Printf("✅ Verification email sent to %s", user.Email)
+            }
+        }()
+    }
+
+    // Генерируем токены (хотя пользователь ещё не верифицирован)
     accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
@@ -148,7 +189,9 @@ func RegisterHandler(c *gin.Context) {
             "email": user.Email,
             "name":  user.Name,
             "role":  user.Role,
+            "email_verified": false,
         },
+        "message": "Registration successful! Please check your email for verification code.",
     })
 }
 
