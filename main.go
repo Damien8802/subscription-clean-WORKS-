@@ -374,6 +374,15 @@ func main() {
         api.DELETE("/crm/attachments/:attachment_id", handlers.DeleteDealAttachment)
 
         api.GET("/crm/advanced-stats", handlers.GetCRMAdvancedStats)
+
+        // Массовые операции для клиентов
+        api.POST("/crm/customers/batch/delete", handlers.BatchDeleteCustomers)
+        api.PUT("/crm/customers/batch/status", handlers.BatchUpdateCustomersStatus)
+
+        // Массовые операции для сделок
+        api.POST("/crm/deals/batch/delete", handlers.BatchDeleteDeals)
+        api.PUT("/crm/deals/batch/stage", handlers.BatchUpdateDealsStage)
+        api.PUT("/crm/deals/batch/responsible", handlers.BatchUpdateDealsResponsible)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========
