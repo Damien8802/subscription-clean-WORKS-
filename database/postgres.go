@@ -512,7 +512,7 @@ func createAdminTables() error {
     return nil
 }
 
-// createCRMTables создаёт таблицы для CRM и добавляет новые колонки
+// createCRMTables создаёт таблицы для CRM, включая историю
 func createCRMTables() error {
     // Таблица клиентов CRM
     _, err := Pool.Exec(context.Background(), `
@@ -624,7 +624,26 @@ func createCRMTables() error {
         log.Printf("⚠️ Не удалось создать индекс на user_id в crm_deals: %v", err)
     }
 
-    log.Println("✅ Таблицы CRM готовы (включая новые поля, таблицу вложений и привязку к пользователям)")
+    // Таблица истории изменений
+    _, err = Pool.Exec(context.Background(), `
+        CREATE TABLE IF NOT EXISTS crm_history (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            entity_type VARCHAR(20) NOT NULL, -- 'customer' или 'deal'
+            entity_id UUID NOT NULL,
+            action VARCHAR(20) NOT NULL, -- 'create', 'update', 'delete'
+            user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            changes JSONB,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+        
+        CREATE INDEX IF NOT EXISTS idx_crm_history_entity ON crm_history(entity_type, entity_id);
+        CREATE INDEX IF NOT EXISTS idx_crm_history_created ON crm_history(created_at);
+    `)
+    if err != nil {
+        log.Printf("⚠️ Не удалось создать таблицу crm_history: %v", err)
+    }
+
+    log.Println("✅ Таблицы CRM готовы (включая новые поля, таблицу вложений, привязку к пользователям и историю)")
     return nil
 }
 

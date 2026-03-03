@@ -2,8 +2,10 @@ package handlers
 
 import (
     "bytes"
+    "context"
     "database/sql"
     "encoding/csv"
+    "encoding/json"
     "fmt"
     "net/http"
     "os"
@@ -59,6 +61,17 @@ type Deal struct {
     ClosedAt      *time.Time `json:"closed_at,omitempty"`
 }
 
+// HistoryRecord представляет запись истории
+type HistoryRecord struct {
+    ID         string          `json:"id"`
+    EntityType string          `json:"entity_type"`
+    EntityID   string          `json:"entity_id"`
+    Action     string          `json:"action"`
+    UserID     *string         `json:"user_id,omitempty"`
+    Changes    json.RawMessage `json:"changes,omitempty"`
+    CreatedAt  time.Time       `json:"created_at"`
+}
+
 // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 
 // getPaginationParams извлекает page и page_size из запроса с значениями по умолчанию
@@ -101,6 +114,96 @@ func getRoleFromContext(c *gin.Context) string {
 // isAdmin проверяет, является ли пользователь администратором
 func isAdmin(c *gin.Context) bool {
     return getRoleFromContext(c) == "admin"
+}
+
+// ========== ИСТОРИЯ ==========
+
+// addHistory записывает действие в историю
+func addHistory(ctx context.Context, entityType, entityID, action string, userID *string, changes interface{}) error {
+    var changesJSON []byte
+    var err error
+    if changes != nil {
+        changesJSON, err = json.Marshal(changes)
+        if err != nil {
+            return err
+        }
+    }
+
+    _, err = database.Pool.Exec(ctx, `
+        INSERT INTO crm_history (entity_type, entity_id, action, user_id, changes)
+        VALUES ($1, $2, $3, $4, $5)
+    `, entityType, entityID, action, userID, changesJSON)
+    return err
+}
+
+// GetEntityHistory возвращает историю для конкретной сущности
+// @Summary История изменений сущности
+// @Description Возвращает историю изменений для клиента или сделки
+// @Tags CRM
+// @Produce json
+// @Param type path string true "Тип сущности (customer или deal)"
+// @Param id path string true "ID сущности"
+// @Success 200 {array} HistoryRecord
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/crm/history/{type}/{id} [get]
+func GetEntityHistory(c *gin.Context) {
+    entityType := c.Param("type")
+    entityID := c.Param("id")
+    if entityType != "customer" && entityType != "deal" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid entity type"})
+        return
+    }
+
+    // Проверка прав доступа: пользователь может смотреть историю только своих записей (если не админ)
+    userID := getUserIDFromContext(c)
+    isAdmin := isAdmin(c)
+    if !isAdmin {
+        var ownerID string
+        var err error
+        if entityType == "customer" {
+            err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_customers WHERE id = $1", entityID).Scan(&ownerID)
+        } else {
+            err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", entityID).Scan(&ownerID)
+        }
+        if err != nil {
+            c.JSON(http.StatusNotFound, gin.H{"error": "Entity not found"})
+            return
+        }
+        if ownerID != userID {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+            return
+        }
+    }
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, entity_type, entity_id, action, user_id, changes, created_at
+        FROM crm_history
+        WHERE entity_type = $1 AND entity_id = $2
+        ORDER BY created_at DESC
+    `, entityType, entityID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    var history []HistoryRecord
+    for rows.Next() {
+        var h HistoryRecord
+        var userID sql.NullString
+        var changes []byte
+        err := rows.Scan(&h.ID, &h.EntityType, &h.EntityID, &h.Action, &userID, &changes, &h.CreatedAt)
+        if err != nil {
+            continue
+        }
+        if userID.Valid {
+            h.UserID = &userID.String
+        }
+        h.Changes = json.RawMessage(changes)
+        history = append(history, h)
+    }
+
+    c.JSON(http.StatusOK, history)
 }
 
 // ========== СТРАНИЦА CRM ==========
@@ -290,6 +393,9 @@ func CreateCustomer(c *gin.Context) {
         notifier.NotifyCustomerCreated(req.Name, req.Email, req.Phone, req.Company, req.Responsible)
     }
 
+    // HISTORY: записываем создание
+    go addHistory(c.Request.Context(), "customer", id, "create", &userID, nil)
+
     c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
@@ -305,9 +411,21 @@ func UpdateCustomer(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
+    // Получаем текущие данные для сравнения (для истории)
+    var oldData Customer
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT name, email, phone, company, status, responsible, source, comment
+        FROM crm_customers WHERE id = $1
+    `, id).Scan(&oldData.Name, &oldData.Email, &oldData.Phone, &oldData.Company,
+        &oldData.Status, &oldData.Responsible, &oldData.Source, &oldData.Comment)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
+        return
+    }
+
     // Проверяем права на запись
     var ownerID string
-    err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_customers WHERE id = $1", id).Scan(&ownerID)
+    err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_customers WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Customer not found"})
         return
@@ -335,6 +453,36 @@ func UpdateCustomer(c *gin.Context) {
         notifier.NotifyCustomerUpdated(id, req.Name, req.Email, req.Phone)
     }
 
+    // HISTORY: записываем изменения (только если были изменения)
+    changes := make(map[string]interface{})
+    if oldData.Name != req.Name {
+        changes["name"] = map[string]string{"old": oldData.Name, "new": req.Name}
+    }
+    if oldData.Email != req.Email {
+        changes["email"] = map[string]string{"old": oldData.Email, "new": req.Email}
+    }
+    if oldData.Phone != req.Phone {
+        changes["phone"] = map[string]string{"old": oldData.Phone, "new": req.Phone}
+    }
+    if oldData.Company != req.Company {
+        changes["company"] = map[string]string{"old": oldData.Company, "new": req.Company}
+    }
+    if oldData.Status != req.Status {
+        changes["status"] = map[string]string{"old": oldData.Status, "new": req.Status}
+    }
+    if oldData.Responsible != req.Responsible {
+        changes["responsible"] = map[string]string{"old": oldData.Responsible, "new": req.Responsible}
+    }
+    if oldData.Source != req.Source {
+        changes["source"] = map[string]string{"old": oldData.Source, "new": req.Source}
+    }
+    if oldData.Comment != req.Comment {
+        changes["comment"] = map[string]string{"old": oldData.Comment, "new": req.Comment}
+    }
+    if len(changes) > 0 {
+        go addHistory(c.Request.Context(), "customer", id, "update", &userID, changes)
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -355,6 +503,9 @@ func DeleteCustomer(c *gin.Context) {
         c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
         return
     }
+
+    // HISTORY: записываем удаление (до самого удаления)
+    go addHistory(c.Request.Context(), "customer", id, "delete", &userID, nil)
 
     _, err = database.Pool.Exec(c.Request.Context(), "DELETE FROM crm_customers WHERE id = $1", id)
     if err != nil {
@@ -408,6 +559,14 @@ func BatchDeleteCustomers(c *gin.Context) {
         }
         if count > 0 {
             c.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own customers"})
+            return
+        }
+    }
+
+    // HISTORY: для каждого удаляемого клиента добавим запись
+    for _, id := range ids {
+        if err := addHistory(c.Request.Context(), "customer", id, "delete", &userID, nil); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
             return
         }
     }
@@ -470,6 +629,17 @@ func BatchUpdateCustomersStatus(c *gin.Context) {
         }
         if count > 0 {
             c.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own customers"})
+            return
+        }
+    }
+
+    // HISTORY: для каждого клиента записываем изменение статуса
+    for _, id := range req.IDs {
+        changes := map[string]interface{}{
+            "status": map[string]string{"new": req.Status},
+        }
+        if err := addHistory(c.Request.Context(), "customer", id, "update", &userID, changes); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
             return
         }
     }
@@ -686,6 +856,9 @@ func CreateDeal(c *gin.Context) {
         notifier.NotifyDealCreated(d.Title, d.Value, d.Stage, d.Responsible, d.CustomerID)
     }
 
+    // HISTORY: записываем создание
+    go addHistory(c.Request.Context(), "deal", d.ID, "create", &userID, nil)
+
     c.JSON(http.StatusCreated, d)
 }
 
@@ -701,9 +874,21 @@ func UpdateDeal(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
+    // Получаем текущие данные для сравнения
+    var oldData Deal
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT title, value, stage, probability, responsible, source, comment, expected_close
+        FROM crm_deals WHERE id = $1
+    `, id).Scan(&oldData.Title, &oldData.Value, &oldData.Stage, &oldData.Probability,
+        &oldData.Responsible, &oldData.Source, &oldData.Comment, &oldData.ExpectedClose)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+        return
+    }
+
     // Проверяем права
     var ownerID string
-    err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
+    err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
@@ -731,6 +916,46 @@ func UpdateDeal(c *gin.Context) {
         notifier.NotifyDealUpdated(id, d.Title, d.Value, d.Stage)
     }
 
+    // HISTORY: записываем изменения
+    changes := make(map[string]interface{})
+    if oldData.Title != d.Title {
+        changes["title"] = map[string]string{"old": oldData.Title, "new": d.Title}
+    }
+    if oldData.Value != d.Value {
+        changes["value"] = map[string]float64{"old": oldData.Value, "new": d.Value}
+    }
+    if oldData.Stage != d.Stage {
+        changes["stage"] = map[string]string{"old": oldData.Stage, "new": d.Stage}
+    }
+    if oldData.Probability != d.Probability {
+        changes["probability"] = map[string]int{"old": oldData.Probability, "new": d.Probability}
+    }
+    if oldData.Responsible != d.Responsible {
+        changes["responsible"] = map[string]string{"old": oldData.Responsible, "new": d.Responsible}
+    }
+    if oldData.Source != d.Source {
+        changes["source"] = map[string]string{"old": oldData.Source, "new": d.Source}
+    }
+    if oldData.Comment != d.Comment {
+        changes["comment"] = map[string]string{"old": oldData.Comment, "new": d.Comment}
+    }
+    if (oldData.ExpectedClose == nil && d.ExpectedClose != nil) ||
+        (oldData.ExpectedClose != nil && d.ExpectedClose == nil) ||
+        (oldData.ExpectedClose != nil && d.ExpectedClose != nil && !oldData.ExpectedClose.Equal(*d.ExpectedClose)) {
+        oldStr := ""
+        newStr := ""
+        if oldData.ExpectedClose != nil {
+            oldStr = oldData.ExpectedClose.Format("2006-01-02")
+        }
+        if d.ExpectedClose != nil {
+            newStr = d.ExpectedClose.Format("2006-01-02")
+        }
+        changes["expected_close"] = map[string]string{"old": oldStr, "new": newStr}
+    }
+    if len(changes) > 0 {
+        go addHistory(c.Request.Context(), "deal", id, "update", &userID, changes)
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -749,9 +974,18 @@ func UpdateDealStage(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
+    // Получаем старые значения для истории
+    var oldStage string
+    var oldProb int
+    err := database.Pool.QueryRow(c.Request.Context(), "SELECT stage, probability FROM crm_deals WHERE id = $1", id).Scan(&oldStage, &oldProb)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+        return
+    }
+
     // Проверяем права
     var ownerID string
-    err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
+    err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
@@ -771,6 +1005,19 @@ func UpdateDealStage(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
         return
     }
+
+    // HISTORY
+    changes := make(map[string]interface{})
+    if oldStage != req.Stage {
+        changes["stage"] = map[string]string{"old": oldStage, "new": req.Stage}
+    }
+    if oldProb != req.Probability {
+        changes["probability"] = map[string]int{"old": oldProb, "new": req.Probability}
+    }
+    if len(changes) > 0 {
+        go addHistory(c.Request.Context(), "deal", id, "update", &userID, changes)
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -792,6 +1039,9 @@ func DeleteDeal(c *gin.Context) {
         return
     }
 
+    // HISTORY
+    go addHistory(c.Request.Context(), "deal", id, "delete", &userID, nil)
+
     _, err = database.Pool.Exec(c.Request.Context(), "DELETE FROM crm_deals WHERE id = $1", id)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -803,16 +1053,6 @@ func DeleteDeal(c *gin.Context) {
 // ========== МАССОВЫЕ ОПЕРАЦИИ ДЛЯ СДЕЛОК ==========
 
 // BatchDeleteDeals массово удаляет сделки
-// @Summary Массовое удаление сделок
-// @Description Удаляет несколько сделок по их ID (только свои, если не админ)
-// @Tags CRM
-// @Accept json
-// @Produce json
-// @Param ids body []string true "Массив ID сделок"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Router /api/crm/deals/batch/delete [post]
 func BatchDeleteDeals(c *gin.Context) {
     var ids []string
     if err := c.ShouldBindJSON(&ids); err != nil || len(ids) == 0 {
@@ -846,6 +1086,14 @@ func BatchDeleteDeals(c *gin.Context) {
         }
     }
 
+    // HISTORY
+    for _, id := range ids {
+        if err := addHistory(c.Request.Context(), "deal", id, "delete", &userID, nil); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
+            return
+        }
+    }
+
     _, err = tx.Exec(c.Request.Context(), "DELETE FROM crm_deals WHERE id = ANY($1)", ids)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -861,16 +1109,6 @@ func BatchDeleteDeals(c *gin.Context) {
 }
 
 // BatchUpdateDealsStage массово обновляет стадию сделок
-// @Summary Массовое обновление стадии сделок
-// @Description Устанавливает новую стадию и вероятность для нескольких сделок
-// @Tags CRM
-// @Accept json
-// @Produce json
-// @Param request body object{ids=[]string,stage=string,probability=int} true "Массив ID, новая стадия и вероятность"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Router /api/crm/deals/batch/stage [put]
 func BatchUpdateDealsStage(c *gin.Context) {
     var req struct {
         IDs         []string `json:"ids"`
@@ -908,6 +1146,18 @@ func BatchUpdateDealsStage(c *gin.Context) {
         }
     }
 
+    // HISTORY (упрощённо: записываем, что стадия изменена, без старых значений)
+    for _, id := range req.IDs {
+        changes := map[string]interface{}{
+            "stage":       map[string]string{"new": req.Stage},
+            "probability": map[string]int{"new": req.Probability},
+        }
+        if err := addHistory(c.Request.Context(), "deal", id, "update", &userID, changes); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
+            return
+        }
+    }
+
     _, err = tx.Exec(c.Request.Context(), `
         UPDATE crm_deals 
         SET stage = $1, probability = $2, updated_at = NOW() 
@@ -927,16 +1177,6 @@ func BatchUpdateDealsStage(c *gin.Context) {
 }
 
 // BatchUpdateDealsResponsible массово назначает ответственного за сделки
-// @Summary Массовое назначение ответственного за сделки
-// @Description Устанавливает нового ответственного для нескольких сделок
-// @Tags CRM
-// @Accept json
-// @Produce json
-// @Param request body object{ids=[]string,responsible=string} true "Массив ID и новый ответственный"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Router /api/crm/deals/batch/responsible [put]
 func BatchUpdateDealsResponsible(c *gin.Context) {
     var req struct {
         IDs         []string `json:"ids"`
@@ -969,6 +1209,17 @@ func BatchUpdateDealsResponsible(c *gin.Context) {
         }
         if count > 0 {
             c.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own deals"})
+            return
+        }
+    }
+
+    // HISTORY
+    for _, id := range req.IDs {
+        changes := map[string]interface{}{
+            "responsible": map[string]string{"new": req.Responsible},
+        }
+        if err := addHistory(c.Request.Context(), "deal", id, "update", &userID, changes); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
             return
         }
     }

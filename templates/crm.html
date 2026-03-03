@@ -183,6 +183,22 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* История */
+        .history-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        .history-item:hover {
+            background-color: #f8f9fa;
+        }
+        .history-action {
+            font-weight: 500;
+            color: #007bff;
+        }
+        .history-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
 
         /* Мобильная адаптация */
         @media (max-width: 768px) {
@@ -340,7 +356,7 @@
                                 <!-- Заполняется JS -->
                             </div>
                         </div>
-                        <!-- NEW: Кнопки экспорта -->
+                        <!-- Кнопки экспорта -->
                         <div class="btn-group me-2">
                             <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-download me-1"></i>Экспорт
@@ -444,7 +460,7 @@
                                 <!-- Заполняется JS -->
                             </div>
                         </div>
-                        <!-- NEW: Кнопки экспорта -->
+                        <!-- Кнопки экспорта -->
                         <div class="btn-group me-2">
                             <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-download me-1"></i>Экспорт
@@ -488,7 +504,7 @@
                 </nav>
             </div>
 
-            <!-- Вкладка Аналитика (без изменений) -->
+            <!-- Вкладка Аналитика -->
             <div class="tab-pane fade" id="analytics" role="tabpanel">
                 <h3 class="mb-4">Аналитика продаж</h3>
                 <div class="analytics-filters">
@@ -560,14 +576,182 @@
         </div>
     </div>
 
-    <!-- Модальное окно для клиента (без изменений) -->
+    <!-- Модальное окно для клиента (с вкладками) -->
     <div class="modal fade" id="customerModal" tabindex="-1">
-        <!-- ... (оставлено как есть) ... -->
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить/Редактировать клиента</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs modal-tabs mb-3" id="customerModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="customer-main-tab" data-bs-toggle="tab" data-bs-target="#customer-main" type="button" role="tab">Основное</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="customer-history-tab" data-bs-toggle="tab" data-bs-target="#customer-history" type="button" role="tab">История</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="customerModalTabContent">
+                        <!-- Вкладка "Основное" -->
+                        <div class="tab-pane fade show active" id="customer-main" role="tabpanel">
+                            <form id="customerForm">
+                                <input type="hidden" id="customerId">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Имя *</label>
+                                        <input type="text" class="form-control" id="customerName" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email *</label>
+                                        <input type="email" class="form-control" id="customerEmail" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Телефон</label>
+                                        <input type="text" class="form-control" id="customerPhone">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Компания</label>
+                                        <input type="text" class="form-control" id="customerCompany">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Статус</label>
+                                        <select class="form-select" id="customerStatus">
+                                            <option value="lead">Лид</option>
+                                            <option value="active">Активный</option>
+                                            <option value="inactive">Неактивный</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Ответственный</label>
+                                        <input type="text" class="form-control" id="customerResponsible">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Источник</label>
+                                        <input type="text" class="form-control" id="customerSource">
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Комментарий</label>
+                                        <textarea class="form-control" id="customerComment" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Вкладка "История" -->
+                        <div class="tab-pane fade" id="customer-history" role="tabpanel">
+                            <div id="customerHistoryList">
+                                <p class="text-muted text-center">Загрузка истории...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="saveCustomerBtn">Сохранить</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Модальное окно для сделки (с вкладками) -->
     <div class="modal fade" id="dealModal" tabindex="-1">
-        <!-- ... (оставлено как есть) ... -->
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить/Редактировать сделку</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs modal-tabs mb-3" id="dealModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="deal-main-tab" data-bs-toggle="tab" data-bs-target="#deal-main" type="button" role="tab">Основное</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="deal-files-tab" data-bs-toggle="tab" data-bs-target="#deal-files" type="button" role="tab">Файлы</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="deal-history-tab" data-bs-toggle="tab" data-bs-target="#deal-history" type="button" role="tab">История</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="dealModalTabContent">
+                        <!-- Вкладка "Основное" -->
+                        <div class="tab-pane fade show active" id="deal-main" role="tabpanel">
+                            <form id="dealForm">
+                                <input type="hidden" id="dealId">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Клиент *</label>
+                                        <select class="form-select" id="dealCustomerId" required>
+                                            <option value="">Выберите клиента</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Название сделки *</label>
+                                        <input type="text" class="form-control" id="dealTitle" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Сумма *</label>
+                                        <input type="text" class="form-control" id="dealValue" required placeholder="Например: 1500.50 или 1500,50">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Стадия</label>
+                                        <select class="form-select" id="dealStage">
+                                            <option value="lead">Лид</option>
+                                            <option value="negotiation">Переговоры</option>
+                                            <option value="proposal">Предложение</option>
+                                            <option value="closed_won">Успешно</option>
+                                            <option value="closed_lost">Проиграно</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Вероятность (%)</label>
+                                        <input type="number" class="form-control" id="dealProbability" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Ответственный</label>
+                                        <input type="text" class="form-control" id="dealResponsible">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Источник</label>
+                                        <input type="text" class="form-control" id="dealSource">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Ожидаемая дата закрытия</label>
+                                        <input type="date" class="form-control" id="dealExpectedClose">
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Комментарий</label>
+                                        <textarea class="form-control" id="dealComment" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Вкладка "Файлы" -->
+                        <div class="tab-pane fade" id="deal-files" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">Загрузить файл</label>
+                                <input type="file" class="form-control" id="fileUpload" accept="*/*">
+                                <div class="form-text">Максимальный размер: 10 МБ</div>
+                            </div>
+                            <div id="fileList" class="mb-3">
+                                <p class="text-muted text-center">Нет загруженных файлов</p>
+                            </div>
+                        </div>
+                        <!-- Вкладка "История" -->
+                        <div class="tab-pane fade" id="deal-history" role="tabpanel">
+                            <div id="dealHistoryList">
+                                <p class="text-muted text-center">Загрузка истории...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="saveDealBtn">Сохранить</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -826,6 +1010,18 @@
             // При открытии модалки для сделки сбрасываем вкладку на "Основное"
             document.getElementById('dealModal').addEventListener('show.bs.modal', function() {
                 document.getElementById('deal-main-tab').click();
+            });
+
+            // При переключении на вкладку истории загружаем данные (для клиента)
+            document.getElementById('customer-history-tab').addEventListener('shown.bs.tab', function() {
+                const id = document.getElementById('customerId').value;
+                if (id) loadCustomerHistory(id);
+            });
+
+            // При переключении на вкладку истории для сделки
+            document.getElementById('deal-history-tab').addEventListener('shown.bs.tab', function() {
+                const id = document.getElementById('dealId').value;
+                if (id) loadDealHistory(id);
             });
         });
 
@@ -1249,6 +1445,8 @@
                         document.getElementById('customerSource').value = customer.source || '';
                         document.getElementById('customerComment').value = customer.comment || '';
                         new bootstrap.Modal(document.getElementById('customerModal')).show();
+                        // Сброс истории при открытии (загрузится при переходе на вкладку)
+                        document.getElementById('customer-history-tab').click(); // или оставить основную вкладку активной
                     }
                 });
         };
@@ -1272,6 +1470,8 @@
                         document.getElementById('dealExpectedClose').value = deal.expected_close ? deal.expected_close.slice(0,10) : '';
                         new bootstrap.Modal(document.getElementById('dealModal')).show();
                         loadFiles(deal.id);
+                        // Сброс истории
+                        document.getElementById('dealHistoryList').innerHTML = '<p class="text-muted text-center">Загрузка истории...</p>';
                     }
                 });
         };
@@ -1302,6 +1502,10 @@
                 document.getElementById('customerId').value = '';
                 document.getElementById('customerForm').reset();
                 document.querySelectorAll('#customerForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                // Сброс истории
+                document.getElementById('customerHistoryList').innerHTML = '<p class="text-muted text-center">Загрузка истории...</p>';
+                // Возврат на основную вкладку
+                document.getElementById('customer-main-tab').click();
             }
         });
 
@@ -1312,6 +1516,7 @@
                 document.querySelectorAll('#dealForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
                 document.getElementById('deal-main-tab').click();
                 document.getElementById('fileList').innerHTML = '<p class="text-muted text-center">Нет загруженных файлов</p>';
+                document.getElementById('dealHistoryList').innerHTML = '<p class="text-muted text-center">Загрузка истории...</p>';
                 currentDealIdForFiles = null;
             }
         });
@@ -1408,6 +1613,65 @@
                 })
                 .catch(error => alert('Ошибка сети: ' + error.message));
         };
+
+        // ==================== ИСТОРИЯ ====================
+        function loadCustomerHistory(id) {
+            const container = document.getElementById('customerHistoryList');
+            container.innerHTML = '<p class="text-muted text-center">Загрузка...</p>';
+            fetchWithLoader(`/api/crm/customers/${id}/history`)
+                .then(response => response.json())
+                .then(history => {
+                    if (history.length === 0) {
+                        container.innerHTML = '<p class="text-muted text-center">История изменений отсутствует</p>';
+                        return;
+                    }
+                    let html = '';
+                    history.forEach(item => {
+                        const date = new Date(item.created_at).toLocaleString('ru-RU');
+                        html += `
+                            <div class="history-item">
+                                <div class="history-action">${item.action}</div>
+                                <div class="history-meta">${item.user_name || 'Система'} • ${date}</div>
+                                <div>${item.details || ''}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading customer history:', error);
+                    container.innerHTML = '<p class="text-danger text-center">Ошибка загрузки истории</p>';
+                });
+        }
+
+        function loadDealHistory(id) {
+            const container = document.getElementById('dealHistoryList');
+            container.innerHTML = '<p class="text-muted text-center">Загрузка...</p>';
+            fetchWithLoader(`/api/crm/deals/${id}/history`)
+                .then(response => response.json())
+                .then(history => {
+                    if (history.length === 0) {
+                        container.innerHTML = '<p class="text-muted text-center">История изменений отсутствует</p>';
+                        return;
+                    }
+                    let html = '';
+                    history.forEach(item => {
+                        const date = new Date(item.created_at).toLocaleString('ru-RU');
+                        html += `
+                            <div class="history-item">
+                                <div class="history-action">${item.action}</div>
+                                <div class="history-meta">${item.user_name || 'Система'} • ${date}</div>
+                                <div>${item.details || ''}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading deal history:', error);
+                    container.innerHTML = '<p class="text-danger text-center">Ошибка загрузки истории</p>';
+                });
+        }
 
         // ==================== АНАЛИТИКА ====================
         function loadAnalytics() {
@@ -1564,7 +1828,7 @@
             });
         }
 
-        // ==================== НОВЫЕ ФУНКЦИИ ЭКСПОРТА ====================
+        // ==================== ЭКСПОРТ ====================
         function exportCustomers(format) {
             const params = new URLSearchParams({
                 status: document.getElementById('customerStatus')?.value || '',
