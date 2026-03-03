@@ -24,32 +24,27 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/crm/customers": {
+        "/api/crm/advanced-stats": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Возвращает всех клиентов с фильтрацией",
+                "description": "Возвращает статистику по ответственным, источникам и динамику за период",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "CRM"
                 ],
-                "summary": "Список клиентов",
+                "summary": "Расширенная аналитика CRM",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Статус клиента",
-                        "name": "status",
+                        "description": "Начальная дата (YYYY-MM-DD)",
+                        "name": "date_from",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Лимит записей",
-                        "name": "limit",
+                        "type": "string",
+                        "description": "Конечная дата (YYYY-MM-DD)",
+                        "name": "date_to",
                         "in": "query"
                     }
                 ],
@@ -57,14 +52,12 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/handlers.Customer"
-                            }
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -73,27 +66,96 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/crm/deals": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Возвращает сделки с фильтрацией по стадии",
+        "/api/crm/attachments/{attachment_id}": {
+            "delete": {
+                "description": "Удаляет файл и запись о нём",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "CRM"
                 ],
-                "summary": "Список сделок",
+                "summary": "Удалить файл",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Стадия сделки",
-                        "name": "stage",
-                        "in": "query"
+                        "description": "ID вложения",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/attachments/{attachment_id}/download": {
+            "get": {
+                "description": "Скачивает файл по его ID",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Скачать файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID вложения",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/deals/{id}/attachments": {
+            "get": {
+                "description": "Возвращает все файлы, прикреплённые к сделке",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Список вложений сделки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID сделки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -102,52 +164,9 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/handlers.Deal"
+                                "type": "object",
+                                "additionalProperties": true
                             }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Добавляет новую сделку в CRM",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CRM"
-                ],
-                "summary": "Создание сделки",
-                "parameters": [
-                    {
-                        "description": "Данные сделки",
-                        "name": "deal",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.Deal"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.Deal"
                         }
                     },
                     "400": {
@@ -158,18 +177,11 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/crm/deals/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Изменяет стадию и вероятность сделки",
+            },
+            "post": {
+                "description": "Загружает файл и прикрепляет его к указанной сделке",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -177,7 +189,7 @@ const docTemplate = `{
                 "tags": [
                     "CRM"
                 ],
-                "summary": "Обновление стадии сделки",
+                "summary": "Загрузить файл для сделки",
                 "parameters": [
                     {
                         "type": "string",
@@ -187,21 +199,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Новая стадия",
-                        "name": "stage",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "probability": {
-                                    "type": "integer"
-                                },
-                                "stage": {
-                                    "type": "string"
-                                }
-                            }
-                        }
+                        "type": "file",
+                        "description": "Файл для загрузки",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -218,111 +220,14 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
-                    }
-                }
-            }
-        },
-        "/api/crm/health": {
-            "get": {
-                "description": "Проверка работоспособности CRM",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CRM"
-                ],
-                "summary": "Статус CRM",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     }
-                }
-            }
-        },
-        "/crm": {
-            "get": {
-                "description": "Отображает интерфейс CRM системы",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "CRM"
-                ],
-                "summary": "Страница CRM",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "handlers.Customer": {
-            "type": "object",
-            "properties": {
-                "company": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_seen": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "handlers.Deal": {
-            "type": "object",
-            "properties": {
-                "closed_at": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "customer_id": {
-                    "type": "string"
-                },
-                "expected_close": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "probability": {
-                    "type": "integer"
-                },
-                "stage": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "number"
                 }
             }
         }

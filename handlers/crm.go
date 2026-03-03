@@ -48,7 +48,7 @@ type Deal struct {
     Responsible   string     `json:"responsible"`
     Source        string     `json:"source"`
     Comment       string     `json:"comment"`
-    ExpectedClose *time.Time `json:"expected_close,omitempty"` // теперь указатель
+    ExpectedClose *time.Time `json:"expected_close,omitempty"`
     CreatedAt     time.Time  `json:"created_at"`
     ClosedAt      *time.Time `json:"closed_at,omitempty"`
 }
@@ -609,6 +609,17 @@ func GetCRMStats(c *gin.Context) {
 const uploadDir = "./uploads/crm"
 
 // UploadDealAttachment загружает файл и прикрепляет к сделке
+// @Summary Загрузить файл для сделки
+// @Description Загружает файл и прикрепляет его к указанной сделке
+// @Tags CRM
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "ID сделки"
+// @Param file formData file true "Файл для загрузки"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/crm/deals/{id}/attachments [post]
 func UploadDealAttachment(c *gin.Context) {
     dealID := c.Param("id")
     if dealID == "" {
@@ -676,6 +687,14 @@ func UploadDealAttachment(c *gin.Context) {
 }
 
 // GetDealAttachments возвращает список вложений для сделки
+// @Summary Список вложений сделки
+// @Description Возвращает все файлы, прикреплённые к сделке
+// @Tags CRM
+// @Produce json
+// @Param id path string true "ID сделки"
+// @Success 200 {array} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/crm/deals/{id}/attachments [get]
 func GetDealAttachments(c *gin.Context) {
     dealID := c.Param("id")
     if dealID == "" {
@@ -723,6 +742,14 @@ func GetDealAttachments(c *gin.Context) {
 }
 
 // DownloadDealAttachment скачивает файл
+// @Summary Скачать файл
+// @Description Скачивает файл по его ID
+// @Tags CRM
+// @Produce application/octet-stream
+// @Param attachment_id path string true "ID вложения"
+// @Success 200 {file} binary
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/crm/attachments/{attachment_id}/download [get]
 func DownloadDealAttachment(c *gin.Context) {
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
@@ -743,6 +770,14 @@ func DownloadDealAttachment(c *gin.Context) {
 }
 
 // DeleteDealAttachment удаляет вложение
+// @Summary Удалить файл
+// @Description Удаляет файл и запись о нём
+// @Tags CRM
+// @Produce json
+// @Param attachment_id path string true "ID вложения"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/crm/attachments/{attachment_id} [delete]
 func DeleteDealAttachment(c *gin.Context) {
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
@@ -764,4 +799,139 @@ func DeleteDealAttachment(c *gin.Context) {
     os.Remove(filePath)
 
     c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ========== РАСШИРЕННАЯ АНАЛИТИКА ==========
+
+// GetCRMAdvancedStats возвращает расширенную статистику с возможностью фильтрации по дате
+// @Summary Расширенная аналитика CRM
+// @Description Возвращает статистику по ответственным, источникам и динамику за период
+// @Tags CRM
+// @Produce json
+// @Param date_from query string false "Начальная дата (YYYY-MM-DD)"
+// @Param date_to query string false "Конечная дата (YYYY-MM-DD)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/crm/advanced-stats [get]
+func GetCRMAdvancedStats(c *gin.Context) {
+    dateFrom := c.Query("date_from")
+    dateTo := c.Query("date_to")
+    ctx := c.Request.Context()
+
+    // Базовое условие для фильтрации по дате создания сделки
+    dateFilter := ""
+    args := []interface{}{}
+    if dateFrom != "" {
+        dateFilter += " AND created_at >= $" + strconv.Itoa(len(args)+1) + "::date"
+        args = append(args, dateFrom)
+    }
+    if dateTo != "" {
+        dateFilter += " AND created_at < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
+        args = append(args, dateTo)
+    }
+
+    // 1. Статистика по ответственным
+    responsibleQuery := `
+        SELECT 
+            COALESCE(responsible, 'Не назначен') as responsible,
+            COUNT(*) as deals_count,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + `
+        GROUP BY responsible
+        ORDER BY total_value DESC
+    `
+    rows, err := database.Pool.Query(ctx, responsibleQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    responsibleStats := []gin.H{}
+    for rows.Next() {
+        var responsible string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&responsible, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        responsibleStats = append(responsibleStats, gin.H{
+            "responsible": responsible,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    // 2. Статистика по источникам
+    sourceQuery := `
+        SELECT 
+            COALESCE(source, 'Не указан') as source,
+            COUNT(*) as deals_count,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + `
+        GROUP BY source
+        ORDER BY total_value DESC
+    `
+    rows, err = database.Pool.Query(ctx, sourceQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    sourceStats := []gin.H{}
+    for rows.Next() {
+        var source string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&source, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        sourceStats = append(sourceStats, gin.H{
+            "source":      source,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    // 3. Ежемесячная динамика с фильтром
+    monthlyQuery := `
+        SELECT 
+            TO_CHAR(date_trunc('month', created_at), 'YYYY-MM') as month,
+            COUNT(*) as deals_created,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + `
+        GROUP BY date_trunc('month', created_at)
+        ORDER BY month
+    `
+    rows, err = database.Pool.Query(ctx, monthlyQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    monthlyStats := []gin.H{}
+    for rows.Next() {
+        var month string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&month, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        monthlyStats = append(monthlyStats, gin.H{
+            "month":       month,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "responsible_stats": responsibleStats,
+        "source_stats":      sourceStats,
+        "monthly_stats":     monthlyStats,
+    })
 }

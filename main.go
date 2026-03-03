@@ -372,6 +372,8 @@ func main() {
         api.GET("/crm/deals/:id/attachments", handlers.GetDealAttachments)
         api.GET("/crm/attachments/:attachment_id/download", handlers.DownloadDealAttachment)
         api.DELETE("/crm/attachments/:attachment_id", handlers.DeleteDealAttachment)
+
+        api.GET("/crm/advanced-stats", handlers.GetCRMAdvancedStats)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========

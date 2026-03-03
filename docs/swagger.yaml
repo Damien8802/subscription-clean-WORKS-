@@ -1,45 +1,4 @@
 basePath: /api
-definitions:
-  handlers.Customer:
-    properties:
-      company:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: string
-      last_seen:
-        type: string
-      name:
-        type: string
-      phone:
-        type: string
-      status:
-        type: string
-    type: object
-  handlers.Deal:
-    properties:
-      closed_at:
-        type: string
-      created_at:
-        type: string
-      customer_id:
-        type: string
-      expected_close:
-        type: string
-      id:
-        type: string
-      probability:
-        type: integer
-      stage:
-        type: string
-      title:
-        type: string
-      value:
-        type: number
-    type: object
 host: localhost:8080
 info:
   contact:
@@ -54,44 +13,18 @@ info:
   title: SaaSPro API
   version: "3.0"
 paths:
-  /api/crm/customers:
+  /api/crm/advanced-stats:
     get:
-      description: Возвращает всех клиентов с фильтрацией
+      description: Возвращает статистику по ответственным, источникам и динамику за
+        период
       parameters:
-      - description: Статус клиента
+      - description: Начальная дата (YYYY-MM-DD)
         in: query
-        name: status
+        name: date_from
         type: string
-      - description: Лимит записей
+      - description: Конечная дата (YYYY-MM-DD)
         in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/handlers.Customer'
-            type: array
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Список клиентов
-      tags:
-      - CRM
-  /api/crm/deals:
-    get:
-      description: Возвращает сделки с фильтрацией по стадии
-      parameters:
-      - description: Стадия сделки
-        in: query
-        name: stage
+        name: date_to
         type: string
       produces:
       - application/json
@@ -99,69 +32,107 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/handlers.Deal'
-            type: array
-        "401":
-          description: Unauthorized
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
-      summary: Список сделок
+      summary: Расширенная аналитика CRM
       tags:
       - CRM
-    post:
-      consumes:
-      - application/json
-      description: Добавляет новую сделку в CRM
+  /api/crm/attachments/{attachment_id}:
+    delete:
+      description: Удаляет файл и запись о нём
       parameters:
-      - description: Данные сделки
-        in: body
-        name: deal
+      - description: ID вложения
+        in: path
+        name: attachment_id
         required: true
-        schema:
-          $ref: '#/definitions/handlers.Deal'
+        type: string
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/handlers.Deal'
-        "400":
-          description: Bad Request
+        "200":
+          description: OK
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
-      summary: Создание сделки
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Удалить файл
       tags:
       - CRM
-  /api/crm/deals/{id}:
-    put:
-      consumes:
-      - application/json
-      description: Изменяет стадию и вероятность сделки
+  /api/crm/attachments/{attachment_id}/download:
+    get:
+      description: Скачивает файл по его ID
+      parameters:
+      - description: ID вложения
+        in: path
+        name: attachment_id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Скачать файл
+      tags:
+      - CRM
+  /api/crm/deals/{id}/attachments:
+    get:
+      description: Возвращает все файлы, прикреплённые к сделке
       parameters:
       - description: ID сделки
         in: path
         name: id
         required: true
         type: string
-      - description: Новая стадия
-        in: body
-        name: stage
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Список вложений сделки
+      tags:
+      - CRM
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает файл и прикрепляет его к указанной сделке
+      parameters:
+      - description: ID сделки
+        in: path
+        name: id
         required: true
-        schema:
-          properties:
-            probability:
-              type: integer
-            stage:
-              type: string
-          type: object
+        type: string
+      - description: Файл для загрузки
+        in: formData
+        name: file
+        required: true
+        type: file
       produces:
       - application/json
       responses:
@@ -175,36 +146,12 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
-      summary: Обновление стадии сделки
-      tags:
-      - CRM
-  /api/crm/health:
-    get:
-      description: Проверка работоспособности CRM
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+        "404":
+          description: Not Found
           schema:
             additionalProperties: true
             type: object
-      summary: Статус CRM
-      tags:
-      - CRM
-  /crm:
-    get:
-      description: Отображает интерфейс CRM системы
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Страница CRM
+      summary: Загрузить файл для сделки
       tags:
       - CRM
 schemes:
