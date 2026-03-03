@@ -72,6 +72,44 @@
         .is-invalid {
             border-color: #dc3545;
         }
+        /* Стили для вкладок внутри модалки */
+        .modal-tabs .nav-link {
+            color: #495057;
+        }
+        .modal-tabs .nav-link.active {
+            font-weight: bold;
+            border-bottom: 2px solid #007bff;
+        }
+        .file-list-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .file-list-item:hover {
+            background-color: #f8f9fa;
+        }
+        .file-icon {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+            color: #6c757d;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: 500;
+        }
+        .file-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .file-actions {
+            margin-left: 1rem;
+        }
+        .file-actions button {
+            margin-left: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -219,7 +257,6 @@
             <!-- Вкладка Аналитика -->
             <div class="tab-pane fade" id="analytics" role="tabpanel">
                 <h3 class="mb-4">Аналитика продаж</h3>
-                
                 <!-- Карточки общей статистики -->
                 <div class="row mb-4">
                     <div class="col-md-3">
@@ -247,7 +284,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Графики -->
                 <div class="row">
                     <div class="col-md-6">
@@ -334,7 +370,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно для сделки -->
+    <!-- Модальное окно для сделки (с вкладками) -->
     <div class="modal fade" id="dealModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -343,55 +379,81 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="dealForm">
-                        <input type="hidden" id="dealId">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Клиент *</label>
-                                <select class="form-select" id="dealCustomerId" required>
-                                    <option value="">Выберите клиента</option>
-                                </select>
+                    <!-- Вкладки внутри модалки -->
+                    <ul class="nav nav-tabs modal-tabs mb-3" id="dealModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="deal-main-tab" data-bs-toggle="tab" data-bs-target="#deal-main" type="button" role="tab">Основное</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="deal-files-tab" data-bs-toggle="tab" data-bs-target="#deal-files" type="button" role="tab">Файлы</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="dealModalTabContent">
+                        <!-- Вкладка "Основное" -->
+                        <div class="tab-pane fade show active" id="deal-main" role="tabpanel">
+                            <form id="dealForm">
+                                <input type="hidden" id="dealId">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Клиент *</label>
+                                        <select class="form-select" id="dealCustomerId" required>
+                                            <option value="">Выберите клиента</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Название сделки *</label>
+                                        <input type="text" class="form-control" id="dealTitle" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Сумма *</label>
+                                        <input type="text" class="form-control" id="dealValue" required placeholder="Например: 1500.50 или 1500,50">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Стадия</label>
+                                        <select class="form-select" id="dealStage">
+                                            <option value="lead">Лид</option>
+                                            <option value="negotiation">Переговоры</option>
+                                            <option value="proposal">Предложение</option>
+                                            <option value="closed_won">Успешно</option>
+                                            <option value="closed_lost">Проиграно</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Вероятность (%)</label>
+                                        <input type="number" class="form-control" id="dealProbability" min="0" max="100">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Ответственный</label>
+                                        <input type="text" class="form-control" id="dealResponsible">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Источник</label>
+                                        <input type="text" class="form-control" id="dealSource">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Ожидаемая дата закрытия</label>
+                                        <input type="date" class="form-control" id="dealExpectedClose">
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Комментарий</label>
+                                        <textarea class="form-control" id="dealComment" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Вкладка "Файлы" -->
+                        <div class="tab-pane fade" id="deal-files" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">Загрузить файл</label>
+                                <input type="file" class="form-control" id="fileUpload" accept="*/*">
+                                <div class="form-text">Максимальный размер: 10 МБ</div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Название сделки *</label>
-                                <input type="text" class="form-control" id="dealTitle" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Сумма *</label>
-                                <input type="text" class="form-control" id="dealValue" required placeholder="Например: 1500.50 или 1500,50">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Стадия</label>
-                                <select class="form-select" id="dealStage">
-                                    <option value="lead">Лид</option>
-                                    <option value="negotiation">Переговоры</option>
-                                    <option value="proposal">Предложение</option>
-                                    <option value="closed_won">Успешно</option>
-                                    <option value="closed_lost">Проиграно</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Вероятность (%)</label>
-                                <input type="number" class="form-control" id="dealProbability" min="0" max="100">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Ответственный</label>
-                                <input type="text" class="form-control" id="dealResponsible">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Источник</label>
-                                <input type="text" class="form-control" id="dealSource">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Ожидаемая дата закрытия</label>
-                                <input type="date" class="form-control" id="dealExpectedClose">
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Комментарий</label>
-                                <textarea class="form-control" id="dealComment" rows="2"></textarea>
+                            <div id="fileList" class="mb-3">
+                                <!-- Список файлов будет загружен сюда -->
+                                <p class="text-muted text-center">Нет загруженных файлов</p>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
@@ -418,6 +480,8 @@
         let dealCloseFrom = '';
         let dealCloseTo = '';
         const pageSize = 20;
+        // Переменные для файлов
+        let currentDealIdForFiles = null;
 
         // ==================== ЗАГРУЗКА ПРИ ОТКРЫТИИ ====================
         document.addEventListener('DOMContentLoaded', function() {
@@ -472,7 +536,99 @@
             document.getElementById('analytics-tab').addEventListener('shown.bs.tab', function () {
                 loadAnalytics();
             });
+
+            // Обработчик загрузки файла
+            document.getElementById('fileUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('Файл слишком большой (макс. 10 МБ)');
+                    return;
+                }
+                if (!currentDealIdForFiles) {
+                    alert('Сначала сохраните сделку');
+                    return;
+                }
+                uploadFile(currentDealIdForFiles, file);
+            });
         });
+
+        // ==================== ЗАГРУЗКА ФАЙЛОВ ====================
+        function loadFiles(dealId) {
+            currentDealIdForFiles = dealId;
+            fetch(`/api/crm/deals/${dealId}/attachments`)
+                .then(response => response.json())
+                .then(files => {
+                    const container = document.getElementById('fileList');
+                    if (files.length === 0) {
+                        container.innerHTML = '<p class="text-muted text-center">Нет загруженных файлов</p>';
+                        return;
+                    }
+                    let html = '';
+                    files.forEach(file => {
+                        const size = (file.file_size / 1024).toFixed(1) + ' КБ';
+                        const date = new Date(file.uploaded_at).toLocaleString('ru-RU');
+                        html += `
+                            <div class="file-list-item" data-id="${file.id}">
+                                <div class="file-icon"><i class="fas fa-file"></i></div>
+                                <div class="file-info">
+                                    <div class="file-name">${file.file_name}</div>
+                                    <div class="file-meta">${size} • загружен ${date}</div>
+                                </div>
+                                <div class="file-actions">
+                                    <a href="/api/crm/attachments/${file.id}/download" class="btn btn-sm btn-outline-primary" target="_blank"><i class="fas fa-download"></i></a>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFile('${file.id}')"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                })
+                .catch(error => console.error('Error loading files:', error));
+        }
+
+        function uploadFile(dealId, file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch(`/api/crm/deals/${dealId}/attachments`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Очистить поле выбора файла
+                    document.getElementById('fileUpload').value = '';
+                    // Перезагрузить список файлов
+                    loadFiles(dealId);
+                } else {
+                    response.text().then(text => alert('Ошибка загрузки: ' + text));
+                }
+            })
+            .catch(error => alert('Ошибка сети: ' + error.message));
+        }
+
+        window.deleteFile = function(attachmentId) {
+            if (!confirm('Удалить файл?')) return;
+            fetch(`/api/crm/attachments/${attachmentId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Удаляем элемент из списка
+                    const item = document.querySelector(`.file-list-item[data-id="${attachmentId}"]`);
+                    if (item) item.remove();
+                    // Если список стал пустым, показываем сообщение
+                    const container = document.getElementById('fileList');
+                    if (container.children.length === 0) {
+                        container.innerHTML = '<p class="text-muted text-center">Нет загруженных файлов</p>';
+                    }
+                } else {
+                    alert('Ошибка удаления');
+                }
+            })
+            .catch(error => alert('Ошибка сети: ' + error.message));
+        };
 
         // ==================== КЛИЕНТЫ ====================
         function loadCustomers(page = currentCustomersPage) {
@@ -840,6 +996,8 @@
                         // Если дата приходит в формате ISO, обрезаем до YYYY-MM-DD
                         document.getElementById('dealExpectedClose').value = deal.expected_close ? deal.expected_close.slice(0,10) : '';
                         new bootstrap.Modal(document.getElementById('dealModal')).show();
+                        // Загружаем файлы для этой сделки
+                        loadFiles(deal.id);
                     }
                 });
         };
@@ -879,6 +1037,10 @@
                 document.getElementById('dealId').value = '';
                 document.getElementById('dealForm').reset();
                 document.querySelectorAll('#dealForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                // Сброс списка файлов и переключение на вкладку "Основное"
+                document.getElementById('deal-main-tab').click();
+                document.getElementById('fileList').innerHTML = '<p class="text-muted text-center">Нет загруженных файлов</p>';
+                currentDealIdForFiles = null;
             }
         });
 
