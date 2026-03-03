@@ -79,8 +79,8 @@ func CRMHealthHandler(c *gin.Context) {
 func GetCustomers(c *gin.Context) {
     status := c.Query("status")
     search := c.Query("search")
-    createdFrom := c.Query("created_from") // NEW: дата начала (YYYY-MM-DD)
-    createdTo := c.Query("created_to")     // NEW: дата окончания
+    createdFrom := c.Query("created_from")
+    createdTo := c.Query("created_to")
     page, pageSize := getPaginationParams(c)
     offset := (page - 1) * pageSize
 
@@ -89,12 +89,10 @@ func GetCustomers(c *gin.Context) {
     countArgs := []interface{}{}
     whereClause := ""
 
-    // Фильтр по статусу
     if status != "" {
         whereClause += " status = $" + strconv.Itoa(len(countArgs)+1)
         countArgs = append(countArgs, status)
     }
-    // Фильтр по поиску
     if search != "" {
         if whereClause != "" {
             whereClause += " AND"
@@ -102,7 +100,6 @@ func GetCustomers(c *gin.Context) {
         whereClause += " (name ILIKE '%' || $" + strconv.Itoa(len(countArgs)+1) + " || '%' OR email ILIKE '%' || $" + strconv.Itoa(len(countArgs)+1) + " || '%')"
         countArgs = append(countArgs, search)
     }
-    // Фильтр по дате создания (от)
     if createdFrom != "" {
         if whereClause != "" {
             whereClause += " AND"
@@ -110,7 +107,6 @@ func GetCustomers(c *gin.Context) {
         whereClause += " created_at >= $" + strconv.Itoa(len(countArgs)+1) + "::date"
         countArgs = append(countArgs, createdFrom)
     }
-    // Фильтр по дате создания (до)
     if createdTo != "" {
         if whereClause != "" {
             whereClause += " AND"
@@ -261,10 +257,10 @@ func DeleteCustomer(c *gin.Context) {
 func GetDeals(c *gin.Context) {
     stage := c.Query("stage")
     search := c.Query("search")
-    valueMin := c.Query("value_min")   // NEW: минимальная сумма
-    valueMax := c.Query("value_max")   // NEW: максимальная сумма
-    closeFrom := c.Query("close_from") // NEW: ожидаемая дата закрытия от
-    closeTo := c.Query("close_to")     // NEW: ожидаемая дата закрытия до
+    valueMin := c.Query("value_min")
+    valueMax := c.Query("value_max")
+    closeFrom := c.Query("close_from")
+    closeTo := c.Query("close_to")
     page, pageSize := getPaginationParams(c)
     offset := (page - 1) * pageSize
 
@@ -485,4 +481,92 @@ func DeleteDeal(c *gin.Context) {
         return
     }
     c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// ========== АНАЛИТИКА ==========
+
+// GetCRMStats возвращает статистику для графиков CRM
+func GetCRMStats(c *gin.Context) {
+    ctx := c.Request.Context()
+
+    // Количество сделок по стадиям
+    rows, err := database.Pool.Query(ctx, `
+        SELECT stage, COUNT(*) as count, COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        GROUP BY stage
+        ORDER BY 
+            CASE stage
+                WHEN 'lead' THEN 1
+                WHEN 'negotiation' THEN 2
+                WHEN 'proposal' THEN 3
+                WHEN 'closed_won' THEN 4
+                WHEN 'closed_lost' THEN 5
+                ELSE 6
+            END
+    `)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    type stageStat struct {
+        Stage      string  `json:"stage"`
+        Count      int     `json:"count"`
+        TotalValue float64 `json:"total_value"`
+    }
+    var stageStats []stageStat
+    for rows.Next() {
+        var s stageStat
+        if err := rows.Scan(&s.Stage, &s.Count, &s.TotalValue); err != nil {
+            continue
+        }
+        stageStats = append(stageStats, s)
+    }
+
+    // Динамика создания сделок по месяцам (последние 12 месяцев)
+    rows, err = database.Pool.Query(ctx, `
+        SELECT 
+            TO_CHAR(date_trunc('month', created_at), 'YYYY-MM') as month,
+            COUNT(*) as deals_created,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        GROUP BY date_trunc('month', created_at)
+        ORDER BY month
+    `)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    type monthlyStat struct {
+        Month        string  `json:"month"`
+        DealsCreated int     `json:"deals_created"`
+        TotalValue   float64 `json:"total_value"`
+    }
+    var monthlyStats []monthlyStat
+    for rows.Next() {
+        var m monthlyStat
+        if err := rows.Scan(&m.Month, &m.DealsCreated, &m.TotalValue); err != nil {
+            continue
+        }
+        monthlyStats = append(monthlyStats, m)
+    }
+
+    // Общая статистика
+    var totalDeals, totalCustomers int
+    var totalValue float64
+    database.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM crm_deals`).Scan(&totalDeals)
+    database.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM crm_customers`).Scan(&totalCustomers)
+    database.Pool.QueryRow(ctx, `SELECT COALESCE(SUM(value), 0) FROM crm_deals`).Scan(&totalValue)
+
+    c.JSON(http.StatusOK, gin.H{
+        "stage_stats":     stageStats,
+        "monthly_stats":   monthlyStats,
+        "total_deals":     totalDeals,
+        "total_customers": totalCustomers,
+        "total_value":     totalValue,
+    })
 }

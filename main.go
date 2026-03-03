@@ -362,6 +362,8 @@ func main() {
         api.PUT("/crm/deals/:id", handlers.UpdateDeal)
         api.DELETE("/crm/deals/:id", handlers.DeleteDeal)
         api.PUT("/crm/deals/:id/stage", handlers.UpdateDealStage)
+
+        api.GET("/crm/stats", handlers.GetCRMStats)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========

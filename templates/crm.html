@@ -6,8 +6,10 @@
     <title>{{ .Title }}</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome для иконок -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         .table-hover tbody tr:hover {
             background-color: rgba(0,123,255,0.1);
@@ -38,6 +40,35 @@
             gap: 0.5rem;
             align-items: center;
         }
+        .editable-cell {
+            position: relative;
+            min-width: 80px;
+        }
+        .editable-cell:hover {
+            background-color: #f8f9fa;
+        }
+        .editable-cell input, .editable-cell select {
+            width: 100%;
+            padding: 0.25rem;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -54,6 +85,11 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="deals-tab" data-bs-toggle="tab" data-bs-target="#deals" type="button" role="tab">
                     <i class="fas fa-handshake me-2"></i>Сделки
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                    <i class="fas fa-chart-line me-2"></i>Аналитика
                 </button>
             </li>
         </ul>
@@ -175,6 +211,63 @@
                 <nav>
                     <ul class="pagination" id="dealsPagination"></ul>
                 </nav>
+            </div>
+
+            <!-- Вкладка Аналитика -->
+            <div class="tab-pane fade" id="analytics" role="tabpanel">
+                <h3 class="mb-4">Аналитика продаж</h3>
+                
+                <!-- Карточки общей статистики -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="totalCustomers">0</h3>
+                            <p>Всего клиентов</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="totalDeals">0</h3>
+                            <p>Всего сделок</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="totalValue">0</h3>
+                            <p>Общая сумма сделок</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <h3 id="avgValue">0</h3>
+                            <p>Средняя сумма сделки</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Графики -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                Воронка продаж по стадиям
+                            </div>
+                            <div class="card-body">
+                                <canvas id="funnelChart" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                Динамика создания сделок (по месяцам)
+                            </div>
+                            <div class="card-body">
+                                <canvas id="monthlyChart" style="max-height: 300px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -305,10 +398,10 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS и зависимости -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Переменные для пагинации, поиска и фильтров
+        // ==================== ПЕРЕМЕННЫЕ ====================
         let currentCustomersPage = 1;
         let currentDealsPage = 1;
         let currentCustomerSearch = '';
@@ -323,7 +416,7 @@
         let dealCloseTo = '';
         const pageSize = 20;
 
-        // Загрузка данных при открытии страницы
+        // ==================== ЗАГРУЗКА ПРИ ОТКРЫТИИ ====================
         document.addEventListener('DOMContentLoaded', function() {
             loadCustomers();
             loadDeals();
@@ -371,9 +464,14 @@
                 currentDealsPage = 1;
                 loadDeals();
             });
+
+            // При переключении на вкладку аналитики загружаем данные
+            document.getElementById('analytics-tab').addEventListener('shown.bs.tab', function () {
+                loadAnalytics();
+            });
         });
 
-        // Загрузка списка клиентов с учётом страницы, поиска и фильтров
+        // ==================== КЛИЕНТЫ ====================
         function loadCustomers(page = currentCustomersPage) {
             let url = `/api/crm/customers?page=${page}&page_size=${pageSize}`;
             if (currentCustomerSearch) {
@@ -395,7 +493,43 @@
                 .catch(error => console.error('Error loading customers:', error));
         }
 
-        // Загрузка списка сделок с учётом страницы, поиска и фильтров
+        function renderCustomersTable(customers) {
+            const tbody = document.querySelector('#customersTable tbody');
+            tbody.innerHTML = '';
+            customers.forEach(customer => {
+                const row = tbody.insertRow();
+                row.setAttribute('data-id', customer.id);
+                // ID (не редактируется)
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="id">${customer.id}</span>`;
+                // Имя
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="name" data-value="${customer.name || ''}">${customer.name || ''}</span>`;
+                // Email
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="email" data-value="${customer.email || ''}">${customer.email || ''}</span>`;
+                // Телефон
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="phone" data-value="${customer.phone || ''}">${customer.phone || ''}</span>`;
+                // Компания
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="company" data-value="${customer.company || ''}">${customer.company || ''}</span>`;
+                // Статус (с бейджем)
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="status" data-value="${customer.status || 'lead'}">
+                    <span class="badge bg-info badge-status">${customer.status || 'lead'}</span>
+                </span>`;
+                // Ответственный
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="responsible" data-value="${customer.responsible || ''}">${customer.responsible || ''}</span>`;
+                // Источник
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="source" data-value="${customer.source || ''}">${customer.source || ''}</span>`;
+                // Комментарий
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="comment" data-value="${customer.comment || ''}">${customer.comment || ''}</span>`;
+                // Действия
+                const actionsCell = row.insertCell();
+                actionsCell.innerHTML = `
+                    <button class="btn btn-sm btn-warning" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
+                `;
+            });
+            attachInlineEditHandlers('customers');
+        }
+
+        // ==================== СДЕЛКИ ====================
         function loadDeals(page = currentDealsPage) {
             let url = `/api/crm/deals?page=${page}&page_size=${pageSize}`;
             if (currentDealSearch) {
@@ -423,55 +557,125 @@
                 .catch(error => console.error('Error loading deals:', error));
         }
 
-        // Отрисовка таблицы клиентов
-        function renderCustomersTable(customers) {
-            const tbody = document.querySelector('#customersTable tbody');
-            tbody.innerHTML = '';
-            customers.forEach(customer => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${customer.id}</td>
-                    <td>${customer.name || ''}</td>
-                    <td>${customer.email || ''}</td>
-                    <td>${customer.phone || ''}</td>
-                    <td>${customer.company || ''}</td>
-                    <td><span class="badge bg-info badge-status">${customer.status || 'lead'}</span></td>
-                    <td>${customer.responsible || ''}</td>
-                    <td>${customer.source || ''}</td>
-                    <td>${customer.comment || ''}</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" onclick="editCustomer('${customer.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${customer.id}')"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-        }
-
-        // Отрисовка таблицы сделок
         function renderDealsTable(deals) {
             const tbody = document.querySelector('#dealsTable tbody');
             tbody.innerHTML = '';
             deals.forEach(deal => {
                 const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${deal.id}</td>
-                    <td>${deal.customer_id || ''}</td>
-                    <td>${deal.title || ''}</td>
-                    <td>${deal.value || 0}</td>
-                    <td><span class="badge bg-primary badge-status">${deal.stage || 'lead'}</span></td>
-                    <td>${deal.probability || 0}%</td>
-                    <td>${deal.responsible || ''}</td>
-                    <td>${deal.source || ''}</td>
-                    <td>${deal.comment || ''}</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" onclick="editDeal('${deal.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteDeal('${deal.id}')"><i class="fas fa-trash"></i></button>
-                    </td>
+                row.setAttribute('data-id', deal.id);
+                // ID
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="id">${deal.id}</span>`;
+                // Клиент (не редактируется inline)
+                row.insertCell().innerHTML = `<span>${deal.customer_id || ''}</span>`;
+                // Название
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="title" data-value="${deal.title || ''}">${deal.title || ''}</span>`;
+                // Сумма
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="value" data-value="${deal.value || 0}">${deal.value || 0}</span>`;
+                // Стадия
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="stage" data-value="${deal.stage || 'lead'}">
+                    <span class="badge bg-primary badge-status">${deal.stage || 'lead'}</span>
+                </span>`;
+                // Вероятность
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="probability" data-value="${deal.probability || 0}">${deal.probability || 0}%</span>`;
+                // Ответственный
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="responsible" data-value="${deal.responsible || ''}">${deal.responsible || ''}</span>`;
+                // Источник
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="source" data-value="${deal.source || ''}">${deal.source || ''}</span>`;
+                // Комментарий
+                row.insertCell().innerHTML = `<span class="editable-cell" data-field="comment" data-value="${deal.comment || ''}">${deal.comment || ''}</span>`;
+                // Действия
+                const actionsCell = row.insertCell();
+                actionsCell.innerHTML = `
+                    <button class="btn btn-sm btn-warning" onclick="editDeal('${deal.id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteDeal('${deal.id}')"><i class="fas fa-trash"></i></button>
                 `;
+            });
+            attachInlineEditHandlers('deals');
+        }
+
+        // ==================== INLINE EDITING ====================
+        function attachInlineEditHandlers(type) {
+            const selector = type === 'customers' ? '#customersTable .editable-cell' : '#dealsTable .editable-cell';
+            document.querySelectorAll(selector).forEach(cell => {
+                cell.addEventListener('dblclick', function(e) {
+                    if (this.querySelector('input') || this.querySelector('select')) return;
+                    const field = this.dataset.field;
+                    if (field === 'id') return;
+                    const currentValue = this.dataset.value || this.innerText.trim();
+                    const row = this.closest('tr');
+                    const id = row.dataset.id;
+
+                    let input;
+                    if ((type === 'customers' && field === 'status') || (type === 'deals' && field === 'stage')) {
+                        input = document.createElement('select');
+                        const options = type === 'customers' 
+                            ? ['lead', 'active', 'inactive'] 
+                            : ['lead', 'negotiation', 'proposal', 'closed_won', 'closed_lost'];
+                        options.forEach(opt => {
+                            const option = document.createElement('option');
+                            option.value = opt;
+                            option.textContent = opt;
+                            if (opt === currentValue) option.selected = true;
+                            input.appendChild(option);
+                        });
+                    } else {
+                        input = document.createElement('input');
+                        input.type = (field === 'value' || field === 'probability') ? 'number' : 'text';
+                        if (field === 'value') input.step = '0.01';
+                        if (field === 'probability') { input.min = 0; input.max = 100; }
+                        input.value = currentValue;
+                    }
+                    input.className = 'form-control form-control-sm';
+                    this.innerHTML = '';
+                    this.appendChild(input);
+                    input.focus();
+
+                    const saveEdit = () => {
+                        const newValue = input.value;
+                        const url = type === 'customers' ? `/api/crm/customers/${id}` : `/api/crm/deals/${id}`;
+                        const updateData = {};
+                        updateData[field] = newValue;
+                        fetch(url, {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(updateData)
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                this.dataset.value = newValue;
+                                if (input.tagName === 'SELECT') {
+                                    this.innerHTML = `<span class="badge ${type === 'customers' ? 'bg-info' : 'bg-primary'} badge-status">${newValue}</span>`;
+                                } else {
+                                    this.innerText = field === 'value' ? parseFloat(newValue).toFixed(2) : newValue;
+                                    if (field === 'probability') this.innerText += '%';
+                                }
+                            } else {
+                                alert('Ошибка сохранения');
+                                if (input.tagName === 'SELECT') {
+                                    this.innerHTML = `<span class="badge ${type === 'customers' ? 'bg-info' : 'bg-primary'} badge-status">${currentValue}</span>`;
+                                } else {
+                                    this.innerText = currentValue;
+                                }
+                            }
+                        })
+                        .catch(() => {
+                            alert('Ошибка сети');
+                            this.innerText = currentValue;
+                        });
+                    };
+
+                    input.addEventListener('blur', saveEdit);
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveEdit();
+                        }
+                    });
+                });
             });
         }
 
-        // Загрузка списка клиентов для выпадающего списка в форме сделки (без фильтров, загружаем до 1000)
+        // ==================== ЗАГРУЗКА SELECT (для модалки сделки) ====================
         function loadCustomerSelect() {
             fetch('/api/crm/customers?page=1&page_size=1000')
                 .then(response => response.json())
@@ -489,7 +693,7 @@
                 .catch(error => console.error('Error loading customer select:', error));
         }
 
-        // Сохранение клиента
+        // ==================== СОХРАНЕНИЕ ЧЕРЕЗ МОДАЛКИ ====================
         document.getElementById('saveCustomerBtn').addEventListener('click', function() {
             const id = document.getElementById('customerId').value;
             const customer = {
@@ -515,7 +719,7 @@
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
                     loadCustomers();
-                    loadCustomerSelect(); // обновить выпадающий список в сделках
+                    loadCustomerSelect();
                 } else {
                     alert('Ошибка сохранения');
                 }
@@ -523,7 +727,6 @@
             .catch(error => console.error('Error saving customer:', error));
         });
 
-        // Сохранение сделки
         document.getElementById('saveDealBtn').addEventListener('click', function() {
             const id = document.getElementById('dealId').value;
             const deal = {
@@ -557,7 +760,7 @@
             .catch(error => console.error('Error saving deal:', error));
         });
 
-        // Редактирование клиента
+        // ==================== РЕДАКТИРОВАНИЕ (открытие модалок) ====================
         window.editCustomer = function(id) {
             fetch(`/api/crm/customers?page=1&page_size=1000`)
                 .then(r => r.json())
@@ -579,7 +782,6 @@
                 });
         };
 
-        // Редактирование сделки
         window.editDeal = function(id) {
             fetch(`/api/crm/deals?page=1&page_size=1000`)
                 .then(r => r.json())
@@ -602,7 +804,7 @@
                 });
         };
 
-        // Удаление клиента
+        // ==================== УДАЛЕНИЕ ====================
         window.deleteCustomer = function(id) {
             if (confirm('Удалить клиента?')) {
                 fetch(`/api/crm/customers/${id}`, {method: 'DELETE'})
@@ -614,7 +816,6 @@
             }
         };
 
-        // Удаление сделки
         window.deleteDeal = function(id) {
             if (confirm('Удалить сделку?')) {
                 fetch(`/api/crm/deals/${id}`, {method: 'DELETE'})
@@ -623,9 +824,9 @@
             }
         };
 
-        // Очистка формы при открытии модального окна для добавления нового
+        // ==================== ОЧИСТКА МОДАЛОК ====================
         document.getElementById('customerModal').addEventListener('show.bs.modal', function(event) {
-            if (!event.relatedTarget) { // открытие по кнопке "Добавить"
+            if (!event.relatedTarget) {
                 document.getElementById('customerId').value = '';
                 document.getElementById('customerForm').reset();
             }
@@ -638,7 +839,7 @@
             }
         });
 
-        // Отрисовка пагинации
+        // ==================== ПАГИНАЦИЯ ====================
         function renderPagination(type, total, currentPage, totalPages) {
             const container = document.getElementById(`${type}Pagination`);
             if (!container) return;
@@ -663,7 +864,6 @@
             container.innerHTML = html;
         }
 
-        // Смена страницы
         window.changePage = function(type, page) {
             if (type === 'customers') {
                 loadCustomers(page);
@@ -671,6 +871,118 @@
                 loadDeals(page);
             }
         };
+
+        // ==================== АНАЛИТИКА ====================
+        function loadAnalytics() {
+            fetch('/api/crm/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalCustomers').innerText = data.total_customers;
+                    document.getElementById('totalDeals').innerText = data.total_deals;
+                    document.getElementById('totalValue').innerText = formatNumber(data.total_value);
+                    const avg = data.total_deals > 0 ? (data.total_value / data.total_deals).toFixed(2) : 0;
+                    document.getElementById('avgValue').innerText = formatNumber(avg);
+
+                    renderFunnelChart(data.stage_stats);
+                    renderMonthlyChart(data.monthly_stats);
+                })
+                .catch(error => console.error('Error loading analytics:', error));
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+
+        function renderFunnelChart(stageStats) {
+            const ctx = document.getElementById('funnelChart').getContext('2d');
+            if (window.funnelChart instanceof Chart) {
+                window.funnelChart.destroy();
+            }
+            const stages = stageStats.map(s => s.stage);
+            const counts = stageStats.map(s => s.count);
+            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
+            window.funnelChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: stages,
+                    datasets: [{
+                        label: 'Количество сделок',
+                        data: counts,
+                        backgroundColor: colors.slice(0, stages.length),
+                        borderColor: 'white',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderMonthlyChart(monthlyStats) {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            if (window.monthlyChart instanceof Chart) {
+                window.monthlyChart.destroy();
+            }
+            const months = monthlyStats.map(m => m.month);
+            const dealsCount = monthlyStats.map(m => m.deals_created);
+            const values = monthlyStats.map(m => m.total_value);
+
+            window.monthlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Количество сделок',
+                            data: dealsCount,
+                            borderColor: '#4e73df',
+                            backgroundColor: 'rgba(78,115,223,0.05)',
+                            yAxisID: 'y',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Сумма сделок',
+                            data: values,
+                            borderColor: '#1cc88a',
+                            backgroundColor: 'rgba(28,200,138,0.05)',
+                            yAxisID: 'y1',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Количество' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Сумма' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
