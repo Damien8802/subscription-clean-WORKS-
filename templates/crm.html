@@ -11,6 +11,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* --- все существующие стили --- */
         .table-hover tbody tr:hover {
             background-color: rgba(0,123,255,0.1);
             cursor: pointer;
@@ -583,7 +584,7 @@
                 </nav>
             </div>
 
-            <!-- Вкладка Сделки -->
+            <!-- Вкладка Сделки (ДОБАВЛЕН ФИЛЬТР ПО СТАДИИ) -->
             <div class="tab-pane fade" id="deals" role="tabpanel">
                 <!-- Панель массовых действий -->
                 <div class="batch-actions mb-2">
@@ -609,6 +610,16 @@
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
                     <h3>Список сделок</h3>
                     <div class="filter-group">
+                        <!-- НОВЫЙ ФИЛЬТР ПО СТАДИИ -->
+                        <select class="form-select form-select-sm" id="dealStageFilter" style="max-width: 150px;">
+                            <option value="">Все стадии</option>
+                            <option value="lead">Лид</option>
+                            <option value="negotiation">Переговоры</option>
+                            <option value="proposal">Предложение</option>
+                            <option value="closed_won">Успешно</option>
+                            <option value="closed_lost">Проиграно</option>
+                        </select>
+
                         <!-- Фильтры по сумме -->
                         <div class="input-group" style="max-width: 150px;">
                             <span class="input-group-text">Сумма от</span>
@@ -1026,6 +1037,7 @@
         let currentDealSearch = '';
         let customerCreatedFrom = '';
         let customerCreatedTo = '';
+        let dealStageFilter = '';
         let dealValueMin = '';
         let dealValueMax = '';
         let dealCloseFrom = '';
@@ -1035,21 +1047,10 @@
         let analyticsDateFrom = '';
         let analyticsDateTo = '';
 
-        // Для индикатора загрузки
         let activeRequests = 0;
-        function showLoader() {
-            activeRequests++;
-            document.getElementById('loader').style.display = 'flex';
-        }
-        function hideLoader() {
-            activeRequests--;
-            if (activeRequests <= 0) {
-                document.getElementById('loader').style.display = 'none';
-                activeRequests = 0;
-            }
-        }
+        function showLoader() { activeRequests++; document.getElementById('loader').style.display = 'flex'; }
+        function hideLoader() { activeRequests--; if (activeRequests <= 0) { document.getElementById('loader').style.display = 'none'; activeRequests = 0; } }
 
-        // Обёртка для fetch с loader
         async function fetchWithLoader(url, options = {}) {
             showLoader();
             try {
@@ -1060,7 +1061,7 @@
             }
         }
 
-        // ==================== НАСТРОЙКА КОЛОНОК (localStorage) ====================
+        // ==================== НАСТРОЙКА КОЛОНОК ====================
         function initColumnSelector(tableId, columns) {
             const selector = document.getElementById(tableId + 'ColumnSelector');
             if (!selector) return;
@@ -1104,7 +1105,6 @@
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('td');
                     columns.forEach((col, index) => {
-                        // Индекс +1 из-за чекбокса (первая колонка)
                         if (cells[index + 1]) {
                             if (hiddenColumns.includes(col.dataColumn)) {
                                 cells[index + 1].style.display = 'none';
@@ -1118,14 +1118,11 @@
 
             renderSelector();
             applyColumnVisibility();
-
-            // Обновлять при перезагрузке таблицы (будем вызывать applyColumnVisibility в render функциях)
             window['applyColumns_' + tableId] = applyColumnVisibility;
         }
 
         // ==================== ЗАГРУЗКА ПРИ ОТКРЫТИИ ====================
         document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация настройки колонок (добавлена колонка lead_score)
             initColumnSelector('customersTable', [
                 { dataColumn: 'id', label: 'ID' },
                 { dataColumn: 'name', label: 'Имя' },
@@ -1136,7 +1133,7 @@
                 { dataColumn: 'responsible', label: 'Ответственный' },
                 { dataColumn: 'source', label: 'Источник' },
                 { dataColumn: 'comment', label: 'Комментарий' },
-                { dataColumn: 'lead_score', label: 'Lead Score' }, // новая колонка
+                { dataColumn: 'lead_score', label: 'Lead Score' },
                 { dataColumn: 'actions', label: 'Действия' }
             ]);
             initColumnSelector('dealsTable', [
@@ -1156,7 +1153,6 @@
             loadDeals();
             loadCustomerSelect();
 
-            // Обработчики поиска
             document.getElementById('customerSearchBtn').addEventListener('click', function() {
                 currentCustomerSearch = document.getElementById('customerSearch').value;
                 currentCustomersPage = 1;
@@ -1182,7 +1178,6 @@
                 }
             });
 
-            // Обработчики применения фильтров
             document.getElementById('applyCustomerFilters').addEventListener('click', function() {
                 customerCreatedFrom = document.getElementById('customerCreatedFrom').value;
                 customerCreatedTo = document.getElementById('customerCreatedTo').value;
@@ -1190,6 +1185,7 @@
                 loadCustomers();
             });
             document.getElementById('applyDealFilters').addEventListener('click', function() {
+                dealStageFilter = document.getElementById('dealStageFilter').value;
                 dealValueMin = document.getElementById('dealValueMin').value;
                 dealValueMax = document.getElementById('dealValueMax').value;
                 dealCloseFrom = document.getElementById('dealCloseFrom').value;
@@ -1198,7 +1194,6 @@
                 loadDeals();
             });
 
-            // Аналитика
             document.getElementById('analytics-tab').addEventListener('shown.bs.tab', function () {
                 loadAnalytics();
             });
@@ -1208,7 +1203,6 @@
                 loadAnalytics();
             });
 
-            // Загрузка файлов
             document.getElementById('fileUpload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -1223,7 +1217,6 @@
                 uploadFile(currentDealIdForFiles, file);
             });
 
-            // Массовые операции
             document.getElementById('selectAllCustomers').addEventListener('change', function(e) {
                 const checkboxes = document.querySelectorAll('#customersTable tbody input[type="checkbox"]');
                 checkboxes.forEach(cb => cb.checked = e.target.checked);
@@ -1239,9 +1232,7 @@
             document.getElementById('batchUpdateDealsStage').addEventListener('click', batchUpdateDealsStage);
             document.getElementById('batchUpdateDealsResponsible').addEventListener('click', batchUpdateDealsResponsible);
 
-            // Горячие клавиши
             document.addEventListener('keydown', function(e) {
-                // Ctrl+F – фокус на поиск (в зависимости от активной вкладки)
                 if (e.ctrlKey && e.key === 'f') {
                     e.preventDefault();
                     const activeTab = document.querySelector('.tab-pane.active');
@@ -1251,7 +1242,6 @@
                         document.getElementById('dealSearch').focus();
                     }
                 }
-                // Ctrl+N – создать новую запись
                 if (e.ctrlKey && e.key === 'n') {
                     e.preventDefault();
                     const activeTab = document.querySelector('.tab-pane.active');
@@ -1261,7 +1251,6 @@
                         $('#dealModal').modal('show');
                     }
                 }
-                // Esc – закрыть модальное окно
                 if (e.key === 'Escape') {
                     const openModal = document.querySelector('.modal.show');
                     if (openModal) {
@@ -1270,27 +1259,21 @@
                 }
             });
 
-            // При открытии модалки для сделки сбрасываем вкладку на "Основное"
             document.getElementById('dealModal').addEventListener('show.bs.modal', function() {
                 document.getElementById('deal-main-tab').click();
             });
 
-            // При переключении на вкладку истории загружаем данные (для клиента)
             document.getElementById('customer-history-tab').addEventListener('shown.bs.tab', function() {
                 const id = document.getElementById('customerId').value;
                 if (id) loadCustomerHistory(id);
             });
-
-            // При переключении на вкладку истории для сделки
             document.getElementById('deal-history-tab').addEventListener('shown.bs.tab', function() {
                 const id = document.getElementById('dealId').value;
                 if (id) loadDealHistory(id);
             });
 
-            // Инициализация AI-чата
             window.aiChatModal = new bootstrap.Modal(document.getElementById('aiChatModal'));
 
-            // ===== НОВОЕ: загрузить настройки уведомлений и инициализировать голосовой ввод =====
             loadNotificationSettings();
             initVoiceRecognition();
         });
@@ -1312,7 +1295,6 @@
             const ids = getSelectedIds('customersTable');
             if (ids.length === 0) { alert('Выберите хотя бы одного клиента'); return; }
             if (!confirm(`Удалить ${ids.length} клиента(ов)?`)) return;
-
             fetchWithLoader('/api/crm/customers/batch/delete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1332,7 +1314,6 @@
             if (ids.length === 0) { alert('Выберите хотя бы одного клиента'); return; }
             const status = document.getElementById('batchCustomerStatus').value;
             if (!status) { alert('Выберите статус'); return; }
-
             fetchWithLoader('/api/crm/customers/batch/status', {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
@@ -1351,7 +1332,6 @@
             const ids = getSelectedIds('dealsTable');
             if (ids.length === 0) { alert('Выберите хотя бы одну сделку'); return; }
             if (!confirm(`Удалить ${ids.length} сделок(и)?`)) return;
-
             fetchWithLoader('/api/crm/deals/batch/delete', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1372,7 +1352,6 @@
             const stage = document.getElementById('batchDealStage').value;
             if (!stage) { alert('Выберите стадию'); return; }
             const probability = parseInt(document.getElementById('batchDealProbability').value) || 0;
-
             fetchWithLoader('/api/crm/deals/batch/stage', {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
@@ -1392,7 +1371,6 @@
             if (ids.length === 0) { alert('Выберите хотя бы одну сделку'); return; }
             const responsible = document.getElementById('batchDealResponsible').value.trim();
             if (!responsible) { alert('Введите имя ответственного'); return; }
-
             fetchWithLoader('/api/crm/deals/batch/responsible', {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
@@ -1407,7 +1385,7 @@
             }).catch(error => alert('Ошибка сети: ' + error.message));
         }
 
-        // ==================== КЛИЕНТЫ (ДОБАВЛЕНА КОЛОНКА LEAD SCORE) ====================
+        // ==================== КЛИЕНТЫ ====================
         function loadCustomers(page = currentCustomersPage) {
             let url = `/api/crm/customers?page=${page}&page_size=${pageSize}`;
             if (currentCustomerSearch) url += `&search=${encodeURIComponent(currentCustomerSearch)}`;
@@ -1444,7 +1422,7 @@
                 row.insertCell().innerHTML = `<span class="editable-cell" data-field="responsible" data-value="${customer.responsible || ''}">${customer.responsible || ''}</span>`;
                 row.insertCell().innerHTML = `<span class="editable-cell" data-field="source" data-value="${customer.source || ''}">${customer.source || ''}</span>`;
                 row.insertCell().innerHTML = `<span class="editable-cell col-comment" data-field="comment" data-value="${customer.comment || ''}">${customer.comment || ''}</span>`;
-                // Ячейка с Lead Score (прогресс-бар)
+
                 const leadScoreCell = row.insertCell();
                 const score = customer.lead_score || 0;
                 const percent = Math.round(score * 100);
@@ -1464,7 +1442,6 @@
                 `;
             });
             attachInlineEditHandlers('customers');
-            // Применить сохранённую видимость колонок
             if (window['applyColumns_customersTable']) window['applyColumns_customersTable']();
         }
 
@@ -1472,6 +1449,7 @@
         function loadDeals(page = currentDealsPage) {
             let url = `/api/crm/deals?page=${page}&page_size=${pageSize}`;
             if (currentDealSearch) url += `&search=${encodeURIComponent(currentDealSearch)}`;
+            if (dealStageFilter) url += `&stage=${encodeURIComponent(dealStageFilter)}`;
             if (dealValueMin) url += `&value_min=${encodeURIComponent(dealValueMin)}`;
             if (dealValueMax) url += `&value_max=${encodeURIComponent(dealValueMax)}`;
             if (dealCloseFrom) url += `&close_from=${encodeURIComponent(dealCloseFrom)}`;
@@ -1640,7 +1618,6 @@
                     bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
                     loadCustomers();
                     loadCustomerSelect();
-                    // Пример вызова уведомления
                     showToast('Клиент успешно сохранён', 'success');
                 } else {
                     response.text().then(text => alert('Ошибка сохранения: ' + text));
@@ -1730,8 +1707,7 @@
                         document.getElementById('customerSource').value = customer.source || '';
                         document.getElementById('customerComment').value = customer.comment || '';
                         new bootstrap.Modal(document.getElementById('customerModal')).show();
-                        // Сброс истории при открытии (загрузится при переходе на вкладку)
-                        document.getElementById('customer-history-tab').click(); // или оставить основную вкладку активной
+                        document.getElementById('customer-history-tab').click();
                     }
                 });
         };
@@ -1755,7 +1731,6 @@
                         document.getElementById('dealExpectedClose').value = deal.expected_close ? deal.expected_close.slice(0,10) : '';
                         new bootstrap.Modal(document.getElementById('dealModal')).show();
                         loadFiles(deal.id);
-                        // Сброс истории
                         document.getElementById('dealHistoryList').innerHTML = '<p class="text-muted text-center">Загрузка истории...</p>';
                     }
                 });
@@ -1791,9 +1766,7 @@
                 document.getElementById('customerId').value = '';
                 document.getElementById('customerForm').reset();
                 document.querySelectorAll('#customerForm .is-invalid').forEach(el => el.classList.remove('is-invalid'));
-                // Сброс истории
                 document.getElementById('customerHistoryList').innerHTML = '<p class="text-muted text-center">Загрузка истории...</p>';
-                // Возврат на основную вкладку
                 document.getElementById('customer-main-tab').click();
             }
         });
@@ -1871,7 +1844,6 @@
         function uploadFile(dealId, file) {
             const formData = new FormData();
             formData.append('file', file);
-
             fetchWithLoader(`/api/crm/deals/${dealId}/attachments`, {
                 method: 'POST',
                 body: formData
@@ -1995,127 +1967,151 @@
         function formatNumber(num) {
             return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
         }
+function renderFunnelChart(stageStats) {
+    const ctx = document.getElementById('funnelChart').getContext('2d');
+    if (window.funnelChart && typeof window.funnelChart.destroy === 'function') {
+        window.funnelChart.destroy();
+    }
+    const stages = stageStats.map(s => s.stage);
+    const counts = stageStats.map(s => s.count);
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
 
-        function renderFunnelChart(stageStats) {
-            const ctx = document.getElementById('funnelChart').getContext('2d');
-            if (window.funnelChart) window.funnelChart.destroy();
-            const stages = stageStats.map(s => s.stage);
-            const counts = stageStats.map(s => s.count);
-            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
-            window.funnelChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: stages,
-                    datasets: [{
-                        label: 'Количество сделок',
-                        data: counts,
-                        backgroundColor: colors.slice(0, stages.length),
-                        borderColor: 'white',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
+    window.funnelChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stages,
+            datasets: [{
+                label: 'Количество сделок',
+                data: counts,
+                backgroundColor: colors.slice(0, stages.length),
+                borderColor: 'white',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
         }
+    });
 
-        function renderResponsibleChart(responsibleStats) {
-            const ctx = document.getElementById('responsibleChart').getContext('2d');
-            if (window.responsibleChart) window.responsibleChart.destroy();
-            const labels = responsibleStats.map(r => r.responsible);
-            const counts = responsibleStats.map(r => r.deals_count);
-            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#fd7e14', '#6610f2'];
-            window.responsibleChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Количество сделок',
-                        data: counts,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderColor: 'white',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
+    const canvas = document.getElementById('funnelChart');
+    canvas.onclick = (event) => {
+        const activePoints = window.funnelChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+        if (activePoints.length > 0) {
+            const index = activePoints[0].index;
+            const stage = stages[index];
+            const dealsTab = document.getElementById('deals-tab');
+            const tab = new bootstrap.Tab(dealsTab);
+            tab.show();
+            document.getElementById('dealStageFilter').value = stage;
+            dealStageFilter = stage;
+            currentDealsPage = 1;
+            loadDeals();
         }
+    };
+}
 
-        function renderSourceChart(sourceStats) {
-            const ctx = document.getElementById('sourceChart').getContext('2d');
-            if (window.sourceChart) window.sourceChart.destroy();
-            const labels = sourceStats.map(s => s.source);
-            const counts = sourceStats.map(s => s.deals_count);
-            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#fd7e14', '#6610f2'];
-            window.sourceChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: counts,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right' } }
-                }
-            });
+function renderResponsibleChart(responsibleStats) {
+    const ctx = document.getElementById('responsibleChart').getContext('2d');
+    if (window.responsibleChart && typeof window.responsibleChart.destroy === 'function') {
+        window.responsibleChart.destroy();
+    }
+    const labels = responsibleStats.map(r => r.responsible);
+    const counts = responsibleStats.map(r => r.deals_count);
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#fd7e14', '#6610f2'];
+    window.responsibleChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Количество сделок',
+                data: counts,
+                backgroundColor: colors.slice(0, labels.length),
+                borderColor: 'white',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
         }
+    });
+}
 
-        function renderMonthlyChart(monthlyStats) {
-            const ctx = document.getElementById('monthlyChart').getContext('2d');
-            if (window.monthlyChart) window.monthlyChart.destroy();
-            const months = monthlyStats.map(m => m.month);
-            const dealsCount = monthlyStats.map(m => m.deals_count);
-            const values = monthlyStats.map(m => m.total_value);
-
-            window.monthlyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [
-                        {
-                            label: 'Количество сделок',
-                            data: dealsCount,
-                            borderColor: '#4e73df',
-                            backgroundColor: 'rgba(78,115,223,0.05)',
-                            yAxisID: 'y',
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Сумма сделок',
-                            data: values,
-                            borderColor: '#1cc88a',
-                            backgroundColor: 'rgba(28,200,138,0.05)',
-                            yAxisID: 'y1',
-                            tension: 0.1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'top' } },
-                    scales: {
-                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Количество' } },
-                        y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Сумма' }, grid: { drawOnChartArea: false } }
-                    }
-                }
-            });
+function renderSourceChart(sourceStats) {
+    const ctx = document.getElementById('sourceChart').getContext('2d');
+    if (window.sourceChart && typeof window.sourceChart.destroy === 'function') {
+        window.sourceChart.destroy();
+    }
+    const labels = sourceStats.map(s => s.source);
+    const counts = sourceStats.map(s => s.deals_count);
+    const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#fd7e14', '#6610f2'];
+    window.sourceChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: counts,
+                backgroundColor: colors.slice(0, labels.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right' } }
         }
+    });
+}
+
+function renderMonthlyChart(monthlyStats) {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    if (window.monthlyChart && typeof window.monthlyChart.destroy === 'function') {
+        window.monthlyChart.destroy();
+    }
+    const months = monthlyStats.map(m => m.month);
+    const dealsCount = monthlyStats.map(m => m.deals_count);
+    const values = monthlyStats.map(m => m.total_value);
+
+    window.monthlyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Количество сделок',
+                    data: dealsCount,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78,115,223,0.05)',
+                    yAxisID: 'y',
+                    tension: 0.1
+                },
+                {
+                    label: 'Сумма сделок',
+                    data: values,
+                    borderColor: '#1cc88a',
+                    backgroundColor: 'rgba(28,200,138,0.05)',
+                    yAxisID: 'y1',
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Количество' } },
+                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Сумма' }, grid: { drawOnChartArea: false } }
+            }
+        }
+    });
+}
 
         // ==================== ЭКСПОРТ ====================
         function exportCustomers(format) {
@@ -2130,7 +2126,7 @@
 
         function exportDeals(format) {
             const params = new URLSearchParams({
-                stage: document.getElementById('dealStage')?.value || '',
+                stage: dealStageFilter || '',
                 search: currentDealSearch,
                 value_min: dealValueMin,
                 value_max: dealValueMax,
@@ -2174,7 +2170,6 @@
             const question = input.value.trim();
             if (!question) return;
 
-            // Добавляем сообщение пользователя
             addAIMessage(question, 'user');
             input.value = '';
             showTypingIndicator();
@@ -2185,7 +2180,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         question: question,
-                        crm_context: true  // включаем CRM-контекст
+                        crm_context: true
                     })
                 });
 
@@ -2209,9 +2204,7 @@
             }
         }
 
-        // ==================== НОВЫЕ ФУНКЦИИ: УВЕДОМЛЕНИЯ (исправленные) ====================
-
-        // Загрузить настройки уведомлений из localStorage при старте
+        // ==================== УВЕДОМЛЕНИЯ ====================
         function loadNotificationSettings() {
             const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {
                 telegram: false,
@@ -2244,7 +2237,6 @@
             });
         }
 
-        // Сохранить настройки уведомлений
         function saveNotificationSettings() {
             const events = [];
             if (document.getElementById('eventCustomerCreate')?.checked) events.push('customer_create');
@@ -2264,7 +2256,6 @@
             showToast('Настройки сохранены', 'success');
         }
 
-        // Показать всплывающее уведомление (тост)
         function showToast(message, type = 'info', title = 'Уведомление') {
             const container = document.getElementById('toastContainer');
             const toastId = 'toast-' + Date.now();
@@ -2285,23 +2276,21 @@
             `;
             container.insertAdjacentHTML('beforeend', toastHtml);
 
-            // Автоматически скрыть через 5 секунд
             setTimeout(() => {
                 const toast = document.getElementById(toastId);
                 if (toast) toast.remove();
             }, 5000);
         }
 
-        // ==================== ГОЛОСОВОЙ ВВОД (исправленный) ====================
+        // ==================== ГОЛОСОВОЙ ВВОД ====================
         let recognition = null;
         let isRecording = false;
-        let voiceToastShown = false; // флаг, чтобы не показывать тост многократно
+        let voiceToastShown = false;
 
         function initVoiceRecognition() {
             const voiceBtn = document.getElementById('voiceBtn');
             if (!voiceBtn) return;
 
-            // Проверяем поддержку API
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 console.log('Голосовой ввод не поддерживается браузером');
                 voiceBtn.style.display = 'none';
@@ -2320,7 +2309,7 @@
                     isRecording = true;
                     voiceBtn.classList.add('recording');
                     voiceBtn.innerHTML = '<i class="fas fa-stop"></i>';
-                    voiceToastShown = false; // сбрасываем флаг при новом старте
+                    voiceToastShown = false;
                 };
 
                 recognition.onend = function() {
@@ -2332,19 +2321,16 @@
                 recognition.onresult = function(event) {
                     const transcript = event.results[0][0].transcript;
                     document.getElementById('aiChatInput').value = transcript;
-                    // Автоматически отправляем сообщение
                     sendAIMessage();
                 };
 
                 recognition.onerror = function(event) {
                     console.error('Ошибка распознавания:', event.error);
-                    // Сбрасываем состояние записи
                     if (isRecording) {
                         isRecording = false;
                         voiceBtn.classList.remove('recording');
                         voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
                     }
-                    // Показываем тост только для значимых ошибок, кроме 'no-speech' (тишина), и только один раз
                     if (event.error !== 'no-speech' && !voiceToastShown) {
                         voiceToastShown = true;
                         let message = 'Ошибка микрофона';
