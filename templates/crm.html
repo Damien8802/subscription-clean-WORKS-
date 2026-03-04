@@ -417,16 +417,60 @@
             border-radius: 20px;
             padding: 8px 20px;
         }
+
+        /* ===== НОВЫЕ СТИЛИ: уведомления и голосовой ввод ===== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .toast-notification {
+            min-width: 300px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .voice-btn {
+            border-radius: 20px;
+            padding: 8px 12px;
+            transition: all 0.3s;
+        }
+        .voice-btn.recording {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        .notification-badge {
+            position: relative;
+            top: -10px;
+            right: 5px;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 <body>
+    <!-- Контейнер для всплывающих уведомлений (тостов) -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- Индикатор загрузки -->
     <div class="loader-overlay" id="loader">
         <div class="loader"></div>
     </div>
 
     <div class="container-fluid mt-4">
-        <h1 class="mb-4">CRM система <small class="text-muted">Управление клиентами и сделками</small></h1>
+        <h1 class="mb-4">
+            CRM система <small class="text-muted">Управление клиентами и сделками</small>
+            <!-- Кнопка настроек уведомлений -->
+            <button class="btn btn-outline-primary btn-sm float-end" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
+                <i class="fas fa-bell"></i> Настройки уведомлений
+            </button>
+        </h1>
 
         <!-- Вкладки -->
         <ul class="nav nav-tabs mb-4" id="crmTabs" role="tablist">
@@ -523,6 +567,8 @@
                                 <th data-column="responsible">Ответственный</th>
                                 <th data-column="source">Источник</th>
                                 <th class="col-comment" data-column="comment">Комментарий</th>
+                                <!-- Новая колонка Lead Score -->
+                                <th data-column="lead_score">Lead Score</th>
                                 <th class="col-actions" data-column="actions">Действия</th>
                             </tr>
                         </thead>
@@ -891,12 +937,62 @@
         </div>
     </div>
 
+    <!-- Модальное окно настроек уведомлений -->
+    <div class="modal fade" id="notificationSettingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Настройки уведомлений</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="notificationForm">
+                        <div class="mb-3">
+                            <label class="form-label">Способ получения</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="notifyTelegram" value="telegram">
+                                <label class="form-check-label" for="notifyTelegram">Telegram</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="notifyEmail" value="email">
+                                <label class="form-check-label" for="notifyEmail">Email</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Контактные данные</label>
+                            <input type="text" class="form-control" id="notificationContact" placeholder="@username или email@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">События</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="eventCustomerCreate" value="customer_create">
+                                <label class="form-check-label" for="eventCustomerCreate">Новый клиент</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="eventDealStage" value="deal_stage">
+                                <label class="form-check-label" for="eventDealStage">Изменение стадии сделки</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="eventInactive" value="inactive">
+                                <label class="form-check-label" for="eventInactive">Неактивность клиента (7 дней)</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNotificationSettings()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Кнопка AI-ассистента -->
     <button class="ai-fab" onclick="openAIChat()" title="AI-ассистент CRM">
         <i class="fas fa-robot"></i>
     </button>
 
-    <!-- Модальное окно AI-чата -->
+    <!-- Модальное окно AI-чата (с голосовым вводом) -->
     <div class="modal fade ai-chat-modal" id="aiChatModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -906,11 +1002,14 @@
                 </div>
                 <div class="ai-chat-body" id="aiChatMessages">
                     <div class="ai-message assistant">
-                        Здравствуйте! Я AI-ассистент CRM. Задайте мне вопрос о ваших клиентах, сделках или статистике. Я могу проанализировать данные и помочь с рекомендациями.
+                        Здравствуйте! Я AI-ассистент CRM. Задайте мне вопрос голосом или текстом.
                     </div>
                 </div>
                 <div class="ai-chat-footer">
                     <input type="text" id="aiChatInput" class="form-control" placeholder="Введите ваш вопрос..." onkeypress="if(event.key==='Enter') sendAIMessage()">
+                    <button class="btn btn-primary voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Голосовой ввод">
+                        <i class="fas fa-microphone"></i>
+                    </button>
                     <button class="btn btn-primary" onclick="sendAIMessage()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -1026,7 +1125,7 @@
 
         // ==================== ЗАГРУЗКА ПРИ ОТКРЫТИИ ====================
         document.addEventListener('DOMContentLoaded', function() {
-            // Инициализация настройки колонок
+            // Инициализация настройки колонок (добавлена колонка lead_score)
             initColumnSelector('customersTable', [
                 { dataColumn: 'id', label: 'ID' },
                 { dataColumn: 'name', label: 'Имя' },
@@ -1037,6 +1136,7 @@
                 { dataColumn: 'responsible', label: 'Ответственный' },
                 { dataColumn: 'source', label: 'Источник' },
                 { dataColumn: 'comment', label: 'Комментарий' },
+                { dataColumn: 'lead_score', label: 'Lead Score' }, // новая колонка
                 { dataColumn: 'actions', label: 'Действия' }
             ]);
             initColumnSelector('dealsTable', [
@@ -1189,6 +1289,10 @@
 
             // Инициализация AI-чата
             window.aiChatModal = new bootstrap.Modal(document.getElementById('aiChatModal'));
+
+            // ===== НОВОЕ: загрузить настройки уведомлений и инициализировать голосовой ввод =====
+            loadNotificationSettings();
+            initVoiceRecognition();
         });
 
         // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
@@ -1303,7 +1407,7 @@
             }).catch(error => alert('Ошибка сети: ' + error.message));
         }
 
-        // ==================== КЛИЕНТЫ ====================
+        // ==================== КЛИЕНТЫ (ДОБАВЛЕНА КОЛОНКА LEAD SCORE) ====================
         function loadCustomers(page = currentCustomersPage) {
             let url = `/api/crm/customers?page=${page}&page_size=${pageSize}`;
             if (currentCustomerSearch) url += `&search=${encodeURIComponent(currentCustomerSearch)}`;
@@ -1340,6 +1444,18 @@
                 row.insertCell().innerHTML = `<span class="editable-cell" data-field="responsible" data-value="${customer.responsible || ''}">${customer.responsible || ''}</span>`;
                 row.insertCell().innerHTML = `<span class="editable-cell" data-field="source" data-value="${customer.source || ''}">${customer.source || ''}</span>`;
                 row.insertCell().innerHTML = `<span class="editable-cell col-comment" data-field="comment" data-value="${customer.comment || ''}">${customer.comment || ''}</span>`;
+                // Ячейка с Lead Score (прогресс-бар)
+                const leadScoreCell = row.insertCell();
+                const score = customer.lead_score || 0;
+                const percent = Math.round(score * 100);
+                let bgClass = 'bg-success';
+                if (percent < 30) bgClass = 'bg-danger';
+                else if (percent < 70) bgClass = 'bg-warning';
+                leadScoreCell.innerHTML = `
+                    <div class="progress" style="height: 20px; min-width: 80px;">
+                        <div class="progress-bar ${bgClass}" role="progressbar" style="width: ${percent}%;" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div>
+                    </div>
+                `;
                 const actionsCell = row.insertCell();
                 actionsCell.className = 'col-actions';
                 actionsCell.innerHTML = `
@@ -1524,6 +1640,8 @@
                     bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
                     loadCustomers();
                     loadCustomerSelect();
+                    // Пример вызова уведомления
+                    showToast('Клиент успешно сохранён', 'success');
                 } else {
                     response.text().then(text => alert('Ошибка сохранения: ' + text));
                 }
@@ -1586,6 +1704,7 @@
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('dealModal')).hide();
                     loadDeals();
+                    showToast('Сделка успешно сохранена', 'success');
                 } else {
                     const errorText = await response.text();
                     alert('Ошибка сохранения: ' + errorText);
@@ -1649,6 +1768,7 @@
                     .then(() => {
                         loadCustomers();
                         loadCustomerSelect();
+                        showToast('Клиент удалён', 'danger');
                     })
                     .catch(error => console.error('Error deleting customer:', error));
             }
@@ -1657,7 +1777,10 @@
         window.deleteDeal = function(id) {
             if (confirm('Удалить сделку?')) {
                 fetchWithLoader(`/api/crm/deals/${id}`, {method: 'DELETE'})
-                    .then(() => loadDeals())
+                    .then(() => {
+                        loadDeals();
+                        showToast('Сделка удалена', 'danger');
+                    })
                     .catch(error => console.error('Error deleting deal:', error));
             }
         };
@@ -2083,6 +2206,195 @@
             } catch (error) {
                 hideTypingIndicator();
                 addAIMessage('❌ Ошибка сети: ' + error.message, 'system');
+            }
+        }
+
+        // ==================== НОВЫЕ ФУНКЦИИ: УВЕДОМЛЕНИЯ (исправленные) ====================
+
+        // Загрузить настройки уведомлений из localStorage при старте
+        function loadNotificationSettings() {
+            const settings = JSON.parse(localStorage.getItem('notificationSettings')) || {
+                telegram: false,
+                email: false,
+                contact: '',
+                events: []
+            };
+
+            const notifyTelegram = document.getElementById('notifyTelegram');
+            if (notifyTelegram) notifyTelegram.checked = settings.telegram;
+
+            const notifyEmail = document.getElementById('notifyEmail');
+            if (notifyEmail) notifyEmail.checked = settings.email;
+
+            const notificationContact = document.getElementById('notificationContact');
+            if (notificationContact) notificationContact.value = settings.contact;
+
+            const eventMap = {
+                'customer_create': 'eventCustomerCreate',
+                'deal_stage': 'eventDealStage',
+                'inactive': 'eventInactive'
+            };
+
+            settings.events.forEach(event => {
+                const elementId = eventMap[event];
+                if (elementId) {
+                    const el = document.getElementById(elementId);
+                    if (el) el.checked = true;
+                }
+            });
+        }
+
+        // Сохранить настройки уведомлений
+        function saveNotificationSettings() {
+            const events = [];
+            if (document.getElementById('eventCustomerCreate')?.checked) events.push('customer_create');
+            if (document.getElementById('eventDealStage')?.checked) events.push('deal_stage');
+            if (document.getElementById('eventInactive')?.checked) events.push('inactive');
+
+            const settings = {
+                telegram: document.getElementById('notifyTelegram')?.checked || false,
+                email: document.getElementById('notifyEmail')?.checked || false,
+                contact: document.getElementById('notificationContact')?.value || '',
+                events: events
+            };
+            localStorage.setItem('notificationSettings', JSON.stringify(settings));
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('notificationSettingsModal'));
+            if (modal) modal.hide();
+            showToast('Настройки сохранены', 'success');
+        }
+
+        // Показать всплывающее уведомление (тост)
+        function showToast(message, type = 'info', title = 'Уведомление') {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success text-white' : 
+                            type === 'danger' ? 'bg-danger text-white' : 
+                            type === 'warning' ? 'bg-warning' : 'bg-info';
+
+            const toastHtml = `
+                <div id="${toastId}" class="toast-notification toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header ${bgClass}">
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', toastHtml);
+
+            // Автоматически скрыть через 5 секунд
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) toast.remove();
+            }, 5000);
+        }
+
+        // ==================== ГОЛОСОВОЙ ВВОД (исправленный) ====================
+        let recognition = null;
+        let isRecording = false;
+        let voiceToastShown = false; // флаг, чтобы не показывать тост многократно
+
+        function initVoiceRecognition() {
+            const voiceBtn = document.getElementById('voiceBtn');
+            if (!voiceBtn) return;
+
+            // Проверяем поддержку API
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                console.log('Голосовой ввод не поддерживается браузером');
+                voiceBtn.style.display = 'none';
+                return;
+            }
+
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'ru-RU';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = function() {
+                    isRecording = true;
+                    voiceBtn.classList.add('recording');
+                    voiceBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    voiceToastShown = false; // сбрасываем флаг при новом старте
+                };
+
+                recognition.onend = function() {
+                    isRecording = false;
+                    voiceBtn.classList.remove('recording');
+                    voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('aiChatInput').value = transcript;
+                    // Автоматически отправляем сообщение
+                    sendAIMessage();
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Ошибка распознавания:', event.error);
+                    // Сбрасываем состояние записи
+                    if (isRecording) {
+                        isRecording = false;
+                        voiceBtn.classList.remove('recording');
+                        voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    }
+                    // Показываем тост только для значимых ошибок, кроме 'no-speech' (тишина), и только один раз
+                    if (event.error !== 'no-speech' && !voiceToastShown) {
+                        voiceToastShown = true;
+                        let message = 'Ошибка микрофона';
+                        if (event.error === 'not-allowed') {
+                            message = 'Доступ к микрофону запрещён. Разрешите использование микрофона.';
+                        } else if (event.error === 'audio-capture') {
+                            message = 'Микрофон не обнаружен. Подключите микрофон.';
+                        } else {
+                            message = 'Ошибка: ' + event.error;
+                        }
+                        showToast(message, 'warning');
+                    }
+                };
+            } catch (e) {
+                console.error('Не удалось инициализировать распознавание речи:', e);
+                voiceBtn.style.display = 'none';
+                recognition = null;
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                if (!voiceToastShown) {
+                    voiceToastShown = true;
+                    showToast('Голосовой ввод не поддерживается в этом браузере', 'warning');
+                }
+                return;
+            }
+            if (isRecording) {
+                stopVoiceInput();
+            } else {
+                startVoiceInput();
+            }
+        }
+
+        function startVoiceInput() {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error('Не удалось запустить запись:', e);
+                if (!voiceToastShown) {
+                    voiceToastShown = true;
+                    showToast('Не удалось запустить микрофон', 'warning');
+                }
+            }
+        }
+
+        function stopVoiceInput() {
+            if (recognition && isRecording) {
+                recognition.stop();
             }
         }
     </script>
