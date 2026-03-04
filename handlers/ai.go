@@ -393,7 +393,6 @@ func AIAskHandler(c *gin.Context) {
         return
     }
     
-    // ВАЖНО: правильный формат авторизации
     apiReq.Header.Set("Authorization", "Api-Key "+cfg.YandexAPIKey)
     apiReq.Header.Set("Content-Type", "application/json")
     apiReq.Header.Set("x-folder-id", cfg.YandexFolderID)
@@ -440,7 +439,6 @@ func AIAskHandler(c *gin.Context) {
     if plan != nil && !isAdmin && subscription != nil {
         totalTokens, _ := strconv.Atoi(yandexResp.Result.Usage.TotalTokens)
         
-        // Обновляем квоту в базе
         _, err = database.Pool.Exec(c.Request.Context(), `
             UPDATE user_subscriptions 
             SET ai_quota_used = ai_quota_used + $1 
@@ -452,7 +450,6 @@ func AIAskHandler(c *gin.Context) {
             caps := plan.GetAICapabilities()
             maxRequests := int(caps["max_requests"].(float64))
             
-            // Получаем текущее использованное количество
             var newUsed int
             database.Pool.QueryRow(c.Request.Context(), 
                 "SELECT ai_quota_used FROM user_subscriptions WHERE user_id = $1::uuid AND status = 'active'",

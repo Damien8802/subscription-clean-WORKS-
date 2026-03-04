@@ -393,6 +393,8 @@ func main() {
         api.GET("/crm/deals/export/excel", handlers.ExportDealsExcel)
 
         api.GET("/crm/history/:type/:id", handlers.GetEntityHistory)
+
+        api.POST("/crm/ai/ask", handlers.AIAskHandler)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========

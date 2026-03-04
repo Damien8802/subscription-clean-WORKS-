@@ -512,7 +512,7 @@ func createAdminTables() error {
     return nil
 }
 
-// createCRMTables создаёт таблицы для CRM, включая историю
+// createCRMTables создаёт таблицы для CRM, включая историю и lead_score
 func createCRMTables() error {
     // Таблица клиентов CRM
     _, err := Pool.Exec(context.Background(), `
@@ -643,7 +643,22 @@ func createCRMTables() error {
         log.Printf("⚠️ Не удалось создать таблицу crm_history: %v", err)
     }
 
-    log.Println("✅ Таблицы CRM готовы (включая новые поля, таблицу вложений, привязку к пользователям и историю)")
+    // NEW: Добавляем поле lead_score для клиентов
+    _, err = Pool.Exec(context.Background(), `
+        ALTER TABLE crm_customers
+        ADD COLUMN IF NOT EXISTS lead_score FLOAT DEFAULT 0;
+    `)
+    if err != nil {
+        log.Printf("⚠️ Не удалось добавить колонку lead_score в crm_customers: %v", err)
+    }
+
+    // Индекс для быстрой сортировки по lead_score
+    _, err = Pool.Exec(context.Background(), `CREATE INDEX IF NOT EXISTS idx_crm_customers_lead_score ON crm_customers(lead_score);`)
+    if err != nil {
+        log.Printf("⚠️ Не удалось создать индекс на lead_score в crm_customers: %v", err)
+    }
+
+    log.Println("✅ Таблицы CRM готовы (включая новые поля, таблицу вложений, привязку к пользователям, историю и lead_score)")
     return nil
 }
 

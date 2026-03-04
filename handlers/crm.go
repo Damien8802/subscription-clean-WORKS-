@@ -7,6 +7,7 @@ import (
     "encoding/csv"
     "encoding/json"
     "fmt"
+    "log"
     "net/http"
     "os"
     "path/filepath"
@@ -40,6 +41,7 @@ type Customer struct {
     Source      string    `json:"source"`
     Comment     string    `json:"comment"`
     UserID      string    `json:"user_id,omitempty"`
+    LeadScore   float64   `json:"lead_score"`
     CreatedAt   time.Time `json:"created_at"`
     LastSeen    time.Time `json:"last_seen"`
 }
@@ -116,6 +118,36 @@ func isAdmin(c *gin.Context) bool {
     return getRoleFromContext(c) == "admin"
 }
 
+// ========== РАСЧЁТ ЛИД-СКОРА ==========
+
+// calculateLeadScore вычисляет скор для клиента на основе его сделок
+func calculateLeadScore(ctx context.Context, customerID string) (float64, error) {
+    var totalValue float64
+    err := database.Pool.QueryRow(ctx, `
+        SELECT COALESCE(SUM(value), 0) FROM crm_deals WHERE customer_id = $1
+    `, customerID).Scan(&totalValue)
+    if err != nil {
+        return 0, err
+    }
+    score := totalValue / 10000
+    if score > 1 {
+        score = 1
+    }
+    return score, nil
+}
+
+// updateLeadScore обновляет скор для клиента
+func updateLeadScore(ctx context.Context, customerID string) error {
+    score, err := calculateLeadScore(ctx, customerID)
+    if err != nil {
+        return err
+    }
+    _, err = database.Pool.Exec(ctx, `
+        UPDATE crm_customers SET lead_score = $1 WHERE id = $2
+    `, score, customerID)
+    return err
+}
+
 // ========== ИСТОРИЯ ==========
 
 // addHistory записывает действие в историю
@@ -154,7 +186,6 @@ func GetEntityHistory(c *gin.Context) {
         return
     }
 
-    // Проверка прав доступа: пользователь может смотреть историю только своих записей (если не админ)
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
     if !isAdmin {
@@ -289,7 +320,7 @@ func GetCustomers(c *gin.Context) {
     }
 
     // ---- Запрос данных с теми же фильтрами и пагинацией ----
-    query := `SELECT id, name, email, phone, company, status, responsible, source, comment, created_at, last_seen
+    query := `SELECT id, name, email, phone, company, status, responsible, source, comment, lead_score, created_at, last_seen
               FROM crm_customers`
     args := []interface{}{}
     whereData := ""
@@ -345,7 +376,7 @@ func GetCustomers(c *gin.Context) {
     for rows.Next() {
         var cst Customer
         err := rows.Scan(&cst.ID, &cst.Name, &cst.Email, &cst.Phone, &cst.Company, &cst.Status,
-            &cst.Responsible, &cst.Source, &cst.Comment, &cst.CreatedAt, &cst.LastSeen)
+            &cst.Responsible, &cst.Source, &cst.Comment, &cst.LeadScore, &cst.CreatedAt, &cst.LastSeen)
         if err != nil {
             continue
         }
@@ -388,12 +419,14 @@ func CreateCustomer(c *gin.Context) {
         return
     }
 
-    // NOTIFY: уведомление о создании клиента
+    if err := updateLeadScore(c.Request.Context(), id); err != nil {
+        log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", id, err)
+    }
+
     if notifier != nil {
         notifier.NotifyCustomerCreated(req.Name, req.Email, req.Phone, req.Company, req.Responsible)
     }
 
-    // HISTORY: записываем создание
     go addHistory(c.Request.Context(), "customer", id, "create", &userID, nil)
 
     c.JSON(http.StatusCreated, gin.H{"id": id})
@@ -411,7 +444,6 @@ func UpdateCustomer(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Получаем текущие данные для сравнения (для истории)
     var oldData Customer
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT name, email, phone, company, status, responsible, source, comment
@@ -423,7 +455,6 @@ func UpdateCustomer(c *gin.Context) {
         return
     }
 
-    // Проверяем права на запись
     var ownerID string
     err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_customers WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
@@ -448,12 +479,14 @@ func UpdateCustomer(c *gin.Context) {
         return
     }
 
-    // NOTIFY: уведомление об изменении клиента
+    if err := updateLeadScore(c.Request.Context(), id); err != nil {
+        log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", id, err)
+    }
+
     if notifier != nil {
         notifier.NotifyCustomerUpdated(id, req.Name, req.Email, req.Phone)
     }
 
-    // HISTORY: записываем изменения (только если были изменения)
     changes := make(map[string]interface{})
     if oldData.Name != req.Name {
         changes["name"] = map[string]string{"old": oldData.Name, "new": req.Name}
@@ -492,7 +525,6 @@ func DeleteCustomer(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Проверяем права
     var ownerID string
     err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_customers WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
@@ -504,7 +536,6 @@ func DeleteCustomer(c *gin.Context) {
         return
     }
 
-    // HISTORY: записываем удаление (до самого удаления)
     go addHistory(c.Request.Context(), "customer", id, "delete", &userID, nil)
 
     _, err = database.Pool.Exec(c.Request.Context(), "DELETE FROM crm_customers WHERE id = $1", id)
@@ -517,17 +548,6 @@ func DeleteCustomer(c *gin.Context) {
 
 // ========== МАССОВЫЕ ОПЕРАЦИИ ДЛЯ КЛИЕНТОВ ==========
 
-// BatchDeleteCustomers массово удаляет клиентов
-// @Summary Массовое удаление клиентов
-// @Description Удаляет несколько клиентов по их ID (только свои, если не админ)
-// @Tags CRM
-// @Accept json
-// @Produce json
-// @Param ids body []string true "Массив ID клиентов"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Router /api/crm/customers/batch/delete [post]
 func BatchDeleteCustomers(c *gin.Context) {
     var ids []string
     if err := c.ShouldBindJSON(&ids); err != nil || len(ids) == 0 {
@@ -538,7 +558,6 @@ func BatchDeleteCustomers(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Начинаем транзакцию
     tx, err := database.Pool.Begin(c.Request.Context())
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -546,7 +565,6 @@ func BatchDeleteCustomers(c *gin.Context) {
     }
     defer tx.Rollback(c.Request.Context())
 
-    // Для не-админов проверяем, что все ID принадлежат пользователю
     if !isAdmin {
         var count int
         err := tx.QueryRow(c.Request.Context(), `
@@ -563,7 +581,6 @@ func BatchDeleteCustomers(c *gin.Context) {
         }
     }
 
-    // HISTORY: для каждого удаляемого клиента добавим запись
     for _, id := range ids {
         if err := addHistory(c.Request.Context(), "customer", id, "delete", &userID, nil); err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
@@ -571,7 +588,6 @@ func BatchDeleteCustomers(c *gin.Context) {
         }
     }
 
-    // Выполняем удаление
     _, err = tx.Exec(c.Request.Context(), "DELETE FROM crm_customers WHERE id = ANY($1)", ids)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -586,17 +602,6 @@ func BatchDeleteCustomers(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true, "deleted": len(ids)})
 }
 
-// BatchUpdateCustomersStatus массово обновляет статус клиентов
-// @Summary Массовое обновление статуса клиентов
-// @Description Устанавливает новый статус для нескольких клиентов
-// @Tags CRM
-// @Accept json
-// @Produce json
-// @Param request body object{ids=[]string,status=string} true "Массив ID и новый статус"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 403 {object} map[string]interface{}
-// @Router /api/crm/customers/batch/status [put]
 func BatchUpdateCustomersStatus(c *gin.Context) {
     var req struct {
         IDs    []string `json:"ids"`
@@ -633,7 +638,6 @@ func BatchUpdateCustomersStatus(c *gin.Context) {
         }
     }
 
-    // HISTORY: для каждого клиента записываем изменение статуса
     for _, id := range req.IDs {
         changes := map[string]interface{}{
             "status": map[string]string{"new": req.Status},
@@ -660,7 +664,6 @@ func BatchUpdateCustomersStatus(c *gin.Context) {
 
 // ========== СДЕЛКИ ==========
 
-// GetDeals возвращает список сделок с пагинацией, поиском, фильтрацией и учётом прав доступа
 func GetDeals(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -674,7 +677,6 @@ func GetDeals(c *gin.Context) {
     page, pageSize := getPaginationParams(c)
     offset := (page - 1) * pageSize
 
-    // ---- Подсчёт общего количества с учётом всех фильтров и прав ----
     countQuery := `SELECT COUNT(*) FROM crm_deals`
     countArgs := []interface{}{}
     whereClause := ""
@@ -685,44 +687,32 @@ func GetDeals(c *gin.Context) {
     }
 
     if stage != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " stage = $" + strconv.Itoa(len(countArgs)+1)
         countArgs = append(countArgs, stage)
     }
     if search != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " title ILIKE '%' || $" + strconv.Itoa(len(countArgs)+1) + " || '%'"
         countArgs = append(countArgs, search)
     }
     if valueMin != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " value >= $" + strconv.Itoa(len(countArgs)+1)
         countArgs = append(countArgs, valueMin)
     }
     if valueMax != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " value <= $" + strconv.Itoa(len(countArgs)+1)
         countArgs = append(countArgs, valueMax)
     }
     if closeFrom != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " expected_close >= $" + strconv.Itoa(len(countArgs)+1) + "::date"
         countArgs = append(countArgs, closeFrom)
     }
     if closeTo != "" {
-        if whereClause != "" {
-            whereClause += " AND"
-        }
+        if whereClause != "" { whereClause += " AND" }
         whereClause += " expected_close < ($" + strconv.Itoa(len(countArgs)+1) + "::date + '1 day'::interval)"
         countArgs = append(countArgs, closeTo)
     }
@@ -738,7 +728,6 @@ func GetDeals(c *gin.Context) {
         return
     }
 
-    // ---- Запрос данных с теми же фильтрами ----
     query := `SELECT id, customer_id, title, value, stage, probability, responsible, source, comment, expected_close, created_at, closed_at
               FROM crm_deals`
     args := []interface{}{}
@@ -750,44 +739,32 @@ func GetDeals(c *gin.Context) {
     }
 
     if stage != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " stage = $" + strconv.Itoa(len(args)+1)
         args = append(args, stage)
     }
     if search != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " title ILIKE '%' || $" + strconv.Itoa(len(args)+1) + " || '%'"
         args = append(args, search)
     }
     if valueMin != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " value >= $" + strconv.Itoa(len(args)+1)
         args = append(args, valueMin)
     }
     if valueMax != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " value <= $" + strconv.Itoa(len(args)+1)
         args = append(args, valueMax)
     }
     if closeFrom != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " expected_close >= $" + strconv.Itoa(len(args)+1) + "::date"
         args = append(args, closeFrom)
     }
     if closeTo != "" {
-        if whereData != "" {
-            whereData += " AND"
-        }
+        if whereData != "" { whereData += " AND" }
         whereData += " expected_close < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
         args = append(args, closeTo)
     }
@@ -825,7 +802,6 @@ func GetDeals(c *gin.Context) {
     })
 }
 
-// CreateDeal создаёт новую сделку
 func CreateDeal(c *gin.Context) {
     var d Deal
     if err := c.ShouldBindJSON(&d); err != nil {
@@ -851,18 +827,19 @@ func CreateDeal(c *gin.Context) {
         return
     }
 
-    // NOTIFY: уведомление о создании сделки
+    if err := updateLeadScore(c.Request.Context(), d.CustomerID); err != nil {
+        log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", d.CustomerID, err)
+    }
+
     if notifier != nil {
         notifier.NotifyDealCreated(d.Title, d.Value, d.Stage, d.Responsible, d.CustomerID)
     }
 
-    // HISTORY: записываем создание
     go addHistory(c.Request.Context(), "deal", d.ID, "create", &userID, nil)
 
     c.JSON(http.StatusCreated, d)
 }
 
-// UpdateDeal обновляет сделку
 func UpdateDeal(c *gin.Context) {
     id := c.Param("id")
     var d Deal
@@ -874,19 +851,13 @@ func UpdateDeal(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Получаем текущие данные для сравнения
-    var oldData Deal
-    err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT title, value, stage, probability, responsible, source, comment, expected_close
-        FROM crm_deals WHERE id = $1
-    `, id).Scan(&oldData.Title, &oldData.Value, &oldData.Stage, &oldData.Probability,
-        &oldData.Responsible, &oldData.Source, &oldData.Comment, &oldData.ExpectedClose)
+    var oldCustomerID string
+    err := database.Pool.QueryRow(c.Request.Context(), "SELECT customer_id FROM crm_deals WHERE id = $1", id).Scan(&oldCustomerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
     }
 
-    // Проверяем права
     var ownerID string
     err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
@@ -895,6 +866,17 @@ func UpdateDeal(c *gin.Context) {
     }
     if !isAdmin && ownerID != userID {
         c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+        return
+    }
+
+    var oldData Deal
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT title, value, stage, probability, responsible, source, comment, expected_close, customer_id
+        FROM crm_deals WHERE id = $1
+    `, id).Scan(&oldData.Title, &oldData.Value, &oldData.Stage, &oldData.Probability,
+        &oldData.Responsible, &oldData.Source, &oldData.Comment, &oldData.ExpectedClose, &oldData.CustomerID)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
     }
 
@@ -911,12 +893,23 @@ func UpdateDeal(c *gin.Context) {
         return
     }
 
-    // NOTIFY: уведомление об изменении сделки
+    if oldCustomerID != d.CustomerID {
+        if err := updateLeadScore(c.Request.Context(), oldCustomerID); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", oldCustomerID, err)
+        }
+        if err := updateLeadScore(c.Request.Context(), d.CustomerID); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", d.CustomerID, err)
+        }
+    } else {
+        if err := updateLeadScore(c.Request.Context(), d.CustomerID); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", d.CustomerID, err)
+        }
+    }
+
     if notifier != nil {
         notifier.NotifyDealUpdated(id, d.Title, d.Value, d.Stage)
     }
 
-    // HISTORY: записываем изменения
     changes := make(map[string]interface{})
     if oldData.Title != d.Title {
         changes["title"] = map[string]string{"old": oldData.Title, "new": d.Title}
@@ -952,6 +945,9 @@ func UpdateDeal(c *gin.Context) {
         }
         changes["expected_close"] = map[string]string{"old": oldStr, "new": newStr}
     }
+    if oldData.CustomerID != d.CustomerID {
+        changes["customer_id"] = map[string]string{"old": oldData.CustomerID, "new": d.CustomerID}
+    }
     if len(changes) > 0 {
         go addHistory(c.Request.Context(), "deal", id, "update", &userID, changes)
     }
@@ -959,7 +955,6 @@ func UpdateDeal(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// UpdateDealStage обновляет только стадию сделки
 func UpdateDealStage(c *gin.Context) {
     id := c.Param("id")
     var req struct {
@@ -974,16 +969,15 @@ func UpdateDealStage(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Получаем старые значения для истории
     var oldStage string
     var oldProb int
-    err := database.Pool.QueryRow(c.Request.Context(), "SELECT stage, probability FROM crm_deals WHERE id = $1", id).Scan(&oldStage, &oldProb)
+    var customerID string
+    err := database.Pool.QueryRow(c.Request.Context(), "SELECT stage, probability, customer_id FROM crm_deals WHERE id = $1", id).Scan(&oldStage, &oldProb, &customerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
     }
 
-    // Проверяем права
     var ownerID string
     err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
@@ -1006,7 +1000,10 @@ func UpdateDealStage(c *gin.Context) {
         return
     }
 
-    // HISTORY
+    if err := updateLeadScore(c.Request.Context(), customerID); err != nil {
+        log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", customerID, err)
+    }
+
     changes := make(map[string]interface{})
     if oldStage != req.Stage {
         changes["stage"] = map[string]string{"old": oldStage, "new": req.Stage}
@@ -1021,15 +1018,20 @@ func UpdateDealStage(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// DeleteDeal удаляет сделку
 func DeleteDeal(c *gin.Context) {
     id := c.Param("id")
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Проверяем права
+    var customerID string
+    err := database.Pool.QueryRow(c.Request.Context(), "SELECT customer_id FROM crm_deals WHERE id = $1", id).Scan(&customerID)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
+        return
+    }
+
     var ownerID string
-    err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
+    err = database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", id).Scan(&ownerID)
     if err != nil {
         c.JSON(http.StatusNotFound, gin.H{"error": "Deal not found"})
         return
@@ -1039,7 +1041,6 @@ func DeleteDeal(c *gin.Context) {
         return
     }
 
-    // HISTORY
     go addHistory(c.Request.Context(), "deal", id, "delete", &userID, nil)
 
     _, err = database.Pool.Exec(c.Request.Context(), "DELETE FROM crm_deals WHERE id = $1", id)
@@ -1047,12 +1048,16 @@ func DeleteDeal(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
         return
     }
+
+    if err := updateLeadScore(c.Request.Context(), customerID); err != nil {
+        log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", customerID, err)
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 // ========== МАССОВЫЕ ОПЕРАЦИИ ДЛЯ СДЕЛОК ==========
 
-// BatchDeleteDeals массово удаляет сделки
 func BatchDeleteDeals(c *gin.Context) {
     var ids []string
     if err := c.ShouldBindJSON(&ids); err != nil || len(ids) == 0 {
@@ -1086,7 +1091,20 @@ func BatchDeleteDeals(c *gin.Context) {
         }
     }
 
-    // HISTORY
+    rows, err := tx.Query(c.Request.Context(), "SELECT DISTINCT customer_id FROM crm_deals WHERE id = ANY($1)", ids)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    var customerIDs []string
+    for rows.Next() {
+        var cid string
+        if err := rows.Scan(&cid); err == nil {
+            customerIDs = append(customerIDs, cid)
+        }
+    }
+    rows.Close()
+
     for _, id := range ids {
         if err := addHistory(c.Request.Context(), "deal", id, "delete", &userID, nil); err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "History error"})
@@ -1105,10 +1123,15 @@ func BatchDeleteDeals(c *gin.Context) {
         return
     }
 
+    for _, cid := range customerIDs {
+        if err := updateLeadScore(c.Request.Context(), cid); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", cid, err)
+        }
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true, "deleted": len(ids)})
 }
 
-// BatchUpdateDealsStage массово обновляет стадию сделок
 func BatchUpdateDealsStage(c *gin.Context) {
     var req struct {
         IDs         []string `json:"ids"`
@@ -1146,7 +1169,20 @@ func BatchUpdateDealsStage(c *gin.Context) {
         }
     }
 
-    // HISTORY (упрощённо: записываем, что стадия изменена, без старых значений)
+    rows, err := tx.Query(c.Request.Context(), "SELECT DISTINCT customer_id FROM crm_deals WHERE id = ANY($1)", req.IDs)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    var customerIDs []string
+    for rows.Next() {
+        var cid string
+        if err := rows.Scan(&cid); err == nil {
+            customerIDs = append(customerIDs, cid)
+        }
+    }
+    rows.Close()
+
     for _, id := range req.IDs {
         changes := map[string]interface{}{
             "stage":       map[string]string{"new": req.Stage},
@@ -1173,10 +1209,15 @@ func BatchUpdateDealsStage(c *gin.Context) {
         return
     }
 
+    for _, cid := range customerIDs {
+        if err := updateLeadScore(c.Request.Context(), cid); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", cid, err)
+        }
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true, "updated": len(req.IDs)})
 }
 
-// BatchUpdateDealsResponsible массово назначает ответственного за сделки
 func BatchUpdateDealsResponsible(c *gin.Context) {
     var req struct {
         IDs         []string `json:"ids"`
@@ -1213,7 +1254,20 @@ func BatchUpdateDealsResponsible(c *gin.Context) {
         }
     }
 
-    // HISTORY
+    rows, err := tx.Query(c.Request.Context(), "SELECT DISTINCT customer_id FROM crm_deals WHERE id = ANY($1)", req.IDs)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    var customerIDs []string
+    for rows.Next() {
+        var cid string
+        if err := rows.Scan(&cid); err == nil {
+            customerIDs = append(customerIDs, cid)
+        }
+    }
+    rows.Close()
+
     for _, id := range req.IDs {
         changes := map[string]interface{}{
             "responsible": map[string]string{"new": req.Responsible},
@@ -1239,18 +1293,22 @@ func BatchUpdateDealsResponsible(c *gin.Context) {
         return
     }
 
+    for _, cid := range customerIDs {
+        if err := updateLeadScore(c.Request.Context(), cid); err != nil {
+            log.Printf("⚠️ Не удалось обновить lead_score для клиента %s: %v", cid, err)
+        }
+    }
+
     c.JSON(http.StatusOK, gin.H{"success": true, "updated": len(req.IDs)})
 }
 
 // ========== АНАЛИТИКА ==========
 
-// GetCRMStats возвращает статистику для графиков CRM с учётом прав доступа
 func GetCRMStats(c *gin.Context) {
     ctx := c.Request.Context()
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Базовое условие для фильтрации по пользователю
     userFilter := ""
     args := []interface{}{}
     if !isAdmin && userID != "" {
@@ -1258,7 +1316,6 @@ func GetCRMStats(c *gin.Context) {
         args = append(args, userID)
     }
 
-    // Количество сделок по стадиям
     rows, err := database.Pool.Query(ctx, `
         SELECT stage, COUNT(*) as count, COALESCE(SUM(value), 0) as total_value
         FROM crm_deals`+userFilter+`
@@ -1293,7 +1350,6 @@ func GetCRMStats(c *gin.Context) {
         stageStats = append(stageStats, s)
     }
 
-    // Динамика создания сделок по месяцам (последние 12 месяцев)
     rows, err = database.Pool.Query(ctx, `
         SELECT 
             TO_CHAR(date_trunc('month', created_at), 'YYYY-MM') as month,
@@ -1324,7 +1380,6 @@ func GetCRMStats(c *gin.Context) {
         monthlyStats = append(monthlyStats, m)
     }
 
-    // Общая статистика (также с фильтром)
     var totalDeals, totalCustomers int
     var totalValue float64
     if !isAdmin && userID != "" {
@@ -1346,22 +1401,139 @@ func GetCRMStats(c *gin.Context) {
     })
 }
 
+// ========== РАСШИРЕННАЯ АНАЛИТИКА ==========
+
+func GetCRMAdvancedStats(c *gin.Context) {
+    dateFrom := c.Query("date_from")
+    dateTo := c.Query("date_to")
+    ctx := c.Request.Context()
+    userID := getUserIDFromContext(c)
+    isAdmin := isAdmin(c)
+
+    dateFilter := ""
+    args := []interface{}{}
+    if dateFrom != "" {
+        dateFilter += " AND created_at >= $" + strconv.Itoa(len(args)+1) + "::date"
+        args = append(args, dateFrom)
+    }
+    if dateTo != "" {
+        dateFilter += " AND created_at < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
+        args = append(args, dateTo)
+    }
+
+    userFilter := ""
+    if !isAdmin && userID != "" {
+        userFilter = " AND user_id = $" + strconv.Itoa(len(args)+1)
+        args = append(args, userID)
+    }
+
+    responsibleQuery := `
+        SELECT 
+            COALESCE(responsible, 'Не назначен') as responsible,
+            COUNT(*) as deals_count,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + userFilter + `
+        GROUP BY responsible
+        ORDER BY total_value DESC
+    `
+    rows, err := database.Pool.Query(ctx, responsibleQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    responsibleStats := []gin.H{}
+    for rows.Next() {
+        var responsible string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&responsible, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        responsibleStats = append(responsibleStats, gin.H{
+            "responsible": responsible,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    sourceQuery := `
+        SELECT 
+            COALESCE(source, 'Не указан') as source,
+            COUNT(*) as deals_count,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + userFilter + `
+        GROUP BY source
+        ORDER BY total_value DESC
+    `
+    rows, err = database.Pool.Query(ctx, sourceQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    sourceStats := []gin.H{}
+    for rows.Next() {
+        var source string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&source, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        sourceStats = append(sourceStats, gin.H{
+            "source":      source,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    monthlyQuery := `
+        SELECT 
+            TO_CHAR(date_trunc('month', created_at), 'YYYY-MM') as month,
+            COUNT(*) as deals_created,
+            COALESCE(SUM(value), 0) as total_value
+        FROM crm_deals
+        WHERE 1=1 ` + dateFilter + userFilter + `
+        GROUP BY date_trunc('month', created_at)
+        ORDER BY month
+    `
+    rows, err = database.Pool.Query(ctx, monthlyQuery, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+
+    monthlyStats := []gin.H{}
+    for rows.Next() {
+        var month string
+        var dealsCount int
+        var totalValue float64
+        if err := rows.Scan(&month, &dealsCount, &totalValue); err != nil {
+            continue
+        }
+        monthlyStats = append(monthlyStats, gin.H{
+            "month":       month,
+            "deals_count": dealsCount,
+            "total_value": totalValue,
+        })
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "responsible_stats": responsibleStats,
+        "source_stats":      sourceStats,
+        "monthly_stats":     monthlyStats,
+    })
+}
+
 // ========== ВЛОЖЕНИЯ К СДЕЛКАМ ==========
 
 const uploadDir = "./uploads/crm"
 
-// UploadDealAttachment загружает файл и прикрепляет к сделке
-// @Summary Загрузить файл для сделки
-// @Description Загружает файл и прикрепляет его к указанной сделке
-// @Tags CRM
-// @Accept multipart/form-data
-// @Produce json
-// @Param id path string true "ID сделки"
-// @Param file formData file true "Файл для загрузки"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 404 {object} map[string]interface{}
-// @Router /api/crm/deals/{id}/attachments [post]
 func UploadDealAttachment(c *gin.Context) {
     dealID := c.Param("id")
     if dealID == "" {
@@ -1372,7 +1544,6 @@ func UploadDealAttachment(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Проверяем существование сделки и права
     var ownerID string
     err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", dealID).Scan(&ownerID)
     if err != nil {
@@ -1390,24 +1561,20 @@ func UploadDealAttachment(c *gin.Context) {
         return
     }
 
-    // Создаём директорию для загрузок, если её нет
     if err := os.MkdirAll(uploadDir, 0755); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Cannot create upload directory"})
         return
     }
 
-    // Генерируем уникальное имя файла
     ext := filepath.Ext(file.Filename)
     newFileName := uuid.New().String() + ext
     filePath := filepath.Join(uploadDir, newFileName)
 
-    // Сохраняем файл
     if err := c.SaveUploadedFile(file, filePath); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
         return
     }
 
-    // Вставляем запись в БД (uploaded_by = userID)
     var attachmentID string
     err = database.Pool.QueryRow(c.Request.Context(), `
         INSERT INTO deal_attachments (deal_id, file_name, file_path, file_size, mime_type, uploaded_by)
@@ -1416,7 +1583,6 @@ func UploadDealAttachment(c *gin.Context) {
     `, dealID, file.Filename, filePath, file.Size, file.Header.Get("Content-Type"), userID).Scan(&attachmentID)
 
     if err != nil {
-        // Если не удалось записать в БД, удаляем загруженный файл
         os.Remove(filePath)
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
         return
@@ -1431,15 +1597,6 @@ func UploadDealAttachment(c *gin.Context) {
     })
 }
 
-// GetDealAttachments возвращает список вложений для сделки
-// @Summary Список вложений сделки
-// @Description Возвращает все файлы, прикреплённые к сделке
-// @Tags CRM
-// @Produce json
-// @Param id path string true "ID сделки"
-// @Success 200 {array} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Router /api/crm/deals/{id}/attachments [get]
 func GetDealAttachments(c *gin.Context) {
     dealID := c.Param("id")
     if dealID == "" {
@@ -1450,7 +1607,6 @@ func GetDealAttachments(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Проверяем права на доступ к сделке
     var ownerID string
     err := database.Pool.QueryRow(c.Request.Context(), "SELECT user_id FROM crm_deals WHERE id = $1", dealID).Scan(&ownerID)
     if err != nil {
@@ -1501,15 +1657,6 @@ func GetDealAttachments(c *gin.Context) {
     c.JSON(http.StatusOK, attachments)
 }
 
-// DownloadDealAttachment скачивает файл
-// @Summary Скачать файл
-// @Description Скачивает файл по его ID
-// @Tags CRM
-// @Produce application/octet-stream
-// @Param attachment_id path string true "ID вложения"
-// @Success 200 {file} binary
-// @Failure 404 {object} map[string]interface{}
-// @Router /api/crm/attachments/{attachment_id}/download [get]
 func DownloadDealAttachment(c *gin.Context) {
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
@@ -1517,7 +1664,6 @@ func DownloadDealAttachment(c *gin.Context) {
         return
     }
 
-    // Проверяем права через сделку, к которой прикреплён файл
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
@@ -1534,7 +1680,6 @@ func DownloadDealAttachment(c *gin.Context) {
         return
     }
 
-    // Проверяем права на сделку
     if !isAdmin && dealID != userID {
         c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
         return
@@ -1543,15 +1688,6 @@ func DownloadDealAttachment(c *gin.Context) {
     c.FileAttachment(filePath, fileName)
 }
 
-// DeleteDealAttachment удаляет вложение
-// @Summary Удалить файл
-// @Description Удаляет файл и запись о нём
-// @Tags CRM
-// @Produce json
-// @Param attachment_id path string true "ID вложения"
-// @Success 200 {object} map[string]interface{}
-// @Failure 404 {object} map[string]interface{}
-// @Router /api/crm/attachments/{attachment_id} [delete]
 func DeleteDealAttachment(c *gin.Context) {
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
@@ -1562,7 +1698,6 @@ func DeleteDealAttachment(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
-    // Получаем информацию о файле и проверяем права через сделку
     var dealID, filePath string
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT da.file_path, d.user_id
@@ -1580,166 +1715,19 @@ func DeleteDealAttachment(c *gin.Context) {
         return
     }
 
-    // Удаляем запись из БД
     _, err = database.Pool.Exec(c.Request.Context(), "DELETE FROM deal_attachments WHERE id = $1", attachmentID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
         return
     }
 
-    // Удаляем файл с диска
     os.Remove(filePath)
 
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// ========== РАСШИРЕННАЯ АНАЛИТИКА ==========
-
-// GetCRMAdvancedStats возвращает расширенную статистику с возможностью фильтрации по дате
-// @Summary Расширенная аналитика CRM
-// @Description Возвращает статистику по ответственным, источникам и динамику за период
-// @Tags CRM
-// @Produce json
-// @Param date_from query string false "Начальная дата (YYYY-MM-DD)"
-// @Param date_to query string false "Конечная дата (YYYY-MM-DD)"
-// @Success 200 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/crm/advanced-stats [get]
-func GetCRMAdvancedStats(c *gin.Context) {
-    dateFrom := c.Query("date_from")
-    dateTo := c.Query("date_to")
-    ctx := c.Request.Context()
-    userID := getUserIDFromContext(c)
-    isAdmin := isAdmin(c)
-
-    // Базовое условие для фильтрации по дате создания сделки и по пользователю
-    dateFilter := ""
-    args := []interface{}{}
-    if dateFrom != "" {
-        dateFilter += " AND created_at >= $" + strconv.Itoa(len(args)+1) + "::date"
-        args = append(args, dateFrom)
-    }
-    if dateTo != "" {
-        dateFilter += " AND created_at < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
-        args = append(args, dateTo)
-    }
-
-    // Добавляем фильтр по пользователю, если не админ
-    userFilter := ""
-    if !isAdmin && userID != "" {
-        userFilter = " AND user_id = $" + strconv.Itoa(len(args)+1)
-        args = append(args, userID)
-    }
-
-    // 1. Статистика по ответственным
-    responsibleQuery := `
-        SELECT 
-            COALESCE(responsible, 'Не назначен') as responsible,
-            COUNT(*) as deals_count,
-            COALESCE(SUM(value), 0) as total_value
-        FROM crm_deals
-        WHERE 1=1 ` + dateFilter + userFilter + `
-        GROUP BY responsible
-        ORDER BY total_value DESC
-    `
-    rows, err := database.Pool.Query(ctx, responsibleQuery, args...)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-        return
-    }
-    defer rows.Close()
-
-    responsibleStats := []gin.H{}
-    for rows.Next() {
-        var responsible string
-        var dealsCount int
-        var totalValue float64
-        if err := rows.Scan(&responsible, &dealsCount, &totalValue); err != nil {
-            continue
-        }
-        responsibleStats = append(responsibleStats, gin.H{
-            "responsible": responsible,
-            "deals_count": dealsCount,
-            "total_value": totalValue,
-        })
-    }
-
-    // 2. Статистика по источникам
-    sourceQuery := `
-        SELECT 
-            COALESCE(source, 'Не указан') as source,
-            COUNT(*) as deals_count,
-            COALESCE(SUM(value), 0) as total_value
-        FROM crm_deals
-        WHERE 1=1 ` + dateFilter + userFilter + `
-        GROUP BY source
-        ORDER BY total_value DESC
-    `
-    rows, err = database.Pool.Query(ctx, sourceQuery, args...)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-        return
-    }
-    defer rows.Close()
-
-    sourceStats := []gin.H{}
-    for rows.Next() {
-        var source string
-        var dealsCount int
-        var totalValue float64
-        if err := rows.Scan(&source, &dealsCount, &totalValue); err != nil {
-            continue
-        }
-        sourceStats = append(sourceStats, gin.H{
-            "source":      source,
-            "deals_count": dealsCount,
-            "total_value": totalValue,
-        })
-    }
-
-    // 3. Ежемесячная динамика с фильтром
-    monthlyQuery := `
-        SELECT 
-            TO_CHAR(date_trunc('month', created_at), 'YYYY-MM') as month,
-            COUNT(*) as deals_created,
-            COALESCE(SUM(value), 0) as total_value
-        FROM crm_deals
-        WHERE 1=1 ` + dateFilter + userFilter + `
-        GROUP BY date_trunc('month', created_at)
-        ORDER BY month
-    `
-    rows, err = database.Pool.Query(ctx, monthlyQuery, args...)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-        return
-    }
-    defer rows.Close()
-
-    monthlyStats := []gin.H{}
-    for rows.Next() {
-        var month string
-        var dealsCount int
-        var totalValue float64
-        if err := rows.Scan(&month, &dealsCount, &totalValue); err != nil {
-            continue
-        }
-        monthlyStats = append(monthlyStats, gin.H{
-            "month":       month,
-            "deals_count": dealsCount,
-            "total_value": totalValue,
-        })
-    }
-
-    c.JSON(http.StatusOK, gin.H{
-        "responsible_stats": responsibleStats,
-        "source_stats":      sourceStats,
-        "monthly_stats":     monthlyStats,
-    })
-}
-
 // ========== ЭКСПОРТ ==========
 
-// exportFilteredCustomers возвращает отфильтрованный список клиентов (общая логика для экспорта)
 func exportFilteredCustomers(c *gin.Context) ([]Customer, error) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -1758,30 +1746,22 @@ func exportFilteredCustomers(c *gin.Context) ([]Customer, error) {
         args = append(args, userID)
     }
     if status != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " status = $" + strconv.Itoa(len(args)+1)
         args = append(args, status)
     }
     if search != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " (name ILIKE '%' || $" + strconv.Itoa(len(args)+1) + " || '%' OR email ILIKE '%' || $" + strconv.Itoa(len(args)+1) + " || '%')"
         args = append(args, search)
     }
     if createdFrom != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " created_at >= $" + strconv.Itoa(len(args)+1) + "::date"
         args = append(args, createdFrom)
     }
     if createdTo != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " created_at < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
         args = append(args, createdTo)
     }
@@ -1809,18 +1789,6 @@ func exportFilteredCustomers(c *gin.Context) ([]Customer, error) {
     return customers, nil
 }
 
-// ExportCustomersCSV экспортирует клиентов в CSV
-// @Summary Экспорт клиентов в CSV
-// @Description Возвращает CSV-файл со списком клиентов (с учётом текущих фильтров)
-// @Tags CRM
-// @Produce text/csv
-// @Param status query string false "Статус клиента"
-// @Param search query string false "Поиск по имени или email"
-// @Param created_from query string false "Дата создания от (YYYY-MM-DD)"
-// @Param created_to query string false "Дата создания до (YYYY-MM-DD)"
-// @Success 200 {file} binary
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/crm/customers/export/csv [get]
 func ExportCustomersCSV(c *gin.Context) {
     customers, err := exportFilteredCustomers(c)
     if err != nil {
@@ -1832,10 +1800,8 @@ func ExportCustomersCSV(c *gin.Context) {
     writer := csv.NewWriter(buf)
     defer writer.Flush()
 
-    // Заголовки
     writer.Write([]string{"ID", "Имя", "Email", "Телефон", "Компания", "Статус", "Ответственный", "Источник", "Комментарий", "Дата создания", "Последний визит"})
 
-    // Данные
     for _, cst := range customers {
         writer.Write([]string{
             cst.ID,
@@ -1857,18 +1823,6 @@ func ExportCustomersCSV(c *gin.Context) {
     c.Data(http.StatusOK, "text/csv", buf.Bytes())
 }
 
-// ExportCustomersExcel экспортирует клиентов в Excel
-// @Summary Экспорт клиентов в Excel
-// @Description Возвращает Excel-файл со списком клиентов (с учётом текущих фильтров)
-// @Tags CRM
-// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-// @Param status query string false "Статус клиента"
-// @Param search query string false "Поиск по имени или email"
-// @Param created_from query string false "Дата создания от (YYYY-MM-DD)"
-// @Param created_to query string false "Дата создания до (YYYY-MM-DD)"
-// @Success 200 {file} binary
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/crm/customers/export/excel [get]
 func ExportCustomersExcel(c *gin.Context) {
     customers, err := exportFilteredCustomers(c)
     if err != nil {
@@ -1882,14 +1836,12 @@ func ExportCustomersExcel(c *gin.Context) {
     sheet := "Клиенты"
     f.SetSheetName("Sheet1", sheet)
 
-    // Заголовки
     headers := []string{"ID", "Имя", "Email", "Телефон", "Компания", "Статус", "Ответственный", "Источник", "Комментарий", "Дата создания", "Последний визит"}
     for i, h := range headers {
         cell := fmt.Sprintf("%c%d", 'A'+i, 1)
         f.SetCellValue(sheet, cell, h)
     }
 
-    // Данные
     for i, cst := range customers {
         row := i + 2
         f.SetCellValue(sheet, fmt.Sprintf("A%d", row), cst.ID)
@@ -1905,14 +1857,12 @@ func ExportCustomersExcel(c *gin.Context) {
         f.SetCellValue(sheet, fmt.Sprintf("K%d", row), cst.LastSeen.Format("2006-01-02 15:04:05"))
     }
 
-    // Стили для заголовков
     style, _ := f.NewStyle(&excelize.Style{
         Font: &excelize.Font{Bold: true},
         Fill: excelize.Fill{Type: "pattern", Color: []string{"#DDDDDD"}, Pattern: 1},
     })
     f.SetCellStyle(sheet, "A1", "K1", style)
 
-    // Автоширина колонок
     for i := 1; i <= 11; i++ {
         col := string(rune('A' + i - 1))
         f.SetColWidth(sheet, col, col, 20)
@@ -1929,7 +1879,6 @@ func ExportCustomersExcel(c *gin.Context) {
     c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
 }
 
-// exportFilteredDeals возвращает отфильтрованный список сделок (общая логика для экспорта)
 func exportFilteredDeals(c *gin.Context) ([]Deal, error) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -1950,44 +1899,32 @@ func exportFilteredDeals(c *gin.Context) ([]Deal, error) {
         args = append(args, userID)
     }
     if stage != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " stage = $" + strconv.Itoa(len(args)+1)
         args = append(args, stage)
     }
     if search != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " title ILIKE '%' || $" + strconv.Itoa(len(args)+1) + " || '%'"
         args = append(args, search)
     }
     if valueMin != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " value >= $" + strconv.Itoa(len(args)+1)
         args = append(args, valueMin)
     }
     if valueMax != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " value <= $" + strconv.Itoa(len(args)+1)
         args = append(args, valueMax)
     }
     if closeFrom != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " expected_close >= $" + strconv.Itoa(len(args)+1) + "::date"
         args = append(args, closeFrom)
     }
     if closeTo != "" {
-        if where != "" {
-            where += " AND"
-        }
+        if where != "" { where += " AND" }
         where += " expected_close < ($" + strconv.Itoa(len(args)+1) + "::date + '1 day'::interval)"
         args = append(args, closeTo)
     }
@@ -2015,20 +1952,6 @@ func exportFilteredDeals(c *gin.Context) ([]Deal, error) {
     return deals, nil
 }
 
-// ExportDealsCSV экспортирует сделки в CSV
-// @Summary Экспорт сделок в CSV
-// @Description Возвращает CSV-файл со списком сделок (с учётом текущих фильтров)
-// @Tags CRM
-// @Produce text/csv
-// @Param stage query string false "Стадия сделки"
-// @Param search query string false "Поиск по названию"
-// @Param value_min query number false "Минимальная сумма"
-// @Param value_max query number false "Максимальная сумма"
-// @Param close_from query string false "Ожидаемая дата закрытия от (YYYY-MM-DD)"
-// @Param close_to query string false "Ожидаемая дата закрытия до (YYYY-MM-DD)"
-// @Success 200 {file} binary
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/crm/deals/export/csv [get]
 func ExportDealsCSV(c *gin.Context) {
     deals, err := exportFilteredDeals(c)
     if err != nil {
@@ -2072,20 +1995,6 @@ func ExportDealsCSV(c *gin.Context) {
     c.Data(http.StatusOK, "text/csv", buf.Bytes())
 }
 
-// ExportDealsExcel экспортирует сделки в Excel
-// @Summary Экспорт сделок в Excel
-// @Description Возвращает Excel-файл со списком сделок (с учётом текущих фильтров)
-// @Tags CRM
-// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-// @Param stage query string false "Стадия сделки"
-// @Param search query string false "Поиск по названию"
-// @Param value_min query number false "Минимальная сумма"
-// @Param value_max query number false "Максимальная сумма"
-// @Param close_from query string false "Ожидаемая дата закрытия от (YYYY-MM-DD)"
-// @Param close_to query string false "Ожидаемая дата закрытия до (YYYY-MM-DD)"
-// @Success 200 {file} binary
-// @Failure 500 {object} map[string]interface{}
-// @Router /api/crm/deals/export/excel [get]
 func ExportDealsExcel(c *gin.Context) {
     deals, err := exportFilteredDeals(c)
     if err != nil {
