@@ -453,6 +453,102 @@
             right: 5px;
             font-size: 0.7rem;
         }
+
+        /* ===== КАНБАН: добавлено ===== */
+        .kanban-board {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            min-height: 70vh;
+        }
+        .kanban-column {
+            flex: 0 0 300px;
+            background: #f4f5f7;
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+        .kanban-column-header {
+            font-weight: 600;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kanban-column-header .badge {
+            font-size: 0.8rem;
+        }
+        .kanban-cards {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 100px;
+        }
+        .kanban-card {
+            background: white;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: grab;
+            transition: box-shadow 0.2s, transform 0.1s;
+            border-left: 4px solid transparent;
+        }
+        .kanban-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .kanban-card:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+        .kanban-card.dragging {
+            opacity: 0.5;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        .kanban-card .card-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            word-break: break-word;
+        }
+        .kanban-card .card-value {
+            font-size: 0.9rem;
+            color: #28a745;
+            font-weight: 500;
+        }
+        .kanban-card .card-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .kanban-card .card-assignee {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 12px;
+        }
+        .kanban-card.stage-lead { border-left-color: #007bff; }
+        .kanban-card.stage-negotiation { border-left-color: #fd7e14; }
+        .kanban-card.stage-proposal { border-left-color: #ffc107; }
+        .kanban-card.stage-closed_won { border-left-color: #28a745; }
+        .kanban-card.stage-closed_lost { border-left-color: #dc3545; }
+
+        @media (max-width: 768px) {
+            .kanban-board {
+                flex-direction: column;
+                overflow-x: visible;
+            }
+            .kanban-column {
+                flex: auto;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -488,6 +584,12 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
                     <i class="fas fa-chart-line me-2"></i>Аналитика
+                </button>
+            </li>
+            <!-- КАНБАН: добавлено -->
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="kanban-tab" data-bs-toggle="tab" data-bs-target="#kanban" type="button" role="tab">
+                    <i class="fas fa-columns me-2"></i>Канбан
                 </button>
             </li>
         </ul>
@@ -809,6 +911,21 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- КАНБАН: добавлено (вкладка Канбан) -->
+            <div class="tab-pane fade" id="kanban" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Доска сделок</h3>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="refreshKanban()">
+                            <i class="fas fa-sync-alt me-1"></i>Обновить
+                        </button>
+                    </div>
+                </div>
+                <div class="kanban-board" id="kanbanBoard">
+                    <!-- Колонки будут сгенерированы JS -->
                 </div>
             </div>
         </div>
@@ -1391,6 +1508,11 @@
 
             loadNotificationSettings();
             initVoiceRecognition();
+
+            // КАНБАН: добавлено - обработчик переключения на вкладку
+            document.getElementById('kanban-tab')?.addEventListener('shown.bs.tab', function () {
+                loadKanban();
+            });
         });
 
         // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
@@ -2809,6 +2931,134 @@
             if (recognition && isRecording) {
                 recognition.stop();
             }
+        }
+
+        // ==================== КАНБАН: добавлено ====================
+        let kanbanDeals = [];
+        let kanbanColumns = [
+            { stage: 'lead', title: 'Лиды', color: '#007bff' },
+            { stage: 'negotiation', title: 'Переговоры', color: '#fd7e14' },
+            { stage: 'proposal', title: 'Предложение', color: '#ffc107' },
+            { stage: 'closed_won', title: 'Успешно', color: '#28a745' },
+            { stage: 'closed_lost', title: 'Проиграно', color: '#dc3545' }
+        ];
+
+        function loadKanban() {
+            let url = `/api/crm/deals?page=1&page_size=1000`;
+            fetchWithLoader(url)
+                .then(response => response.json())
+                .then(resp => {
+                    kanbanDeals = resp.data;
+                    renderKanban();
+                })
+                .catch(error => console.error('Error loading deals for kanban:', error));
+        }
+
+        function renderKanban() {
+            const board = document.getElementById('kanbanBoard');
+            if (!board) return;
+
+            let html = '';
+            kanbanColumns.forEach(col => {
+                const columnDeals = kanbanDeals.filter(d => d.stage === col.stage);
+                html += `
+                    <div class="kanban-column" data-stage="${col.stage}" ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <div class="kanban-column-header" style="border-bottom: 3px solid ${col.color};">
+                            <span>${col.title}</span>
+                            <span class="badge bg-secondary">${columnDeals.length}</span>
+                        </div>
+                        <div class="kanban-cards" id="column-${col.stage}">
+                            ${columnDeals.map(deal => renderKanbanCard(deal)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            board.innerHTML = html;
+
+            document.querySelectorAll('.kanban-card').forEach(card => {
+                card.setAttribute('draggable', 'true');
+                card.addEventListener('dragstart', dragStart);
+                card.addEventListener('dragend', dragEnd);
+            });
+        }
+
+        function renderKanbanCard(deal) {
+            const value = deal.value ? deal.value.toFixed(2) : '0.00';
+            const assignee = deal.responsible || 'Не назначен';
+            const nextAction = deal.next_action_date ? new Date(deal.next_action_date).toLocaleDateString('ru-RU') : '';
+            return `
+                <div class="kanban-card stage-${deal.stage}" data-id="${deal.id}">
+                    <div class="card-title">${escapeHtml(deal.title)}</div>
+                    <div class="card-value">${value} ₽</div>
+                    <div class="card-meta">
+                        <span class="card-assignee"><i class="fas fa-user me-1"></i>${escapeHtml(assignee)}</span>
+                        ${nextAction ? `<span><i class="far fa-calendar me-1"></i>${nextAction}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+        }
+
+        function dragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.closest('.kanban-card').dataset.id);
+            e.target.closest('.kanban-card').classList.add('dragging');
+        }
+
+        function dragEnd(e) {
+            e.target.closest('.kanban-card').classList.remove('dragging');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            const column = e.target.closest('.kanban-column');
+            if (!column) return;
+
+            const dealId = e.dataTransfer.getData('text/plain');
+            const newStage = column.dataset.stage;
+
+            const card = document.querySelector(`.kanban-card[data-id="${dealId}"]`);
+            const oldColumn = card.closest('.kanban-column');
+            if (oldColumn.dataset.stage === newStage) return;
+
+            const targetColumnCards = column.querySelector('.kanban-cards');
+            targetColumnCards.appendChild(card);
+            card.classList.remove(`stage-${oldColumn.dataset.stage}`);
+            card.classList.add(`stage-${newStage}`);
+
+            updateColumnCount(oldColumn.dataset.stage);
+            updateColumnCount(newStage);
+
+            fetchWithLoader(`/api/crm/deals/${dealId}/stage`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stage: newStage, probability: 0 })
+            }).then(response => {
+                if (!response.ok) {
+                    alert('Ошибка при обновлении стадии');
+                    location.reload();
+                } else {
+                    const deal = kanbanDeals.find(d => d.id === dealId);
+                    if (deal) deal.stage = newStage;
+                }
+            }).catch(() => {
+                alert('Ошибка сети');
+                location.reload();
+            });
+        }
+
+        function updateColumnCount(stage) {
+            const column = document.querySelector(`.kanban-column[data-stage="${stage}"]`);
+            if (!column) return;
+            const count = column.querySelectorAll('.kanban-card').length;
+            const badge = column.querySelector('.kanban-column-header .badge');
+            if (badge) badge.innerText = count;
+        }
+
+        function refreshKanban() {
+            loadKanban();
         }
     </script>
 </body>
