@@ -354,6 +354,7 @@ func main() {
         api.GET("/crm/forecast", handlers.GetSalesForecast)
         api.GET("/crm/conversion", handlers.GetStageConversion)
         api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
+        api.PUT("/crm/tags/:id", handlers.UpdateTag)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========

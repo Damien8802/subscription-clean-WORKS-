@@ -2566,6 +2566,32 @@ func CreateTag(c *gin.Context) {
     c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
+// UpdateTag обновляет существующий тег
+func UpdateTag(c *gin.Context) {
+    id := c.Param("id")
+    var req Tag
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    if req.Name == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
+        return
+    }
+    if req.Color == "" {
+        req.Color = "#6c757d"
+    }
+
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        UPDATE tags SET name = $1, color = $2 WHERE id = $3
+    `, req.Name, req.Color, id)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // DeleteTag удаляет тег
 func DeleteTag(c *gin.Context) {
     id := c.Param("id")
