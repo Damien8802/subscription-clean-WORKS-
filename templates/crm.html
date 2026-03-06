@@ -1833,6 +1833,7 @@
 
             const url = id ? `/api/crm/customers/${id}` : '/api/crm/customers';
             const method = id ? 'PUT' : 'POST';
+            console.log('Сохранение: id =', id, 'метод =', method);
 
             fetchWithLoader(url, {
                 method: method,
@@ -1902,6 +1903,7 @@
 
             const url = id ? `/api/crm/deals/${id}` : '/api/crm/deals';
             const method = id ? 'PUT' : 'POST';
+            console.log('Сохранение сделки: id =', id, 'метод =', method);
 
             fetchWithLoader(url, {
                 method: method,
@@ -2017,9 +2019,9 @@
             }
         });
 
-        document.getElementById('dealModal').addEventListener('show.bs.modal', function(event) {
-            if (!event.relatedTarget) {
-                document.getElementById('dealId').value = '';
+        document.getElementById('dealModal').addEventListener('show.bs.modal', function() {
+            // Если ID сделки пуст – открываем для создания новой
+            if (!document.getElementById('dealId').value) {
                 document.getElementById('dealForm').reset();
                 document.getElementById('dealProductCategory').value = '';
                 document.getElementById('dealDiscount').value = 0;
@@ -2128,7 +2130,7 @@
         function loadCustomerHistory(id) {
             const container = document.getElementById('customerHistoryList');
             container.innerHTML = '<p class="text-muted text-center">Загрузка...</p>';
-            fetchWithLoader(`/api/crm/customers/${id}/history`)
+            fetchWithLoader(`/api/crm/history/customer/${id}`)
                 .then(response => response.json())
                 .then(history => {
                     if (history.length === 0) {
@@ -2157,7 +2159,7 @@
         function loadDealHistory(id) {
             const container = document.getElementById('dealHistoryList');
             container.innerHTML = '<p class="text-muted text-center">Загрузка...</p>';
-            fetchWithLoader(`/api/crm/deals/${id}/history`)
+            fetchWithLoader(`/api/crm/history/deal/${id}`)
                 .then(response => response.json())
                 .then(history => {
                     if (history.length === 0) {

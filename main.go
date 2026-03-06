@@ -344,6 +344,8 @@ func main() {
         // Настройки уведомлений
         api.GET("/notifications/settings", handlers.GetNotificationSettings)
         api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
+        api.GET("/crm/forecast", handlers.GetSalesForecast)
+        api.GET("/crm/conversion", handlers.GetStageConversion)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========
