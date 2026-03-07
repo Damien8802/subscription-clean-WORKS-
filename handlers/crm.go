@@ -2726,7 +2726,7 @@ func GetActivities(c *gin.Context) {
     }
 
     rows, err := database.Pool.Query(c.Request.Context(), `
-        SELECT a.id, a.entity_type, a.entity_id, a.activity_type, a.content, a.user_id, u.name as user_name, a.created_at
+       SELECT a.id, a.entity_type, a.entity_id, a.activity_type, a.content, a.user_id, u.email as user_name, a.created_at
         FROM activities a
         LEFT JOIN users u ON u.id = a.user_id
         WHERE a.entity_type = $1 AND a.entity_id = $2
@@ -2738,7 +2738,7 @@ func GetActivities(c *gin.Context) {
     }
     defer rows.Close()
 
-    var activities []Activity
+    activities := []Activity{} // или make([]Activity, 0)
     for rows.Next() {
         var act Activity
         var userID, userName sql.NullString
