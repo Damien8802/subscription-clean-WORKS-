@@ -20,6 +20,7 @@ import (
     "subscription-system/database"
     "subscription-system/handlers"
     "subscription-system/middleware"
+    "subscription-system/services"  // ← ДОБАВЛЕНО!
     _ "subscription-system/docs"
 )
 
@@ -81,6 +82,17 @@ func main() {
 
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
+
+    // ========== ИНИЦИАЛИЗАЦИЯ YANDEXGPT И SPEECHKIT ==========
+    yandexService := services.NewYandexService(cfg)
+    aiAgentService := services.NewAIAgentService(yandexService)
+    aiAgentService.StartAgentScheduler()
+    log.Println("🤖 Сервис ИИ-агентов запущен с YandexGPT")
+
+    // Используем speechKitService чтобы не было ошибки "declared and not used"
+    speechKitService := services.NewSpeechKitService(cfg)
+    _ = speechKitService // заглушка, чтобы компилятор не ругался
+    log.Println("🎙️ Сервис транскрибации SpeechKit инициализирован")
 
     if cfg.Env == "release" {
         gin.SetMode(gin.ReleaseMode)
@@ -173,6 +185,7 @@ func main() {
     r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
+    r.GET("/transcriptions", handlers.TranscriptionsPage)
 
     // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
     public := r.Group("/")
@@ -391,6 +404,10 @@ func main() {
         api.GET("/crm/activities/:type/:id", handlers.GetActivities)
         api.POST("/crm/ai/ask", handlers.AIAskHandler)
 
+        api.POST("/transcription/upload", handlers.UploadAudio)
+        api.GET("/transcriptions", handlers.GetTranscriptions)
+        api.GET("/transcription/:id", handlers.GetTranscriptionByID)
+
         // Настройки уведомлений
         api.GET("/notifications/settings", handlers.GetNotificationSettings)
         api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
@@ -399,6 +416,14 @@ func main() {
         api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
         api.POST("/ai/consultant", handlers.AIConsultantHandler)
+
+        api.GET("/ai/agents", handlers.GetAgents)
+        api.POST("/ai/agents", handlers.CreateAgent)
+        api.PUT("/ai/agents/:id", handlers.UpdateAgent)
+        api.DELETE("/ai/agents/:id", handlers.DeleteAgent)
+        api.POST("/ai/agents/:id/actions", handlers.AddAgentAction)
+        api.GET("/ai/agents/logs", handlers.GetAgentLogs)
+        api.GET("/ai/agents/stats", handlers.GetAgentStats)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========
