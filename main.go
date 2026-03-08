@@ -20,25 +20,19 @@ import (
     "subscription-system/database"
     "subscription-system/handlers"
     "subscription-system/middleware"
-<<<<<<< HEAD
-    "subscription-system/services"  // ← ДОБАВЛЕНО!
-=======
     "subscription-system/services"
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
     _ "subscription-system/docs"
 )
 
 //go:embed templates/*.html
 var templateFS embed.FS
 
-// ---------- ДОБАВЛЕНО: структура и обработчик для заявок (вынесены из main) ----------
 type ServiceOrder struct {
     Name        string `json:"name"`
     Contact     string `json:"contact"`
     Description string `json:"description"`
 }
 
-// Обработчик POST /api/service-order
 func serviceOrderHandler(c *gin.Context) {
     var order ServiceOrder
     if err := c.ShouldBindJSON(&order); err != nil {
@@ -46,13 +40,11 @@ func serviceOrderHandler(c *gin.Context) {
         return
     }
 
-    // Валидация
     if order.Name == "" || order.Contact == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Имя и контакт обязательны"})
         return
     }
 
-    // Сохраняем в БД
     _, err := database.Pool.Exec(c.Request.Context(), `
         INSERT INTO service_requests (name, contact, description, created_at)
         VALUES ($1, $2, $3, NOW())
@@ -63,13 +55,9 @@ func serviceOrderHandler(c *gin.Context) {
         return
     }
 
-    // Просто логируем заявку (позже можно добавить Telegram-уведомление)
     log.Printf("📦 Новая заявка на услуги: %s (%s): %s", order.Name, order.Contact, order.Description)
-
     c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
-
-// ------------------------------------------------------------------------------------
 
 func main() {
     if err := godotenv.Load(); err != nil {
@@ -86,15 +74,6 @@ func main() {
 
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
-    handlers.InitAuthHandler(cfg)
-    handlers.InitNotifier(cfg)
-
-      // ========== ИНИЦИАЛИЗАЦИЯ ИИ-АГЕНТОВ ==========
-   // Используем YandexGPT вместо OpenRouter
-   yandexService := services.NewYandexService(cfg)
-   aiAgentService := services.NewAIAgentService(yandexService)
-   aiAgentService.StartAgentScheduler()
-   log.Println("🤖 Сервис ИИ-агентов запущен с YandexGPT")
 
     // ========== ИНИЦИАЛИЗАЦИЯ YANDEXGPT И SPEECHKIT ==========
     yandexService := services.NewYandexService(cfg)
@@ -102,9 +81,8 @@ func main() {
     aiAgentService.StartAgentScheduler()
     log.Println("🤖 Сервис ИИ-агентов запущен с YandexGPT")
 
-    // Используем speechKitService чтобы не было ошибки "declared and not used"
     speechKitService := services.NewSpeechKitService(cfg)
-    _ = speechKitService // заглушка, чтобы компилятор не ругался
+    _ = speechKitService
     log.Println("🎙️ Сервис транскрибации SpeechKit инициализирован")
 
     if cfg.Env == "release" {
@@ -118,14 +96,10 @@ func main() {
     r.SetTrustedProxies(cfg.TrustedProxies)
     r.Use(middleware.SetupCORS(cfg))
 
-    // ========== MIDDLEWARE БЕЗОПАСНОСТИ ==========
     rateLimiter := middleware.NewRateLimiter(30, time.Minute)
-
     r.Use(middleware.SecurityMonitor())
-
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
 
-    // Загрузка шаблонов
     subFS, err := fs.Sub(templateFS, "templates")
     if err != nil {
         log.Fatalf("❌ Не удалось открыть встроенные шаблоны: %v", err)
@@ -198,13 +172,8 @@ func main() {
     r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
-<<<<<<< HEAD
     r.GET("/transcriptions", handlers.TranscriptionsPage)
-=======
-    r.GET("/ai-agents", handlers.AIAgentsPage)
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
 
-    // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
     public := r.Group("/")
     {
         public.GET("/", handlers.HomeHandler)
@@ -213,13 +182,10 @@ func main() {
         public.GET("/info", handlers.InfoHandler)
         public.GET("/pricing", handlers.PricingPageHandler)
         public.GET("/partner", handlers.PartnerHandler)
-        
     }
 
-    // ---------- ДОБАВЛЕНО: публичное API для заявок ----------
     r.POST("/api/service-order", serviceOrderHandler)
 
-    // ========== СТРАНИЦЫ АВТОРИЗАЦИИ ==========
     authPages := r.Group("/")
     {
         authPages.GET("/login", handlers.LoginPageHandler)
@@ -227,7 +193,6 @@ func main() {
         authPages.GET("/forgot-password", handlers.ForgotPasswordHandler)
     }
 
-    // ========== API АВТОРИЗАЦИИ С ЗАЩИТОЙ ==========
     authAPI := r.Group("/api/auth")
     authAPI.Use(func(c *gin.Context) {
         ip := c.ClientIP()
@@ -250,7 +215,6 @@ func main() {
         authAPI.GET("/trusted-devices/list", handlers.GetTrustedDevices)
     }
 
-    // ========== ПАРТНЁРСКАЯ ПРОГРАММА ==========
     referralAPI := r.Group("/api/referral")
     referralAPI.Use(middleware.AuthMiddleware(cfg))
     {
@@ -261,7 +225,6 @@ func main() {
     }
     r.GET("/ref", handlers.ProcessReferral)
 
-    // ========== ВЕРИФИКАЦИЯ ==========
     verificationAPI := r.Group("/api/verification")
     {
         verificationAPI.POST("/send-email", handlers.SendVerificationEmail)
@@ -270,7 +233,6 @@ func main() {
         verificationAPI.GET("/status", handlers.CheckVerificationStatus)
     }
 
-    // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
     protected := r.Group("/")
     protected.Use(middleware.AuthMiddleware(cfg))
     {
@@ -283,10 +245,8 @@ func main() {
         protected.GET("/monetization", handlers.MonetizationHandler)
         protected.GET("/profile", handlers.ProfilePageHandler)
         protected.GET("/calendar", handlers.CalendarHandler)
-       
     }
 
-    // ========== АДМИН СТРАНИЦЫ ==========
     admin := r.Group("/")
     admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
@@ -303,7 +263,6 @@ func main() {
         admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
     }
 
-    // ========== ДАШБОРДЫ ==========
     dashboards := r.Group("/")
     dashboards.Use(middleware.AuthMiddleware(cfg))
     {
@@ -315,7 +274,6 @@ func main() {
         dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler)
     }
 
-    // ========== ПЛАТЕЖИ ==========
     payments := r.Group("/")
     payments.Use(middleware.AuthMiddleware(cfg))
     {
@@ -326,7 +284,6 @@ func main() {
         payments.GET("/rub-payment", handlers.RUBPaymentHandler)
     }
 
-    // ========== ЛОГИСТИКА ==========
     logistics := r.Group("/")
     logistics.Use(middleware.AuthMiddleware(cfg))
     {
@@ -339,8 +296,6 @@ func main() {
         deliveryAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
     }
 
-
-    // ========== API (JSON) С ЗАЩИТОЙ ==========
     api := r.Group("/api")
     api.Use(func(c *gin.Context) {
         ip := c.ClientIP()
@@ -355,7 +310,6 @@ func main() {
     })
     api.Use(middleware.AuthMiddleware(cfg))
     {
-        // Основные роуты
         api.GET("/health", handlers.HealthHandler)
         api.GET("/crm/health", handlers.CRMHealthHandler)
         api.GET("/system/stats", handlers.SystemStatsHandler)
@@ -391,8 +345,6 @@ func main() {
         api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.POST("/2fa/trust-device", handlers.TrustDevice)
         api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
-        
-        // CRM роуты
         api.GET("/crm/customers", handlers.GetCustomers)
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
@@ -423,38 +375,20 @@ func main() {
         api.DELETE("/crm/tags/:id", handlers.DeleteTag)
         api.POST("/crm/activities", handlers.AddActivity)
         api.GET("/crm/activities/:type/:id", handlers.GetActivities)
-<<<<<<< HEAD
         api.POST("/crm/ai/ask", handlers.AIAskHandler)
 
         api.POST("/transcription/upload", handlers.UploadAudio)
         api.GET("/transcriptions", handlers.GetTranscriptions)
         api.GET("/transcription/:id", handlers.GetTranscriptionByID)
 
-=======
-        api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
-        api.PUT("/crm/tags/:id", handlers.UpdateTag)
-        api.GET("/crm/forecast", handlers.GetSalesForecast)
-        api.GET("/crm/conversion", handlers.GetStageConversion)
-        
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
-        // Настройки уведомлений
         api.GET("/notifications/settings", handlers.GetNotificationSettings)
         api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
-        
-        // AI роуты (уникальные)
+        api.GET("/crm/forecast", handlers.GetSalesForecast)
+        api.GET("/crm/conversion", handlers.GetStageConversion)
+        api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
+        api.PUT("/crm/tags/:id", handlers.UpdateTag)
         api.POST("/ai/consultant", handlers.AIConsultantHandler)
-<<<<<<< HEAD
 
-=======
-        
-        // ========== АНАЛИТИКА ==========
-        api.GET("/analytics/dashboard", handlers.GetDashboardAnalytics)
-        api.GET("/analytics/rfm", handlers.GetRFMAnalysis)
-        api.GET("/analytics/churn", handlers.GetChurnPrediction)
-        api.GET("/analytics/cohorts", handlers.GetCohortAnalysis)
-        
-        // ========== ИИ-АГЕНТЫ ==========
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
         api.GET("/ai/agents", handlers.GetAgents)
         api.POST("/ai/agents", handlers.CreateAgent)
         api.PUT("/ai/agents/:id", handlers.UpdateAgent)
@@ -464,7 +398,6 @@ func main() {
         api.GET("/ai/agents/stats", handlers.GetAgentStats)
     }
 
-    // ========== ЗАЩИЩЕННЫЕ API ==========
     secureAPI := r.Group("/api")
     secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
@@ -517,11 +450,6 @@ func main() {
             "Version": "3.0",
         })
     })
-
-    // ========== ИНИЦИАЛИЗАЦИЯ АНАЛИТИКИ (ПОСЛЕ ВСЕХ РОУТОВ) ==========
-    analyticsService := services.NewAnalyticsService()
-    analyticsService.StartAnalyticsScheduler()
-    log.Println("📊 Сервис аналитики запущен")
 
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port

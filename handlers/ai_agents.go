@@ -15,18 +15,10 @@ func GetAccountID(c *gin.Context) string {
 	return accountID.(string)
 }
 
-<<<<<<< HEAD
 // CreateAgent - создание нового ИИ-агента
 func CreateAgent(c *gin.Context) {
 	accountID := GetAccountID(c)
 	
-=======
-// CreateAgent - создание агента
-func CreateAgent(c *gin.Context) {
-	accountID := GetAccountID(c)
-	
-	// В режиме SkipAuth может не быть account_id, но мы все равно возвращаем успех
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "Агент будет создан",
 		"account_id": accountID,
@@ -37,10 +29,6 @@ func CreateAgent(c *gin.Context) {
 func GetAgents(c *gin.Context) {
 	accountID := GetAccountID(c)
 	
-<<<<<<< HEAD
-=======
-	// Всегда возвращаем пустой список, даже если нет account_id
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
 	c.JSON(http.StatusOK, gin.H{
 		"agents":     []gin.H{},
 		"account_id": accountID,
@@ -79,11 +67,6 @@ func GetAgentStats(c *gin.Context) {
 
 // AIAgentsPage - отображение страницы с агентами
 func AIAgentsPage(c *gin.Context) {
-<<<<<<< HEAD
-=======
-	// В режиме SkipAuth пользователь уже установлен в middleware
-	// Получаем данные пользователя из контекста или используем значения по умолчанию
->>>>>>> f02de4e2a0fee671ab6fc78dcca9683279e82bc1
 	userEmail := c.GetString("userEmail")
 	if userEmail == "" {
 		userEmail = "admin@example.com"
