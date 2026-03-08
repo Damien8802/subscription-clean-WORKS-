@@ -26,6 +26,46 @@ import (
 //go:embed templates/*.html
 var templateFS embed.FS
 
+// ---------- ДОБАВЛЕНО: структура и обработчик для заявок (вынесены из main) ----------
+type ServiceOrder struct {
+    Name        string `json:"name"`
+    Contact     string `json:"contact"`
+    Description string `json:"description"`
+}
+
+// Обработчик POST /api/service-order
+func serviceOrderHandler(c *gin.Context) {
+    var order ServiceOrder
+    if err := c.ShouldBindJSON(&order); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
+        return
+    }
+
+    // Валидация
+    if order.Name == "" || order.Contact == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Имя и контакт обязательны"})
+        return
+    }
+
+    // Сохраняем в БД
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO service_requests (name, contact, description, created_at)
+        VALUES ($1, $2, $3, NOW())
+    `, order.Name, order.Contact, order.Description)
+    if err != nil {
+        log.Printf("Ошибка сохранения заявки: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка базы данных"})
+        return
+    }
+
+    // Просто логируем заявку (позже можно добавить Telegram-уведомление)
+    log.Printf("📦 Новая заявка на услуги: %s (%s): %s", order.Name, order.Contact, order.Description)
+
+    c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// ------------------------------------------------------------------------------------
+
 func main() {
     if err := godotenv.Load(); err != nil {
         log.Println("⚠️ .env file not found, using system environment")
@@ -54,7 +94,6 @@ func main() {
     r.Use(middleware.SetupCORS(cfg))
 
     // ========== MIDDLEWARE БЕЗОПАСНОСТИ ==========
-    // Увеличил лимит для API с 5 до 30 запросов в минуту, чтобы AI не блокировался
     rateLimiter := middleware.NewRateLimiter(30, time.Minute)
 
     r.Use(middleware.SecurityMonitor())
@@ -145,6 +184,9 @@ func main() {
         public.GET("/pricing", handlers.PricingPageHandler)
         public.GET("/partner", handlers.PartnerHandler)
     }
+
+    // ---------- ДОБАВЛЕНО: публичное API для заявок ----------
+    r.POST("/api/service-order", serviceOrderHandler)
 
     // ========== СТРАНИЦЫ АВТОРИЗАЦИИ ==========
     authPages := r.Group("/")
@@ -356,6 +398,7 @@ func main() {
         api.GET("/crm/conversion", handlers.GetStageConversion)
         api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
+        api.POST("/ai/consultant", handlers.AIConsultantHandler)
     }
 
     // ========== ЗАЩИЩЕННЫЕ API ==========

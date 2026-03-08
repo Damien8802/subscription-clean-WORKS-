@@ -3684,5 +3684,405 @@
             calendarInstance.render();
         }
     </script>
+
+<!-- Модальное окно с услугами -->
+<div id="services-modal" class="services-modal" style="display: none;">
+    <div class="services-modal-content">
+        <span class="services-close">&times;</span>
+        <h3>🧩 Индивидуальные решения под ваш бизнес</h3>
+        <ul class="services-list">
+            <li><strong>🤖 Разработка Telegram-ботов</strong> – от простых уведомлений до сложных Mini Apps</li>
+            <li><strong>🛒 Создание интернет-магазинов</strong> – интеграция с криптой, картами, СБП</li>
+            <li><strong>🔗 Интеграции</strong> – amoCRM, Bitrix24, Google Sheets, WhatsApp API</li>
+            <li><strong>🧠 AI-ассистенты для бизнеса</strong> – кастомные чат-боты на YandexGPT, OpenRouter</li>
+            <li><strong>📱 Telegram Mini Apps</strong> – интерактивные приложения внутри бота</li>
+            <li><strong>📊 Настройка CRM-систем</strong> – внедрение, кастомизация, обучение</li>
+            <li><strong>⚙️ Автоматизация процессов</strong> – скрипты, вебхуки, интеграции</li>
+            <li><strong>🎯 Партнёрские программы и реферальные системы</strong> – как в этом проекте</li>
+            <li><strong>📈 Индивидуальные дашборды и аналитика</strong> – под ключ</li>
+            <li><strong>📢 SEO и маркетинг</strong> – аудит, настройка рекламы</li>
+        </ul>
+        <p>Оставьте заявку, и мы обсудим ваш проект</p>
+        <form id="service-order-form">
+            <input type="text" name="name" placeholder="Ваше имя" required>
+            <input type="text" name="contact" placeholder="Telegram или Email" required>
+            <textarea name="description" placeholder="Опишите, что нужно сделать" rows="3"></textarea>
+            <button type="submit">Отправить заявку</button>
+        </form>
+        <p class="services-note">Или <a href="#" onclick="openAIChatFromServices(); return false;">спросите нашего AI-ассистента</a></p>
+    </div>
+</div>
+
+<style>
+.services-fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+.services-fab:hover {
+    transform: scale(1.1);
+}
+.services-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+.services-modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.services-close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
+.services-close:hover {
+    color: #000;
+}
+.services-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+.services-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+}
+.services-list li:last-child {
+    border-bottom: none;
+}
+#service-order-form input,
+#service-order-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+#service-order-form button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+}
+#service-order-form button:hover {
+    background: #0056b3;
+}
+.services-note {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+.services-note a {
+    color: #007bff;
+    text-decoration: none;
+}
+.services-note a:hover {
+    text-decoration: underline;
+}
+
+/* ===== ОТСТУП ДЛЯ ТАБЛИЦЫ, ЧТОБЫ НЕ ПЕРЕКРЫВАЛ ВИДЖЕТ ===== */
+.table-responsive {
+    padding-bottom: 100px !important;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+    .table-responsive {
+        padding-bottom: 80px !important;
+    }
+}
+
+/* Если таблица находится внутри вкладок, добавим отступ и для них */
+.tab-pane .table-responsive {
+    padding-bottom: 100px !important;
+}
+</style>
+
+<script>
+// Открытие/закрытие модалки
+const fab = document.getElementById('services-fab');
+const modal = document.getElementById('services-modal');
+const closeBtn = document.querySelector('.services-close');
+
+fab.onclick = function() {
+    modal.style.display = 'flex';
+}
+closeBtn.onclick = function() {
+    modal.style.display = 'none';
+}
+window.onclick = function(e) {
+    if (e.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Отправка формы заявки
+document.getElementById('service-order-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {
+        name: formData.get('name'),
+        contact: formData.get('contact'),
+        description: formData.get('description')
+    };
+    try {
+        const res = await fetch('/api/service-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            alert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+            modal.style.display = 'none';
+            form.reset();
+        } else {
+            alert('❌ Ошибка при отправке. Попробуйте позже.');
+        }
+    } catch (err) {
+        alert('Ошибка сети: ' + err.message);
+    }
+});
+
+// Функция для открытия AI-чата (если он есть на главной)
+function openAIChatFromServices() {
+    // Здесь можно вызвать открытие AI-виджета, если он реализован
+    // Например, если у вас есть глобальная функция openAIChat(), как в CRM
+    if (typeof openAIChat === 'function') {
+        openAIChat();
+    } else {
+        // Или просто открыть ссылку на отдельную страницу с AI
+        window.location.href = '/ai'; // если такая страница существует
+    }
+}
+</script>
+
+<!-- Плавающая кнопка услуг слева -->
+<button id="services-fab-left" class="services-fab-left" title="Индивидуальные услуги">
+    <i class="fas fa-cogs"></i>
+</button>
+
+<!-- Модальное окно с услугами (без изменений) -->
+<div id="services-modal-left" class="services-modal-left" style="display: none;">
+    <div class="services-modal-content-left">
+        <span class="services-close-left">&times;</span>
+        <h3>🧩 Индивидуальные решения под ваш бизнес</h3>
+        <ul class="services-list-left">
+            <li><strong>🤖 Разработка Telegram-ботов</strong> – от простых уведомлений до сложных Mini Apps</li>
+            <li><strong>🛒 Создание интернет-магазинов</strong> – интеграция с криптой, картами, СБП</li>
+            <li><strong>🔗 Интеграции</strong> – amoCRM, Bitrix24, Google Sheets, WhatsApp API</li>
+            <li><strong>🧠 AI-ассистенты для бизнеса</strong> – кастомные чат-боты на YandexGPT, OpenRouter</li>
+            <li><strong>📱 Telegram Mini Apps</strong> – интерактивные приложения внутри бота</li>
+            <li><strong>📊 Настройка CRM-систем</strong> – внедрение, кастомизация, обучение</li>
+            <li><strong>⚙️ Автоматизация процессов</strong> – скрипты, вебхуки, интеграции</li>
+            <li><strong>🎯 Партнёрские программы и реферальные системы</strong> – как в этом проекте</li>
+            <li><strong>📈 Индивидуальные дашборды и аналитика</strong> – под ключ</li>
+            <li><strong>📢 SEO и маркетинг</strong> – аудит, настройка рекламы</li>
+        </ul>
+        <p>Оставьте заявку, и мы обсудим ваш проект</p>
+        <form id="service-order-form-left">
+            <input type="text" name="name" placeholder="Ваше имя" required>
+            <input type="text" name="contact" placeholder="Telegram или Email" required>
+            <textarea name="description" placeholder="Опишите, что нужно сделать" rows="3"></textarea>
+            <button type="submit">Отправить заявку</button>
+        </form>
+        <p class="services-note-left">Или <a href="#" onclick="openAIChatFromServicesLeft(); return false;">спросите нашего AI-ассистента</a></p>
+    </div>
+</div>
+
+<style>
+.services-fab-left {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;  /* ← теперь слева */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+.services-fab-left:hover {
+    transform: scale(1.1);
+}
+.services-modal-left {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+.services-modal-content-left {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    color: #333;
+}
+.services-close-left {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
+.services-close-left:hover {
+    color: #000;
+}
+.services-list-left {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+.services-list-left li {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+}
+.services-list-left li:last-child {
+    border-bottom: none;
+}
+#service-order-form-left input,
+#service-order-form-left textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+#service-order-form-left button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+}
+#service-order-form-left button:hover {
+    background: #0056b3;
+}
+.services-note-left {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+.services-note-left a {
+    color: #007bff;
+    text-decoration: none;
+}
+.services-note-left a:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script>
+// Открытие/закрытие модалки (левая кнопка)
+const fabLeft = document.getElementById('services-fab-left');
+const modalLeft = document.getElementById('services-modal-left');
+const closeBtnLeft = document.querySelector('.services-close-left');
+
+if (fabLeft) {
+    fabLeft.onclick = function() {
+        modalLeft.style.display = 'flex';
+    }
+}
+if (closeBtnLeft) {
+    closeBtnLeft.onclick = function() {
+        modalLeft.style.display = 'none';
+    }
+}
+window.onclick = function(e) {
+    if (e.target == modalLeft) {
+        modalLeft.style.display = 'none';
+    }
+}
+
+// Отправка формы заявки (левая)
+document.getElementById('service-order-form-left')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = {
+        name: formData.get('name'),
+        contact: formData.get('contact'),
+        description: formData.get('description')
+    };
+    try {
+        const res = await fetch('/api/service-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            alert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+            modalLeft.style.display = 'none';
+            form.reset();
+        } else {
+            alert('❌ Ошибка при отправке. Попробуйте позже.');
+        }
+    } catch (err) {
+        alert('Ошибка сети: ' + err.message);
+    }
+});
+
+// Функция для открытия AI-чата (левая)
+function openAIChatFromServicesLeft() {
+    if (typeof openAIChat === 'function') {
+        openAIChat();
+    } else {
+        window.location.href = '/ai';
+    }
+}
+</script>
 </body>
 </html>

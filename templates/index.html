@@ -18,7 +18,7 @@
             background: white;
             border-radius: 40px 40px 0 0;
             margin-top: 40px;
-            padding: 40px 0;
+            padding: 40px 0 100px 0;  /* ← УВЕЛИЧЕН ОТСТУП СНИЗУ */
             box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
         }
         
@@ -328,26 +328,78 @@
             font-style: italic;
             padding: 10px;
             font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 3px;
+        }
+
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            background-color: #999;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typingDot 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            30% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        /* УВЕЛИЧЕННАЯ СТРОКА ВВОДА И КНОПКА */
         .input-area {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            margin-top: 10px;
         }
         .input-area input {
             flex: 1;
-            padding: 12px;
+            padding: 15px 18px;
             border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 13px;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            height: 50px;
+        }
+        .input-area input:focus {
+            border-color: #667eea;
+            outline: none;
         }
         .input-area button {
-            padding: 12px 20px;
+            padding: 0 25px;
             background: #667eea;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background 0.2s;
+            min-width: 100px;
+            height: 50px;
+        }
+        .input-area button:hover {
+            background: #5a67d8;
         }
         
         /* ФУТЕР (на синем фоне) */
@@ -540,19 +592,27 @@
                     </div>
                 </div>
                 
-                <!-- AI ЧАТ -->
+                <!-- AI КОНСУЛЬТАНТ -->
                 <div class="ai-chat-side">
                     <div class="chat-header">
-                        <h3>🤖 AI Помощник</h3>
+                        <h3>🤖 AI Консультант</h3>
                         <span class="online-badge">Online 24/7</span>
                     </div>
-                    <p class="chat-subtitle">Спросите о тарифах, оплате, функциях</p>
+                    <p class="chat-subtitle">Расскажите, какой проект хотите заказать — я соберу все детали и передам разработчику</p>
                     
                     <div class="chat-container">
                         <div class="messages" id="messages"></div>
+                        <div id="typingIndicator" class="typing" style="display: none;">
+                            AI печатает
+                            <div class="typing-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
                         <div class="input-area">
-                            <input type="text" id="questionInput" placeholder="Напишите вопрос..." />
-                            <button onclick="sendQuestion()">➤</button>
+                            <input type="text" id="messageInput" placeholder="Введите сообщение..." />
+                            <button onclick="sendMessage()">Отправить</button>
                         </div>
                     </div>
                 </div>
@@ -590,48 +650,552 @@
         </div>
     </div>
 
+    <!-- Плавающая кнопка услуг с подсказкой -->
+    <div class="services-wrapper">
+        <button id="services-fab" class="services-fab" title="Индивидуальные решения для вашего бизнеса">
+            <i class="fas fa-cogs"></i>
+        </button>
+        <div class="services-tooltip" id="servicesTooltip">
+            <i class="fas fa-info-circle"></i> Нужен свой бот, интернет-магазин или интеграция? Мы сделаем!
+        </div>
+    </div>
+
+    <!-- Модальное окно с услугами -->
+    <div id="services-modal" class="services-modal" style="display: none;">
+        <div class="services-modal-content">
+            <span class="services-close">&times;</span>
+            <h3>🧩 Индивидуальные решения под ваш бизнес</h3>
+            <p class="services-intro">Мы не только даём готовую платформу, но и разрабатываем уникальные решения специально под ваши задачи. Нажмите на интересующую услугу, чтобы узнать подробности:</p>
+            
+            <div class="services-grid">
+                <div class="service-item" onclick="showServiceDetails('telegram-bot')">
+                    <div class="service-icon">🤖</div>
+                    <div class="service-title">Telegram-боты</div>
+                    <div class="service-desc">От простых уведомлений до сложных Mini Apps с платежами</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('shop')">
+                    <div class="service-icon">🛒</div>
+                    <div class="service-title">Интернет-магазины</div>
+                    <div class="service-desc">Под ключ с интеграцией крипты, карт, СБП и Telegram Stars</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('integration')">
+                    <div class="service-icon">🔗</div>
+                    <div class="service-title">Интеграции</div>
+                    <div class="service-desc">amoCRM, Bitrix24, Google Sheets, WhatsApp API и любые другие</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('ai')">
+                    <div class="service-icon">🧠</div>
+                    <div class="service-title">AI-ассистенты</div>
+                    <div class="service-desc">Кастомные чат-боты на YandexGPT, OpenRouter, ChatGPT</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('miniapp')">
+                    <div class="service-icon">📱</div>
+                    <div class="service-title">Telegram Mini Apps</div>
+                    <div class="service-desc">Интерактивные приложения прямо внутри Telegram</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('crm')">
+                    <div class="service-icon">📊</div>
+                    <div class="service-title">Настройка CRM</div>
+                    <div class="service-desc">Внедрение, кастомизация, обучение сотрудников</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('automation')">
+                    <div class="service-icon">⚙️</div>
+                    <div class="service-title">Автоматизация</div>
+                    <div class="service-desc">Скрипты, вебхуки, связь с 1С, Битрикс24, Telegram</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('referral')">
+                    <div class="service-icon">🎯</div>
+                    <div class="service-title">Партнёрские программы</div>
+                    <div class="service-desc">Как в этом проекте — реферальные системы под ключ</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('dashboard')">
+                    <div class="service-icon">📈</div>
+                    <div class="service-title">Индивидуальные дашборды</div>
+                    <div class="service-desc">Аналитика и отчёты специально для вашего бизнеса</div>
+                </div>
+                <div class="service-item" onclick="showServiceDetails('seo')">
+                    <div class="service-icon">📢</div>
+                    <div class="service-title">SEO и маркетинг</div>
+                    <div class="service-desc">Аудит, настройка рекламы, привлечение клиентов</div>
+                </div>
+            </div>
+
+            <div id="service-detail-panel" class="service-detail-panel" style="display: none;">
+                <h4 id="service-detail-title"></h4>
+                <p id="service-detail-description"></p>
+                <button class="btn btn-sm btn-outline-primary" onclick="hideServiceDetails()">← Назад к списку</button>
+            </div>
+
+            <div class="services-cta">
+                <p>Оставьте заявку, и мы обсудим ваш проект бесплатно</p>
+                <form id="service-order-form">
+                    <input type="text" name="name" placeholder="Ваше имя" required>
+                    <input type="text" name="contact" placeholder="Telegram, Email или телефон" required>
+                    <textarea name="description" placeholder="Опишите, что нужно сделать" rows="2"></textarea>
+                    <button type="submit">Отправить заявку →</button>
+                </form>
+                <p class="services-note">Или <a href="#" onclick="openAIChatFromServices(); return false;">спросите нашего AI-ассистента</a> — он ответит сразу</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .services-wrapper {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+    .services-fab {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .services-fab:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+    .services-tooltip {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        background: white;
+        color: #333;
+        padding: 12px 20px;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        white-space: nowrap;
+        animation: bounce 2s infinite;
+        border: 1px solid #e0e0e0;
+        pointer-events: none;
+    }
+    .services-tooltip i {
+        color: #667eea;
+        margin-right: 8px;
+    }
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    .services-modal {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1001;
+        backdrop-filter: blur(5px);
+    }
+    .services-modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 25px;
+        max-width: 900px;
+        width: 95%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+        color: #333;
+    }
+    .services-close {
+        float: right;
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #999;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+    .services-close:hover {
+        color: #333;
+    }
+    .services-intro {
+        font-size: 16px;
+        color: #666;
+        margin: 20px 0 25px;
+        line-height: 1.6;
+    }
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+        margin: 25px 0;
+    }
+    .service-item {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 18px 15px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eee;
+    }
+    .service-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(102,126,234,0.15);
+        border-color: #667eea;
+    }
+    .service-icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    .service-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #667eea;
+    }
+    .service-desc {
+        font-size: 13px;
+        color: #666;
+        line-height: 1.5;
+    }
+    .service-detail-panel {
+        background: #f0f4ff;
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+        border-left: 5px solid #667eea;
+    }
+    .service-detail-panel h4 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+    .service-detail-panel p {
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+    .services-cta {
+        background: linear-gradient(135deg, #f5f7ff 0%, #f0f4ff 100%);
+        border-radius: 20px;
+        padding: 25px;
+        margin-top: 25px;
+    }
+    .services-cta p {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 15px;
+    }
+    #service-order-form input,
+    #service-order-form textarea {
+        width: 100%;
+        padding: 12px 15px;
+        margin: 8px 0;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+    #service-order-form input:focus,
+    #service-order-form textarea:focus {
+        border-color: #667eea;
+        outline: none;
+    }
+    #service-order-form button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 14px 25px;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-top: 10px;
+    }
+    #service-order-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+    }
+    .services-note {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #666;
+    }
+    .services-note a {
+        color: #667eea;
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .services-note a:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 600px) {
+        .services-grid {
+            grid-template-columns: 1fr;
+        }
+        .services-tooltip {
+            display: none;
+        }
+        .services-modal-content {
+            padding: 20px;
+        }
+    }
+
+/* АДАПТИВНОСТЬ И ОТСТУПЫ */
+@media (max-width: 1000px) {
+    .pricing-row {
+        grid-template-columns: 1fr;
+    }
+    .pricing-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .hero {
+        grid-template-columns: 1fr;
+    }
+    .footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 700px) {
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+    .navbar {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+/* ===== ОТСТУП ДЛЯ КОНТЕНТА, ЧТОБЫ НЕ ПЕРЕКРЫВАЛ ВИДЖЕТ ===== */
+body {
+    padding-bottom: 100px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 80px;
+    }
+}
+    </style>
+
     <script>
-        const messagesDiv = document.getElementById('messages');
+    // ========== AI Консультант ==========
+    let sessionId = localStorage.getItem('consultantSessionId') || '';
+    let messagesDiv = document.getElementById('messages');
+    let typingDiv = document.getElementById('typingIndicator');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!sessionId) {
+            startNewConsultation();
+        } else {
+            addMessage('Продолжим оформление заявки? Напишите ваш ответ.', false);
+        }
+    });
+
+    function startNewConsultation() {
+        addMessage('Здравствуйте! Я помогу вам оформить заявку на индивидуальную разработку. Расскажите, что именно вы хотите создать?', false);
+        sessionId = '';
+        localStorage.removeItem('consultantSessionId');
+    }
+
+    function addMessage(text, isUser) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+        msgDiv.textContent = text;
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function showTyping() {
+        typingDiv.style.display = 'block';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function hideTyping() {
+        typingDiv.style.display = 'none';
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessage(message, true);
+        input.value = '';
+        showTyping();
+
+        try {
+            const response = await fetch('/api/ai/consultant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+            
+            // Задержка 3 секунды
+            setTimeout(() => {
+                hideTyping();
+
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('consultantSessionId', sessionId);
+                }
+
+                addMessage(data.message, false);
+
+                if (data.completed) {
+                    setTimeout(() => {
+                        if (confirm('Хотите оформить ещё одну заявку?')) {
+                            localStorage.removeItem('consultantSessionId');
+                            sessionId = '';
+                            startNewConsultation();
+                        }
+                    }, 1000);
+                }
+            }, 3000);
+        } catch (error) {
+            hideTyping();
+            addMessage('Ошибка: ' + error.message, false);
+        }
+    }
+
+    // Отправка по Enter
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    // ========== Виджет услуг ==========
+    const fab = document.getElementById('services-fab');
+    const modal = document.getElementById('services-modal');
+    const closeBtn = document.querySelector('.services-close');
+
+    fab.onclick = function() {
+        modal.style.display = 'flex';
+    }
+    closeBtn.onclick = function() {
+        modal.style.display = 'none';
+    }
+    window.onclick = function(e) {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    const serviceDetails = {
+        'telegram-bot': {
+            title: '🤖 Разработка Telegram-ботов',
+            description: 'Создаём ботов любой сложности: от простых уведомлений до полноценных магазинов с оплатой через Telegram Stars, криптовалюту или карты. Интеграция с вашей CRM, базой данных, AI. Поддержка и доработка.'
+        },
+        'shop': {
+            title: '🛒 Интернет-магазины под ключ',
+            description: 'Разработаем современный интернет-магазин с каталогом, корзиной, личным кабинетом и интеграцией всех популярных платёжных систем: крипта, карты РФ/мира, СБП, Telegram Stars. Адаптивный дизайн, SEO-оптимизация.'
+        },
+        'integration': {
+            title: '🔗 Интеграции с внешними сервисами',
+            description: 'Подключим ваш проект к любым API: amoCRM, Bitrix24, Google Sheets, WhatsApp, Telegram, 1С, платежные системы, службы доставки. Автоматический обмен данными, вебхуки.'
+        },
+        'ai': {
+            title: '🧠 AI-ассистенты для бизнеса',
+            description: 'Внедрим искусственный интеллект в ваш бизнес: чат-боты на основе YandexGPT, OpenRouter, ChatGPT. Обработка заказов, консультации, генерация контента, аналитика.'
+        },
+        'miniapp': {
+            title: '📱 Telegram Mini Apps',
+            description: 'Создадим интерактивные приложения, которые работают прямо внутри Telegram. Интернет-магазины, опросы, игры, формы — с возможностью оплаты и авторизации через Telegram.'
+        },
+        'crm': {
+            title: '📊 Настройка CRM-систем',
+            description: 'Поможем выбрать и внедрить CRM (в том числе нашу), настроим под ваши процессы, обучим сотрудников. Перенос данных, интеграция с телефонией, почтой, мессенджерами.'
+        },
+        'automation': {
+            title: '⚙️ Автоматизация процессов',
+            description: 'Автоматизируем рутину: скрипты для сбора данных, рассылки, обработки заказов, создания отчётов. Свяжем все ваши сервисы в единую систему.'
+        },
+        'referral': {
+            title: '🎯 Партнёрские программы',
+            description: 'Разработаем реферальную систему под ключ: приглашайте партнёров, начисляйте комиссии, отслеживайте статистику. Как в этом проекте, только для вашего бизнеса.'
+        },
+        'dashboard': {
+            title: '📈 Индивидуальные дашборды',
+            description: 'Создадим персональные панели аналитики с нужными вам метриками, графиками, отчётами. Данные из любых источников в реальном времени.'
+        },
+        'seo': {
+            title: '📢 SEO и маркетинг',
+            description: 'Проведём аудит сайта, настроим рекламу (Яндекс.Директ, VK, Telegram Ads), поможем с контент-маркетингом и привлечением клиентов.'
+        }
+    };
+
+    function showServiceDetails(serviceKey) {
+        const detail = serviceDetails[serviceKey];
+        if (!detail) return;
         
-        function addMessage(text, isUser) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            msgDiv.textContent = text;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+        document.getElementById('service-detail-title').textContent = detail.title;
+        document.getElementById('service-detail-description').textContent = detail.description;
+        document.getElementById('service-detail-panel').style.display = 'block';
+        document.querySelector('.services-grid').style.display = 'none';
+    }
 
-        async function sendQuestion() {
-            const input = document.getElementById('questionInput');
-            const question = input.value.trim();
-            if (!question) return;
+    function hideServiceDetails() {
+        document.getElementById('service-detail-panel').style.display = 'none';
+        document.querySelector('.services-grid').style.display = 'grid';
+    }
 
-            addMessage(question, true);
-            input.value = '';
-
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'typing';
-            typingDiv.textContent = 'AI печатает...';
-            messagesDiv.appendChild(typingDiv);
-
-            try {
-                const response = await fetch('/api/ai/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
-                });
-
-                const data = await response.json();
-                typingDiv.remove();
-                addMessage(data.answer || 'Извините, не удалось получить ответ', false);
-            } catch (error) {
-                typingDiv.remove();
-                addMessage('Ошибка: ' + error.message, false);
+    document.getElementById('service-order-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = {
+            name: formData.get('name'),
+            contact: formData.get('contact'),
+            description: formData.get('description')
+        };
+        try {
+            const res = await fetch('/api/service-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+                modal.style.display = 'none';
+                form.reset();
+            } else {
+                alert('❌ Ошибка при отправке. Попробуйте позже.');
             }
+        } catch (err) {
+            alert('Ошибка сети: ' + err.message);
         }
+    });
 
-        // Приветственное сообщение
-        addMessage('Здравствуйте! Я AI-помощник. Спросите меня о тарифах, оплате или возможностях платформы!', false);
+    function openAIChatFromServices() {
+        const aiChat = document.querySelector('.ai-chat-side');
+        if (aiChat) {
+            aiChat.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('messageInput')?.focus();
+        } else {
+            window.location.href = '/ai';
+        }
+    }
     </script>
 </body>
 </html>

@@ -99,3 +99,4 @@ func (ns *NotificationService) NotifyDealUpdated(id, title string, value float64
         id, title, value, stage)
     ns.SendTelegram(msg)
 }
+
