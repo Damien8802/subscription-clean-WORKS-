@@ -254,6 +254,10 @@ r.GET("/api/qr/status", handlers.QRStatusWebSocket)
 r.POST("/api/qr/scan", handlers.ScanQRCode)
 r.POST("/api/qr/approve", handlers.ApproveQRLogin)
 
+// Телефонная авторизация
+r.POST("/api/auth/send-code", handlers.SendPhoneCode)
+r.POST("/api/auth/verify-code", handlers.VerifyPhoneCode)
+
 // Push уведомления
 r.POST("/api/push/register", handlers.RegisterPushDevice)
 r.GET("/api/push/devices", handlers.GetUserDevices)

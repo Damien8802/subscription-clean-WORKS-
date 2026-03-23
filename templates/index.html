@@ -412,6 +412,37 @@
             align-self: flex-start;
             border-radius: 18px 18px 18px 4px;
         }
+        .typing {
+            color: #999;
+            font-style: italic;
+            padding: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .typing-dots {
+            display: inline-flex;
+            gap: 3px;
+        }
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            background-color: #999;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typingDot 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typingDot {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+            30% { transform: translateY(-4px); opacity: 1; }
+        }
         .input-area {
             display: flex;
             gap: 10px;
@@ -499,6 +530,7 @@
             <a href="/">Главная</a>
             <a href="/dashboard-improved">Дашборд</a>
             <a href="/vpn">VPN</a>
+            <a href="/identity-hub">🔐 Identity Hub</a>
             <a href="/ai">AI Чат</a>
             <a href="/crm">CRM</a>
             <a href="/analytics">Аналитика</a>
@@ -537,36 +569,12 @@
             <h2>⚡ Чем занимается SaaSPro</h2>
             <p>Мы создаём экосистему для автоматизации вашего бизнеса</p>
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">💳</div>
-                    <h3>Приём платежей</h3>
-                    <p>Поддержка всех популярных способов оплаты: карты РФ/МИР, криптовалюты, СБП, Telegram Stars</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Аналитика и отчеты</h3>
-                    <p>Детальные графики, прогнозирование доходов, когортный анализ, LTV клиентов</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
-                    <h3>AI-ассистенты</h3>
-                    <p>Умные помощники на основе YandexGPT. Отвечают на вопросы, ищут информацию, помогают клиентам</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>VPN сервис</h3>
-                    <p>Безопасный доступ из любой точки мира. Шифрование WireGuard, высокая скорость</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔗</div>
-                    <h3>Интеграции</h3>
-                    <p>1С, Битрикс24, Telegram, WhatsApp, Google Sheets, amoCRM и любые другие API</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📋</div>
-                    <h3>CRM система</h3>
-                    <p>Управление клиентами, сделками, воронка продаж, история взаимодействий</p>
-                </div>
+                <div class="feature-card"><div class="feature-icon">💳</div><h3>Приём платежей</h3><p>Поддержка всех популярных способов оплаты: карты РФ/МИР, криптовалюты, СБП, Telegram Stars</p></div>
+                <div class="feature-card"><div class="feature-icon">📊</div><h3>Аналитика и отчеты</h3><p>Детальные графики, прогнозирование доходов, когортный анализ, LTV клиентов</p></div>
+                <div class="feature-card"><div class="feature-icon">🤖</div><h3>AI-ассистенты</h3><p>Умные помощники на основе YandexGPT. Отвечают на вопросы, помогают клиентам</p></div>
+                <div class="feature-card"><div class="feature-icon">🔒</div><h3>VPN сервис</h3><p>Безопасный доступ из любой точки мира. Шифрование WireGuard, высокая скорость</p></div>
+                <div class="feature-card"><div class="feature-icon">🔗</div><h3>Интеграции</h3><p>1С, Битрикс24, Telegram, WhatsApp, Google Sheets, amoCRM и любые другие API</p></div>
+                <div class="feature-card"><div class="feature-icon">📋</div><h3>CRM система</h3><p>Управление клиентами, сделками, воронка продаж, история взаимодействий</p></div>
             </div>
         </div>
 
@@ -575,116 +583,44 @@
             <h2>🏆 Почему SaaSPro лучше конкурентов</h2>
             <p>Мы создали платформу, которая решает реальные задачи бизнеса</p>
             <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>В 10 раз быстрее</h3>
-                    <p>Оптимизированная архитектура и кэширование обеспечивают молниеносную работу</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Безопасность данных</h3>
-                    <p>Шифрование всех данных, двухфакторная аутентификация, защита от DDoS</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">💸</div>
-                    <h3>Ниже комиссии</h3>
-                    <p>Комиссия всего 1% вместо 3-5% у конкурентов. Экономия до 40% в месяц</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Персональная поддержка</h3>
-                    <p>24/7 поддержка в Telegram, WhatsApp, email. Среднее время ответа — 2 минуты</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h3>Безлимитная аналитика</h3>
-                    <p>Неограниченное количество отчетов, дашбордов и экспорта данных</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔄</div>
-                    <h3>Автоматизация под ключ</h3>
-                    <p>Настроим любые интеграции, скрипты, вебхуки. Полная автоматизация ваших процессов</p>
-                </div>
+                <div class="feature-card"><div class="feature-icon">⚡</div><h3>В 10 раз быстрее</h3><p>Оптимизированная архитектура и кэширование обеспечивают молниеносную работу</p></div>
+                <div class="feature-card"><div class="feature-icon">🔒</div><h3>Безопасность данных</h3><p>Шифрование всех данных, двухфакторная аутентификация, защита от DDoS</p></div>
+                <div class="feature-card"><div class="feature-icon">💸</div><h3>Ниже комиссии</h3><p>Комиссия всего 1% вместо 3-5% у конкурентов. Экономия до 40% в месяц</p></div>
+                <div class="feature-card"><div class="feature-icon">🎯</div><h3>Персональная поддержка</h3><p>24/7 поддержка в Telegram, WhatsApp, email. Среднее время ответа — 2 минуты</p></div>
+                <div class="feature-card"><div class="feature-icon">📈</div><h3>Безлимитная аналитика</h3><p>Неограниченное количество отчетов, дашбордов и экспорта данных</p></div>
+                <div class="feature-card"><div class="feature-icon">🔄</div><h3>Автоматизация под ключ</h3><p>Настроим любые интеграции, скрипты, вебхуки. Полная автоматизация ваших процессов</p></div>
             </div>
         </div>
 
         <!-- ПРОДУКТЫ -->
         <div class="products-section">
-            <div class="products-header">
-                <h2>🚀 Наши продукты</h2>
-                <p>Готовые решения для вашего бизнеса</p>
-            </div>
+            <div class="products-header"><h2>🚀 Наши продукты</h2><p>Готовые решения для вашего бизнеса</p></div>
             <div class="products-grid">
-                <div class="product-card" onclick="location.href='/vpn'">
-                    <div class="product-icon">🔒</div>
-                    <div class="product-title">VPN Сервис</div>
-                    <div class="product-desc">Безопасный доступ из любой точки мира. Высокая скорость, шифрование WireGuard. 3 дня бесплатно.</div>
-                    <div class="product-btn">Купить VPN →</div>
-                </div>
-                <div class="product-card" onclick="location.href='/ai'">
-                    <div class="product-icon">🤖</div>
-                    <div class="product-title">AI Чат</div>
-                    <div class="product-desc">Интеллектуальный помощник на основе YandexGPT. Отвечает на вопросы, ищет информацию в интернете.</div>
-                    <div class="product-btn">Попробовать →</div>
-                </div>
+                <div class="product-card" onclick="location.href='/vpn'"><div class="product-icon">🔒</div><div class="product-title">VPN Сервис</div><div class="product-desc">Безопасный доступ из любой точки мира. Высокая скорость, шифрование WireGuard. 3 дня бесплатно.</div><div class="product-btn">Купить VPN →</div></div>
+                <div class="product-card" onclick="location.href='/ai'"><div class="product-icon">🤖</div><div class="product-title">AI Чат</div><div class="product-desc">Интеллектуальный помощник. Отвечает на вопросы, помогает с заказами.</div><div class="product-btn">Попробовать →</div></div>
             </div>
         </div>
 
         <!-- ТАРИФЫ И AI ЧАТ -->
         <div class="pricing-section">
-            <div class="pricing-header">
-                <h2>💰 Выберите свой тариф</h2>
-                <p>Гибкие планы для любого бизнеса</p>
-            </div>
+            <div class="pricing-header"><h2>💰 Выберите свой тариф</h2><p>Гибкие планы для любого бизнеса</p></div>
             <div class="pricing-row">
                 <div class="pricing-grid">
-                    <div class="pricing-card">
-                        <h3>Базовый</h3>
-                        <div class="price">₽990 <small>/мес</small></div>
-                        <ul class="features-list">
-                            <li>До 100 пользователей</li>
-                            <li>Базовая аналитика</li>
-                            <li>Email поддержка</li>
-                            <li>5 интеграций</li>
-                        </ul>
-                        <button class="btn" onclick="location.href='/payment?plan=basic&price=990'">Выбрать</button>
-                    </div>
-                    <div class="pricing-card">
-                        <div class="popular-tag">🔥 ПОПУЛЯРНЫЙ</div>
-                        <h3>Профессиональный</h3>
-                        <div class="price">₽2 990 <small>/мес</small></div>
-                        <ul class="features-list">
-                            <li>До 1000 пользователей</li>
-                            <li>Продвинутая аналитика</li>
-                            <li>Приоритетная поддержка</li>
-                            <li>20 интеграций</li>
-                            <li>CRM система</li>
-                        </ul>
-                        <button class="btn" onclick="location.href='/payment?plan=pro&price=2990'">Выбрать</button>
-                    </div>
-                    <div class="pricing-card">
-                        <h3>Предприятие</h3>
-                        <div class="price">₽9 990 <small>/мес</small></div>
-                        <ul class="features-list">
-                            <li>Неограниченно пользователей</li>
-                            <li>Полная аналитика + AI</li>
-                            <li>24/7 персональная поддержка</li>
-                            <li>Все интеграции</li>
-                            <li>White-label решение</li>
-                        </ul>
-                        <button class="btn" onclick="location.href='/contact'">Связаться</button>
-                    </div>
+                    <div class="pricing-card"><h3>Базовый</h3><div class="price">₽990 <small>/мес</small></div><ul class="features-list"><li>До 100 пользователей</li><li>Базовая аналитика</li><li>Email поддержка</li><li>5 интеграций</li></ul><button class="btn" onclick="location.href='/payment?plan=basic&price=990'">Выбрать</button></div>
+                    <div class="pricing-card"><div class="popular-tag">🔥 ПОПУЛЯРНЫЙ</div><h3>Профессиональный</h3><div class="price">₽2 990 <small>/мес</small></div><ul class="features-list"><li>До 1000 пользователей</li><li>Продвинутая аналитика</li><li>Приоритетная поддержка</li><li>20 интеграций</li><li>CRM система</li></ul><button class="btn" onclick="location.href='/payment?plan=pro&price=2990'">Выбрать</button></div>
+                    <div class="pricing-card"><h3>Предприятие</h3><div class="price">₽9 990 <small>/мес</small></div><ul class="features-list"><li>Неограниченно пользователей</li><li>Полная аналитика + AI</li><li>24/7 персональная поддержка</li><li>Все интеграции</li><li>White-label решение</li></ul><button class="btn" onclick="location.href='/contact'">Связаться</button></div>
                 </div>
                 
                 <!-- AI КОНСУЛЬТАНТ -->
                 <div class="ai-chat-side">
-                    <div class="chat-header">
-                        <h3>🤖 AI Консультант</h3>
-                        <span class="online-badge">Online 24/7</span>
-                    </div>
+                    <div class="chat-header"><h3>🤖 AI Консультант</h3><span class="online-badge">Online 24/7</span></div>
                     <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Расскажите, какой проект хотите заказать — я соберу все детали и передам разработчику</p>
                     <div class="chat-container">
                         <div class="messages" id="messages"></div>
+                        <div id="typingIndicator" class="typing" style="display: none;">
+                            AI печатает
+                            <div class="typing-dots"><span></span><span></span><span></span></div>
+                        </div>
                         <div class="input-area">
                             <input type="text" id="messageInput" placeholder="Введите сообщение...">
                             <button onclick="sendMessage()">Отправить</button>
@@ -707,25 +643,74 @@
     </div>
 
     <script>
+        // ========== AI Консультант с эффектом печатания и автоскроллом ==========
         let sessionId = localStorage.getItem('consultantSessionId') || '';
         let messagesDiv = document.getElementById('messages');
-
+        let typingDiv = document.getElementById('typingIndicator');
+        let isTyping = false;
+        
+        // Функция прокрутки вниз
+        function scrollToBottom() {
+            if (messagesDiv) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        }
+        
+        async function typeMessage(text, element) {
+            return new Promise((resolve) => {
+                let i = 0;
+                element.textContent = '';
+                
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                        scrollToBottom();
+                        setTimeout(type, 20 + Math.random() * 15);
+                    } else {
+                        resolve();
+                    }
+                }
+                
+                type();
+            });
+        }
+        
         function addMessage(text, isUser) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            msgDiv.textContent = text;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            if (!isUser) {
+                msgDiv.textContent = '';
+                messagesDiv.appendChild(msgDiv);
+                scrollToBottom();
+                return { element: msgDiv, text: text };
+            } else {
+                msgDiv.textContent = text;
+                messagesDiv.appendChild(msgDiv);
+                scrollToBottom();
+                return null;
+            }
         }
-
+        
+        function showTyping() {
+            typingDiv.style.display = 'block';
+            scrollToBottom();
+        }
+        
+        function hideTyping() {
+            typingDiv.style.display = 'none';
+        }
+        
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
-            if (!message) return;
-
+            if (!message || isTyping) return;
+            
             addMessage(message, true);
             input.value = '';
-
+            showTyping();
+            
             try {
                 const response = await fetch('/api/ai/consultant', {
                     method: 'POST',
@@ -733,31 +718,66 @@
                     body: JSON.stringify({ session_id: sessionId, message: message })
                 });
                 const data = await response.json();
-                if (data.session_id) sessionId = data.session_id;
-                localStorage.setItem('consultantSessionId', sessionId);
-                addMessage(data.message, false);
+                
+                if (data.session_id) {
+                    sessionId = data.session_id;
+                    localStorage.setItem('consultantSessionId', sessionId);
+                }
+                
+                hideTyping();
+                
+                const msgPromise = addMessage('', false);
+                if (msgPromise) {
+                    await typeMessage(data.message, msgPromise.element);
+                }
+                
                 if (data.completed) {
                     setTimeout(() => {
                         if (confirm('Хотите оформить ещё одну заявку?')) {
                             localStorage.removeItem('consultantSessionId');
                             sessionId = '';
-                            addMessage('Здравствуйте! Я помогу вам оформить заявку. Расскажите, что хотите создать?', false);
+                            const resetMsg = addMessage('', false);
+                            if (resetMsg) {
+                                typeMessage('Здравствуйте! Я помогу вам оформить заявку. Расскажите, что хотите создать?', resetMsg.element);
+                            }
                         }
                     }, 1000);
                 }
             } catch (error) {
-                addMessage('Ошибка: ' + error.message, false);
+                hideTyping();
+                const errorMsg = addMessage('', false);
+                if (errorMsg) {
+                    typeMessage('Извините, произошла ошибка. Попробуйте позже.', errorMsg.element);
+                }
             }
         }
-
+        
         document.getElementById('messageInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') sendMessage();
         });
-
+        
+        // Наблюдатель за изменениями для автоскролла
+        const observer = new MutationObserver(function(mutations) {
+            scrollToBottom();
+        });
+        if (messagesDiv) {
+            observer.observe(messagesDiv, { childList: true, subtree: true });
+        }
+        
         if (!sessionId) {
-            addMessage('Здравствуйте! Я помогу вам оформить заявку на индивидуальную разработку. Расскажите, что именно вы хотите создать?', false);
+            setTimeout(() => {
+                const welcomeMsg = addMessage('', false);
+                if (welcomeMsg) {
+                    typeMessage('Здравствуйте! Я помогу вам оформить заявку на индивидуальную разработку. Расскажите, что именно вы хотите создать?', welcomeMsg.element);
+                }
+            }, 500);
         } else {
-            addMessage('Продолжим оформление заявки? Напишите ваш ответ.', false);
+            setTimeout(() => {
+                const continueMsg = addMessage('', false);
+                if (continueMsg) {
+                    typeMessage('Продолжим оформление заявки? Напишите ваш ответ.', continueMsg.element);
+                }
+            }, 500);
         }
     </script>
 </body>

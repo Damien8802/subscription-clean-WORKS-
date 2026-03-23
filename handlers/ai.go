@@ -202,7 +202,7 @@ func searchInternet(query string) ([]SearchResult, error) {
         return nil, fmt.Errorf("поиск не настроен")
     }
 
-    log.Printf("🔍 Поиск в интернете: %s", query)
+    log.Printf("🔍 Поиск: %s", query)
 
     searchQueries := []string{
         query,
@@ -262,14 +262,12 @@ func searchInternet(query string) ([]SearchResult, error) {
         xmlData, _ := base64.StdEncoding.DecodeString(result.RawData)
         xmlStr := string(xmlData)
         
-        // Извлекаем заголовки и описания
         titleRegex := regexp.MustCompile(`<title>(.*?)</title>`)
         passageRegex := regexp.MustCompile(`<passage>(.*?)</passage>`)
         
         titles := titleRegex.FindAllStringSubmatch(xmlStr, -1)
         passages := passageRegex.FindAllStringSubmatch(xmlStr, -1)
         
-        // Извлекаем цены
         priceRegex := regexp.MustCompile(`(\d{1,3}(?:[.\s]?\d{3})*)\s*(?:тыс\.?|тысяч|₽|руб|рублей|р\.)`)
         
         for _, title := range titles {
@@ -280,7 +278,6 @@ func searchInternet(query string) ([]SearchResult, error) {
                     Source:      sq,
                 }
                 
-                // Ищем цену в заголовке
                 matches := priceRegex.FindAllStringSubmatch(title[1], -1)
                 for _, match := range matches {
                     if len(match) > 1 {
@@ -330,7 +327,6 @@ func searchInternet(query string) ([]SearchResult, error) {
         time.Sleep(100 * time.Millisecond)
     }
 
-    // Уникальные результаты
     uniqueResults := make(map[string]SearchResult)
     for _, r := range allResults {
         if r.Title != "" || r.Description != "" {
@@ -349,7 +345,6 @@ func searchInternet(query string) ([]SearchResult, error) {
         results = append(results, r)
     }
     
-    // Кэшируем результаты
     cacheMutex.Lock()
     searchCache[cacheKey] = &SearchCache{
         Results:   results,
@@ -385,7 +380,6 @@ func getAveragePrice(query string) float64 {
         return medianPrice
     }
     
-    // Дефолтные цены по категориям
     switch {
     case strings.Contains(strings.ToLower(query), "telegram") || strings.Contains(strings.ToLower(query), "телеграм"):
         return 50000
@@ -407,7 +401,7 @@ func getAdvice(query string) string {
     }
     
     var advice strings.Builder
-    advice.WriteString("💡 **Вот что рекомендуют эксперты в интернете:**\n\n")
+    advice.WriteString("💡 **Рекомендации:**\n\n")
     
     count := 0
     for _, r := range results {
@@ -593,7 +587,6 @@ func sendEmailNotification(userName, service, phone, messenger, price, deadline,
         body += fmt.Sprintf("<p><strong>💬 Мессенджер:</strong> %s</p>", messenger)
     }
     
-    // Формируем письмо
     msg := []byte(fmt.Sprintf("To: %s\r\n", emailTo) +
         fmt.Sprintf("From: %s\r\n", emailFrom) +
         fmt.Sprintf("Subject: %s\r\n", subject) +
@@ -604,7 +597,6 @@ func sendEmailNotification(userName, service, phone, messenger, price, deadline,
     addr := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
     auth := smtp.PlainAuth("", emailFrom, emailPassword, smtpHost)
     
-    // Подключаемся к SMTP серверу
     conn, err := tls.Dial("tcp", addr, &tls.Config{ServerName: smtpHost})
     if err != nil {
         log.Printf("❌ Ошибка подключения к SMTP: %v", err)
@@ -619,25 +611,21 @@ func sendEmailNotification(userName, service, phone, messenger, price, deadline,
     }
     defer client.Quit()
     
-    // Аутентификация
     if err = client.Auth(auth); err != nil {
         log.Printf("❌ Ошибка аутентификации: %v", err)
         return
     }
     
-    // Отправитель
     if err = client.Mail(emailFrom); err != nil {
         log.Printf("❌ Ошибка отправителя: %v", err)
         return
     }
     
-    // Получатель
     if err = client.Rcpt(emailTo); err != nil {
         log.Printf("❌ Ошибка получателя: %v", err)
         return
     }
     
-    // Отправляем данные
     w, err := client.Data()
     if err != nil {
         log.Printf("❌ Ошибка данных: %v", err)
@@ -658,6 +646,7 @@ func sendEmailNotification(userName, service, phone, messenger, price, deadline,
     
     log.Printf("✅ Email отправлен на %s", emailTo)
 }
+
 func AIAskHandler(c *gin.Context) {
     var req AskRequest
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -688,7 +677,6 @@ func AIAskHandler(c *gin.Context) {
     answer := ""
     phoneRegex := regexp.MustCompile(`^(\+7|8|7)?[\s-]?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}$`)
     
-    // Ожидание телефона
     if state.AwaitingPhone {
         if phoneRegex.MatchString(question) {
             state.UserPhone = question
@@ -704,7 +692,6 @@ func AIAskHandler(c *gin.Context) {
         }
     }
 
-    // Ожидание мессенджера
     if state.AwaitingMessenger {
         messenger := detectMessenger(question)
         if messenger != "" {
@@ -735,23 +722,19 @@ func AIAskHandler(c *gin.Context) {
         }
     }
 
-    // Приветствие
     if !state.GreetingShown {
         greeting := getGreeting()
         answer = fmt.Sprintf("%s! 👋 Я AI-помощник студии разработки.\n\n", greeting) +
-            "🔍 **Я ищу информацию в интернете, чтобы дать вам актуальные цены и советы.**\n\n" +
             "🎯 **Как к вам можно обращаться?**"
         state.GreetingShown = true
         c.JSON(http.StatusOK, gin.H{"answer": answer, "session_id": req.SessionID})
         return
     }
 
-    // Получение имени
     if state.UserName == "" {
         if isNameResponse(question) {
             state.UserName = question
             answer = fmt.Sprintf("Приятно познакомиться, %s! 🌟\n\n", state.UserName) +
-                "🔍 **Я сейчас найду в интернете актуальную информацию и цены.**\n\n" +
                 "📝 **Напишите, что хотите разработать:**\n" +
                 "• Telegram бот\n" +
                 "• Интернет-магазин\n" +
@@ -767,15 +750,12 @@ func AIAskHandler(c *gin.Context) {
         }
     }
 
-    // Определение услуги и поиск в интернете
     if state.UserService == "" {
-        // Ищем цену в интернете
         price := getAveragePrice(question)
         state.UserService = question
         state.BasePrice = price
         state.CalculatedPrice = price
         
-        // Ищем советы в интернете
         advice := getAdvice(question)
         
         serviceName := question
@@ -786,25 +766,22 @@ func AIAskHandler(c *gin.Context) {
             }
         }
         
-        answer = fmt.Sprintf("🔍 **Я нашел в интернете информацию для вас!**\n\n")
-        answer += fmt.Sprintf("🎯 **%s**\n\n", serviceName)
-        answer += fmt.Sprintf("💰 **Средняя рыночная цена:** %s ₽\n\n", formatPrice(price))
+        answer = fmt.Sprintf("🎯 **%s**\n\n", serviceName)
+        answer += fmt.Sprintf("💰 **Стоимость разработки:** %s ₽\n\n", formatPrice(price))
         answer += advice + "\n"
         answer += "🎨 **Расскажите о пожеланиях по дизайну:**\n" +
             "• Есть готовый дизайн?\n" +
             "• Нужна разработка с нуля?\n" +
-            "• Или я могу подобрать варианты из интернета?"
+            "• Или могу предложить варианты"
         
         c.JSON(http.StatusOK, gin.H{"answer": answer, "session_id": req.SessionID})
         return
     }
     
-    // Сохраняем дизайн и ищем варианты в интернете
     if !state.DesignAsked && state.UserService != "" {
         state.DesignAnswer = question
         state.DesignAsked = true
         
-        // Если спрашивают про дизайн, ищем варианты в интернете
         if strings.Contains(lowerQ, "дизайн") || strings.Contains(lowerQ, "вариант") || strings.Contains(lowerQ, "посоветуй") {
             designAdvice := getAdvice(state.UserService + " дизайн примеры")
             answer = designAdvice + "\n\n" +
@@ -821,7 +798,6 @@ func AIAskHandler(c *gin.Context) {
         return
     }
     
-    // Техподдержка
     if !state.TechHelpAsked && state.DesignAsked {
         state.TechHelpAsked = true
         
@@ -851,7 +827,6 @@ func AIAskHandler(c *gin.Context) {
         return
     }
     
-    // Сроки
     if state.DeadlineAsked && !state.AwaitingPhone {
         if strings.Contains(lowerQ, "быстре") || strings.Contains(lowerQ, "сроч") {
             originalPrice := state.CalculatedPrice
@@ -882,7 +857,6 @@ func AIAskHandler(c *gin.Context) {
         return
     }
     
-    // Подтверждение срочного заказа
     if state.Deadline == "Срочно (5-7 дней)" && !state.AwaitingPhone {
         if strings.Contains(lowerQ, "да") {
             answer = "📝 **Для оформления оставьте номер телефона:**"
@@ -901,25 +875,7 @@ func AIAskHandler(c *gin.Context) {
     }
 
     if answer == "" {
-        // Если не поняли вопрос, ищем ответ в интернете
-        searchResults, _ := searchInternet(question)
-        if len(searchResults) > 0 {
-            answer = "🔍 **Я нашел в интернете информацию:**\n\n"
-            for i, r := range searchResults {
-                if i >= 3 {
-                    break
-                }
-                if r.Title != "" {
-                    answer += fmt.Sprintf("• %s\n", r.Title)
-                }
-                if r.Description != "" {
-                    answer += fmt.Sprintf("  %s\n\n", truncateText(r.Description, 150))
-                }
-            }
-            answer += "\n❓ Это помогает? Уточните вопрос, если нужно!"
-        } else {
-            answer = "Пожалуйста, уточните ваш вопрос, и я найду информацию в интернете!"
-        }
+        answer = "Пожалуйста, уточните ваш вопрос, и я помогу вам!"
     }
 
     state.Messages = append(state.Messages, "assistant: "+answer)

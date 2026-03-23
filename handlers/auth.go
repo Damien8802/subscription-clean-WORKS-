@@ -2,11 +2,15 @@ package handlers
 
 import (
     "context"
+    "crypto/rand"
+    "encoding/hex"
+    "fmt"
     "log"
     "net/http"
     "time"
 
     "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
     "golang.org/x/crypto/bcrypt"
     "subscription-system/config"
     "subscription-system/database"
@@ -16,19 +20,123 @@ import (
 
 // InitAuthHandler инициализирует обработчики авторизации
 func InitAuthHandler(cfg *config.Config) {
-    // Здесь можно добавить инициализацию, например:
-    // - Проверку подключения к БД
-    // - Загрузку ключей
-    // - Настройку параметров
     log.Println("✅ Auth handler initialized")
 }
 
-// LoginHandler обрабатывает вход пользователя с поддержкой "Запомнить меня"
+// generateRandomStringAuth генерирует случайную строку
+func generateRandomStringAuth(length int) string {
+    bytes := make([]byte, length)
+    rand.Read(bytes)
+    return hex.EncodeToString(bytes)[:length]
+}
+
+// SendPhoneCode отправляет код на телефон
+func SendPhoneCode(c *gin.Context) {
+    var req struct {
+        Phone string `json:"phone" binding:"required"`
+    }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Генерируем 6-значный код
+    code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+    
+    // Сохраняем код в БД
+    expiresAt := time.Now().Add(5 * time.Minute)
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO phone_auth_codes (phone, code, expires_at)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (phone) DO UPDATE SET code = $2, expires_at = $3
+    `, req.Phone, code, expiresAt)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save code"})
+        return
+    }
+    
+    log.Printf("📱 Код для %s: %s", req.Phone, code)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "message":    "Код отправлен",
+        "expires_in": 300,
+    })
+}
+
+// VerifyPhoneCode проверяет код с телефона
+func VerifyPhoneCode(c *gin.Context) {
+    var req struct {
+        Phone string `json:"phone" binding:"required"`
+        Code  string `json:"code" binding:"required"`
+        Name  string `json:"name"`
+    }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    // Проверяем код
+    var storedCode string
+    var expiresAt time.Time
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT code, expires_at FROM phone_auth_codes
+        WHERE phone = $1 AND expires_at > NOW()
+    `, req.Phone).Scan(&storedCode, &expiresAt)
+    
+    if err != nil || storedCode != req.Code {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired code"})
+        return
+    }
+    
+    // Находим или создаем пользователя
+    var userID uuid.UUID
+    err = database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id FROM users WHERE phone = $1
+    `, req.Phone).Scan(&userID)
+    
+    userName := req.Name
+    if userName == "" {
+        userName = "User_" + req.Phone[len(req.Phone)-4:]
+    }
+    
+    if err != nil {
+        // Создаем нового пользователя
+        email := fmt.Sprintf("%s@phone.saaspro.ru", generateRandomStringAuth(8))
+        err = database.Pool.QueryRow(c.Request.Context(), `
+            INSERT INTO users (phone, name, email, role) VALUES ($1, $2, $3, 'user') RETURNING id
+        `, req.Phone, userName, email).Scan(&userID)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+            return
+        }
+    }
+    
+    // Генерируем JWT токен
+    token, err := GenerateJWTForUser(userID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+        return
+    }
+    
+    // Удаляем использованный код
+    database.Pool.Exec(c.Request.Context(), "DELETE FROM phone_auth_codes WHERE phone = $1", req.Phone)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "token": token,
+        "user": gin.H{
+            "id":   userID,
+            "name": userName,
+        },
+    })
+}
+
+// LoginHandler обрабатывает вход пользователя
 func LoginHandler(c *gin.Context) {
     var req struct {
-        Email     string `json:"email" binding:"required,email"`
-        Password  string `json:"password" binding:"required"`
-        Remember  bool   `json:"remember"` // флаг "Запомнить меня"
+        Email    string `json:"email" binding:"required,email"`
+        Password string `json:"password" binding:"required"`
+        Remember bool   `json:"remember"`
     }
 
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -36,7 +144,6 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
-    // Получаем пользователя из БД
     var user models.User
     var passwordHash string
     var emailVerified bool
@@ -49,42 +156,35 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем, подтверждён ли email
     if !emailVerified {
         c.JSON(http.StatusUnauthorized, gin.H{
-            "error": "Email not verified. Please check your email for verification code.",
+            "error":                  "Email not verified. Please check your email for verification code.",
             "requires_verification": true,
-            "user_id": user.ID,
+            "user_id":               user.ID,
         })
         return
     }
 
-    // Проверяем пароль
     if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
 
-    // Определяем срок действия токена в зависимости от флага Remember
     var accessExpiry, refreshExpiry time.Duration
     if req.Remember {
-        // Если "Запомнить меня" - токен на 30 дней
         accessExpiry = 30 * 24 * time.Hour
         refreshExpiry = 90 * 24 * time.Hour
     } else {
-        // Обычный вход - токен на 15 минут
         accessExpiry = 15 * time.Minute
         refreshExpiry = 24 * time.Hour
     }
 
-    // Генерируем JWT токены с учётом срока
     accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID, user.Role, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
     }
 
-    // Сохраняем refresh token в БД для возможности инвалидации
     _, err = database.Pool.Exec(c.Request.Context(),
         `INSERT INTO user_tokens (user_id, token, expires_at, created_at) 
          VALUES ($1, $2, NOW() + $3 * interval '1 second', NOW())`,
@@ -93,16 +193,13 @@ func LoginHandler(c *gin.Context) {
         log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
-    // Проверяем устройство
     userID := user.ID
     
-    // Получаем последний вход
     var lastLoginIP string
     database.Pool.QueryRow(context.Background(),
         "SELECT ip_address FROM login_history WHERE user_id = $1 ORDER BY login_time DESC LIMIT 1",
         userID).Scan(&lastLoginIP)
 
-    // Если устройство новое - отправляем уведомление
     if lastLoginIP != "" && lastLoginIP != c.ClientIP() {
         details := map[string]interface{}{
             "ip":       c.ClientIP(),
@@ -113,7 +210,6 @@ func LoginHandler(c *gin.Context) {
         LogAndNotify(c, userID, NotifLoginNewDevice, details)
     }
 
-    // Сохраняем вход в историю
     database.Pool.Exec(context.Background(),
         "INSERT INTO login_history (user_id, ip_address, user_agent, login_time) VALUES ($1, $2, $3, $4)",
         userID, c.ClientIP(), c.GetHeader("User-Agent"), time.Now())
@@ -144,14 +240,12 @@ func LogoutHandler(c *gin.Context) {
         return
     }
 
-    // Удаляем refresh token из БД (инвалидация)
     _, err := database.Pool.Exec(c.Request.Context(),
         "DELETE FROM user_tokens WHERE token = $1", req.RefreshToken)
     if err != nil {
         log.Printf("⚠️ Failed to delete refresh token: %v", err)
     }
 
-    // Очищаем куки, если они используются
     c.SetCookie("access_token", "", -1, "/", "", false, true)
     c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
@@ -174,7 +268,6 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем, не занят ли email
     var exists bool
     err := database.Pool.QueryRow(c.Request.Context(),
         "SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)", req.Email).Scan(&exists)
@@ -187,14 +280,12 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Хешируем пароль
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
         return
     }
 
-    // Создаём пользователя в БД (email_verified = false по умолчанию)
     var user models.User
     err = database.Pool.QueryRow(c.Request.Context(),
         `INSERT INTO users (email, password_hash, name, role, email_verified) 
@@ -208,12 +299,10 @@ func RegisterHandler(c *gin.Context) {
         return
     }
 
-    // Генерируем код подтверждения
     verificationCode, err := GenerateVerificationCode(user.ID, "email")
     if err != nil {
         log.Printf("❌ Failed to generate verification code: %v", err)
     } else {
-        // Отправляем код на email (в фоне)
         go func() {
             emailService := utils.NewEmailService(config.Load())
             err := emailService.SendVerificationEmail(user.Email, user.Name, verificationCode)
@@ -225,7 +314,6 @@ func RegisterHandler(c *gin.Context) {
         }()
     }
 
-    // Генерируем токены (хотя пользователь ещё не верифицирован)
     accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
@@ -237,10 +325,10 @@ func RegisterHandler(c *gin.Context) {
         "access_token":  accessToken,
         "refresh_token": refreshToken,
         "user": gin.H{
-            "id":    user.ID,
-            "email": user.Email,
-            "name":  user.Name,
-            "role":  user.Role,
+            "id":             user.ID,
+            "email":          user.Email,
+            "name":           user.Name,
+            "role":           user.Role,
             "email_verified": false,
         },
         "message": "Registration successful! Please check your email for verification code.",
@@ -258,7 +346,6 @@ func RefreshHandler(c *gin.Context) {
         return
     }
 
-    // Проверяем, существует ли refresh token в БД (не был ли отозван)
     var exists bool
     err := database.Pool.QueryRow(c.Request.Context(),
         "SELECT EXISTS(SELECT 1 FROM user_tokens WHERE token = $1 AND expires_at > NOW())",
@@ -268,7 +355,6 @@ func RefreshHandler(c *gin.Context) {
         return
     }
 
-    // Валидируем refresh token и получаем новый access token
     newAccessToken, err := utils.RefreshToken(req.RefreshToken)
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
