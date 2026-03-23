@@ -11,20 +11,18 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- ДОБАВЛЕНО: FullCalendar и Moment.js для календаря -->
-       <!-- Локальный FullCalendar 5.11.3 -->
     <link href="/static/fullcalendar/fullcalendar.min.css" rel="stylesheet">
     <script src="/static/fullcalendar/fullcalendar.min.js"></script>
     <style>
-
-/* Добавьте в стили (где-то в начале) */
-.btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
-}
-.btn-info:hover {
-    background-color: #138496;
-    border-color: #117a8b;
-}
+        /* Добавьте в стили (где-то в начале) */
+        .btn-info {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+        }
+        .btn-info:hover {
+            background-color: #138496;
+            border-color: #117a8b;
+        }
         /* --- все существующие стили --- */
         .table-hover tbody tr:hover {
             background-color: rgba(0,123,255,0.1);
@@ -324,6 +322,7 @@
             pointer-events: none;
         }
 
+        /* Улучшенные стили для модального окна AI */
         .ai-chat-modal .modal-dialog {
             position: fixed;
             bottom: 100px;
@@ -331,12 +330,28 @@
             margin: 0;
             width: 380px;
             max-width: calc(100% - 60px);
+            transition: all 0.3s ease;
         }
+
         .ai-chat-modal .modal-content {
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            animation: slideUp 0.3s ease;
         }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .ai-chat-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -344,18 +359,25 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            border-bottom: none;
         }
+
         .ai-chat-header h5 {
             margin: 0;
             font-weight: 500;
+            font-size: 1.1rem;
         }
+
         .ai-chat-header button {
             color: white;
             opacity: 0.8;
+            transition: opacity 0.2s;
         }
+
         .ai-chat-header button:hover {
             opacity: 1;
         }
+
         .ai-chat-body {
             height: 400px;
             overflow-y: auto;
@@ -363,74 +385,125 @@
             background: #f8f9fa;
             display: flex;
             flex-direction: column;
+            gap: 10px;
         }
+
         .ai-message {
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             max-width: 85%;
             padding: 10px 15px;
             border-radius: 18px;
             word-wrap: break-word;
             animation: fadeIn 0.3s;
+            line-height: 1.4;
+            font-size: 0.95rem;
         }
+
         .ai-message.user {
             background-color: #007bff;
             color: white;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.2);
         }
+
         .ai-message.assistant {
             background-color: #e9ecef;
             color: #212529;
             align-self: flex-start;
             border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+
         .ai-message.system {
             background-color: #ffc107;
             color: #212529;
             align-self: center;
             font-style: italic;
             font-size: 0.9rem;
+            max-width: 90%;
+            text-align: center;
+            border-radius: 18px;
         }
+
         .ai-typing {
             background-color: #e9ecef;
             color: #6c757d;
             align-self: flex-start;
             border-radius: 18px;
             padding: 10px 15px;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-style: italic;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            font-size: 0.95rem;
             animation: pulse 1.5s infinite;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .ai-typing .dots {
+            display: inline-block;
+            min-width: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
+
         @keyframes pulse {
             0% { opacity: 0.6; }
             50% { opacity: 1; }
             100% { opacity: 0.6; }
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .ai-chat-footer {
-            padding: 10px;
+            padding: 15px;
             background: white;
             border-top: 1px solid #dee2e6;
             display: flex;
             gap: 10px;
         }
+
         .ai-chat-footer input {
             flex: 1;
             border-radius: 20px;
             border: 1px solid #ced4da;
-            padding: 8px 15px;
+            padding: 10px 15px;
             outline: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
         }
+
         .ai-chat-footer input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
         }
+
         .ai-chat-footer button {
             border-radius: 20px;
-            padding: 8px 20px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .ai-chat-footer button:hover {
+            transform: scale(1.05);
+        }
+
+        .voice-btn {
+            border-radius: 20px;
+            padding: 10px 12px;
+            transition: all 0.3s;
+        }
+
+        .voice-btn.recording {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            animation: pulse 1.5s infinite;
         }
 
         /* ===== НОВЫЕ СТИЛИ: уведомления и голосовой ввод ===== */
@@ -449,17 +522,6 @@
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
-        }
-        .voice-btn {
-            border-radius: 20px;
-            padding: 8px 12px;
-            transition: all 0.3s;
-        }
-        .voice-btn.recording {
-            background-color: #dc3545;
-            color: white;
-            border-color: #dc3545;
-            animation: pulse 1.5s infinite;
         }
         .notification-badge {
             position: relative;
@@ -600,92 +662,6 @@
         }
         .fc-toolbar-title { font-size: 1.5rem; }
         .fc-event { cursor: pointer; }
-
-// В функции sendAIMessage добавьте:
-async function sendAIMessage() {
-    const input = document.getElementById('aiChatInput');
-    const question = input.value.trim();
-    if (!question) return;
-
-    addAIMessage(question, 'user');
-    input.value = '';
-    
-    // Показываем индикатор печатания
-    showTypingIndicator();
-
-    try {
-        const sessionId = localStorage.getItem('ai_session_id') || '';
-        
-        const response = await fetchWithLoader('/api/crm/ai/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                question: question,
-                session_id: sessionId
-            })
-        });
-
-        const data = await response.json();
-        
-        // Сохраняем session_id для продолжения диалога
-        if (data.session_id) {
-            localStorage.setItem('ai_session_id', data.session_id);
-        }
-        
-        // Скрываем индикатор печатания
-        hideTypingIndicator();
-        
-        // Добавляем ответ с эффектом печатания
-        await typeWriterEffect(data.answer, 'assistant');
-        
-    } catch (error) {
-        hideTypingIndicator();
-        addAIMessage('❌ Ошибка сети: ' + error.message, 'system');
-    }
-}
-
-// Эффект печатания
-async function typeWriterEffect(text, sender) {
-    const container = document.getElementById('aiChatMessages');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `ai-message ${sender}`;
-    container.appendChild(msgDiv);
-    
-    for (let i = 0; i < text.length; i++) {
-        msgDiv.textContent += text[i];
-        // Скорость печатания (30ms на символ)
-        await new Promise(resolve => setTimeout(resolve, 30));
-        container.scrollTop = container.scrollHeight;
-    }
-}
-
-// Улучшенный индикатор печатания
-function showTypingIndicator() {
-    const container = document.getElementById('aiChatMessages');
-    const typingDiv = document.createElement('div');
-    typingDiv.className = 'ai-typing';
-    typingDiv.id = 'aiTypingIndicator';
-    typingDiv.innerHTML = '<span>Ассистент печатает</span><span class="dots">...</span>';
-    container.appendChild(typingDiv);
-    container.scrollTop = container.scrollHeight;
-    
-    // Анимация точек
-    let dots = 0;
-    typingDiv.interval = setInterval(() => {
-        dots = (dots + 1) % 4;
-        if (typingDiv.querySelector('.dots')) {
-            typingDiv.querySelector('.dots').textContent = '.'.repeat(dots);
-        }
-    }, 300);
-}
-
-function hideTypingIndicator() {
-    const typing = document.getElementById('aiTypingIndicator');
-    if (typing) {
-        clearInterval(typing.interval);
-        typing.remove();
-    }
-}
     </style>
 </head>
 <body>
@@ -3089,19 +3065,40 @@ actionsCell.innerHTML = `
             container.scrollTop = container.scrollHeight;
         }
 
-        function showTypingIndicator() {
-            const container = document.getElementById('aiChatMessages');
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'ai-typing';
-            typingDiv.id = 'aiTypingIndicator';
-            typingDiv.textContent = 'Ассистент печатает...';
-            container.appendChild(typingDiv);
-            container.scrollTop = container.scrollHeight;
+      function showTypingIndicator() {
+    // Удаляем старый индикатор если есть
+    hideTypingIndicator();
+    
+    const container = document.getElementById('aiChatMessages');
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'ai-typing';
+    typingDiv.id = 'aiTypingIndicator';
+    typingDiv.innerHTML = '<span>Ассистент печатает</span><span class="dots">...</span>';
+    container.appendChild(typingDiv);
+    container.scrollTop = container.scrollHeight;
+    
+    // Анимация точек
+    let dots = 0;
+    typingDiv.interval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        const dotsSpan = typingDiv.querySelector('.dots');
+        if (dotsSpan) {
+            dotsSpan.textContent = '.'.repeat(dots);
         }
+    }, 300);
+    
+    // Страховка - через 30 секунд принудительно убираем индикатор
+    setTimeout(() => {
+        hideTypingIndicator();
+    }, 30000);
+}
 
         function hideTypingIndicator() {
             const typing = document.getElementById('aiTypingIndicator');
-            if (typing) typing.remove();
+            if (typing) {
+                clearInterval(typing.interval);
+                typing.remove();
+            }
         }
 
         async function sendAIMessage() {
@@ -3111,35 +3108,89 @@ actionsCell.innerHTML = `
 
             addAIMessage(question, 'user');
             input.value = '';
+            
+            // Показываем индикатор печатания
             showTypingIndicator();
 
             try {
+                // Получаем session_id из localStorage или создаем новый
+                let sessionId = localStorage.getItem('ai_session_id');
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('ai_session_id', sessionId);
+                    console.log('🆕 Создана новая сессия:', sessionId);
+                } else {
+                    console.log('📌 Используем существующую сессию:', sessionId);
+                }
+                
+                console.log('📤 Отправка вопроса:', question);
+                
                 const response = await fetchWithLoader('/api/crm/ai/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         question: question,
-                        crm_context: true
+                        session_id: sessionId
                     })
                 });
 
-                hideTypingIndicator();
-
-                if (!response.ok) {
-                    let errorMsg = 'Ошибка при обращении к AI';
-                    try {
-                        const errorData = await response.json();
-                        errorMsg = errorData.error || errorMsg;
-                    } catch (e) {}
-                    addAIMessage('❌ ' + errorMsg, 'system');
-                    return;
-                }
-
+                console.log('📥 Статус ответа:', response.status);
+                
                 const data = await response.json();
-                addAIMessage(data.answer, 'assistant');
+                console.log('📦 Данные ответа:', data);
+                
+                // Если сервер вернул новый session_id, сохраняем его
+                if (data.session_id && data.session_id !== sessionId) {
+                    localStorage.setItem('ai_session_id', data.session_id);
+                    console.log('🔄 Обновлен session_id:', data.session_id);
+                }
+                
+                // Скрываем индикатор печатания
+                hideTypingIndicator();
+                
+                // Добавляем ответ с эффектом печатания
+                if (data.answer) {
+                    await typeWriterEffect(data.answer, 'assistant');
+                } else {
+                    addAIMessage('❌ Получен пустой ответ от сервера', 'system');
+                }
+                
             } catch (error) {
+                console.error('❌ Ошибка:', error);
                 hideTypingIndicator();
                 addAIMessage('❌ Ошибка сети: ' + error.message, 'system');
+            }
+        }
+
+        // Эффект печатания
+        async function typeWriterEffect(text, sender) {
+            const container = document.getElementById('aiChatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `ai-message ${sender}`;
+            container.appendChild(msgDiv);
+            
+            for (let i = 0; i < text.length; i++) {
+                msgDiv.textContent += text[i];
+                // Скорость печатания (30ms на символ)
+                await new Promise(resolve => setTimeout(resolve, 30));
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Функция для очистки сессии (можно добавить кнопку)
+        function clearAISession() {
+            localStorage.removeItem('ai_session_id');
+            console.log('🧹 Сессия AI очищена');
+            addAIMessage('🆕 Начат новый диалог. Чем могу помочь?', 'system');
+        }
+
+        // Функция для отладки - показать текущую сессию
+        function showAISession() {
+            const sessionId = localStorage.getItem('ai_session_id');
+            if (sessionId) {
+                alert('Текущая сессия: ' + sessionId);
+            } else {
+                alert('Сессия не создана');
             }
         }
 

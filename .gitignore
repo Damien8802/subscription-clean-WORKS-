@@ -35,4 +35,12 @@ telegram-mini-app/env
 
 # Local temporary files
 file_list.txt
+_archive/handlers/*.backup
+handlers/*.CORRUPTED
+handlers/*.TEMP
+orders/
+test_search.go
+templates/payment_unified.html
+handlers/*.backup
+handlers/*.FINAL_BACKUP
 _archive/

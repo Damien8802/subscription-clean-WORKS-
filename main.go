@@ -15,7 +15,7 @@ import (
     "github.com/joho/godotenv"
     swaggerFiles "github.com/swaggo/files"
     ginSwagger "github.com/swaggo/gin-swagger"
-
+    
     "subscription-system/config"
     "subscription-system/database"
     "subscription-system/handlers"
@@ -71,6 +71,12 @@ func main() {
         log.Fatalf("❌ Ошибка подключения к БД: %v", err)
     }
     defer database.CloseDB()
+
+      handlers.InitAuthHandler(cfg)
+   handlers.InitNotifier(cfg)
+   
+
+   //handlers.InitAPISales(database.DB) 
 
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
@@ -180,6 +186,13 @@ func main() {
     r.GET("/transcriptions", handlers.TranscriptionsPage)
     r.GET("/ai-agents", handlers.AIAgentsPage)
     r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
+ // ВРЕМЕННО - без авторизации для тестирования
+r.GET("/api-sales", handlers.APISalesPageHandler)           
+r.GET("/api/user/plan", handlers.GetUserPlan)                
+r.POST("/api/create-key", handlers.CreateAPIKey)             
+r.POST("/api/upgrade-key", handlers.UpgradeAPIKey)           
+r.GET("/api/v1/search", handlers.PublicSearchAPI)            
+r.GET("/api/user/usage", handlers.GetAPIUsage)               
 
     public := r.Group("/")
     {
