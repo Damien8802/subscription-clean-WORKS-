@@ -100,7 +100,6 @@
             border-radius: 20px;
         }
         
-        /* Стили для раздела быстрых действий */
         .quick-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -143,7 +142,6 @@
             color: #888;
         }
         
-        /* Стили для карточек ключей в профиле */
         .key-card {
             background: #1a1a1a;
             border: 1px solid #333;
@@ -238,7 +236,6 @@
         </div>
         
         <div class="flex-grow-1 p-3">
-            <!-- Информация о пользователе в боковой панели -->
             <div class="d-flex align-items-center p-3 mb-4 bg-dark rounded">
                 <img src="https://ui-avatars.com/api/?name={{ .UserName }}&background=667eea&color=fff&size=50" 
                      class="rounded-circle me-3" 
@@ -303,6 +300,12 @@
                     <a class="nav-link text-light d-flex align-items-center" href="/profile">
                         <i class="bi bi-person-circle me-3"></i>
                         Профиль
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-light d-flex align-items-center" href="/vpn">
+                        <i class="bi bi-shield-lock me-3"></i>
+                        VPN
                     </a>
                 </li>
                 {{ if .IsAdmin }}
@@ -401,12 +404,20 @@
                     <div class="action-desc">Управление тарифами</div>
                 </a>
                 
-                <a href="/profile" class="action-card text-decoration-none">
+                <a href="/vpn" class="action-card text-decoration-none">
+                    <div class="action-icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                    <div class="action-title">VPN</div>
+                    <div class="action-desc">Безопасный доступ из любой точки мира</div>
+                </a>
+                
+                <a href="/api-keys" class="action-card text-decoration-none">
                     <div class="action-icon">
                         <i class="bi bi-key"></i>
                     </div>
                     <div class="action-title">API ключи</div>
-                    <div class="action-desc">Доступ к API</div>
+                    <div class="action-desc">Управление API ключами</div>
                 </a>
                 
                 <a href="/support" class="action-card text-decoration-none">
@@ -689,15 +700,14 @@
         
         // Обновление данных в реальном времени (симуляция)
         setInterval(() => {
-            // Обновляем статистику
             const stats = document.querySelectorAll('.stat-card h3');
             stats.forEach(stat => {
                 const current = parseInt(stat.textContent.replace(/[^\d]/g, ''));
                 const increment = Math.floor(Math.random() * 10) + 1;
-                stat.textContent = current + increment;
-                
                 if (stat.classList.contains('text-success')) {
                     stat.textContent = '₽' + (current + increment).toLocaleString();
+                } else {
+                    stat.textContent = (current + increment).toLocaleString();
                 }
             });
         }, 10000);

@@ -1,6 +1,7 @@
 package main
 
 import (
+    "context"
     "embed"
     "encoding/json"
     "fmt"
@@ -72,11 +73,70 @@ func main() {
     }
     defer database.CloseDB()
 
-      handlers.InitAuthHandler(cfg)
-   handlers.InitNotifier(cfg)
-   
-
-   //handlers.InitAPISales(database.DB) 
+    // ========== СОЗДАНИЕ ТАБЛИЦ VPN ==========
+    ctx := context.Background()
+    
+    // Создаем таблицу планов
+    _, err := database.Pool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS vpn_plans (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(50) NOT NULL,
+            price DECIMAL(10,2) NOT NULL,
+            days INTEGER NOT NULL,
+            speed VARCHAR(50),
+            devices INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    `)
+    if err != nil {
+        log.Printf("⚠️ Ошибка создания vpn_plans: %v", err)
+    } else {
+        log.Println("✅ Таблица vpn_plans готова")
+    }
+    
+    // Создаем таблицу ключей
+    _, err = database.Pool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS vpn_keys (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            client_name VARCHAR(100) NOT NULL,
+            client_ip VARCHAR(15),
+            private_key TEXT NOT NULL,
+            public_key TEXT NOT NULL,
+            plan_id INTEGER REFERENCES vpn_plans(id),
+            expires_at TIMESTAMP NOT NULL,
+            active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    `)
+    if err != nil {
+        log.Printf("⚠️ Ошибка создания vpn_keys: %v", err)
+    } else {
+        log.Println("✅ Таблица vpn_keys готова")
+    }
+    
+    // Вставляем тарифы
+    _, err = database.Pool.Exec(ctx, `
+        INSERT INTO vpn_plans (name, price, days, speed, devices) 
+        VALUES ($1, $2, $3, $4, $5),
+               ($6, $7, $8, $9, $10),
+               ($11, $12, $13, $14, $15),
+               ($16, $17, $18, $19, $20)
+        ON CONFLICT (id) DO NOTHING
+    `,
+        "Пробный", 0, 3, "10 Mbps", 1,
+        "Старт", 299, 30, "50 Mbps", 2,
+        "Про", 999, 90, "100 Mbps", 5,
+        "Премиум", 2999, 365, "1 Gbps", 10,
+    )
+    if err != nil {
+        log.Printf("⚠️ Ошибка вставки тарифов: %v", err)
+    } else {
+        log.Println("✅ VPN тарифы загружены")
+    }
+    
+    // Инициализация VPN с БД
+    handlers.InitVPNWithDB(database.Pool)
+    // ========== КОНЕЦ СОЗДАНИЯ ТАБЛИЦ VPN ==========
 
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
@@ -186,13 +246,29 @@ func main() {
     r.GET("/transcriptions", handlers.TranscriptionsPage)
     r.GET("/ai-agents", handlers.AIAgentsPage)
     r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
- // ВРЕМЕННО - без авторизации для тестирования
+    
 r.GET("/api-sales", handlers.APISalesPageHandler)           
 r.GET("/api/user/plan", handlers.GetUserPlan)                
 r.POST("/api/create-key", handlers.CreateAPIKey)             
 r.POST("/api/upgrade-key", handlers.UpgradeAPIKey)           
-r.GET("/api/v1/search", handlers.PublicSearchAPI)            
-r.GET("/api/user/usage", handlers.GetAPIUsage)               
+// r.GET("/api/v1/search", handlers.PublicSearchAPI)  // ЭТО ОСТАВЛЯЕМ ЗАКОММЕНТИРОВАННЫМ
+r.GET("/api/user/usage", handlers.GetAPIUsage)  
+    
+    // VPN маршруты
+    r.GET("/vpn", handlers.VPNSalesPageHandler)
+    r.POST("/api/vpn/create", handlers.CreateVPNKey)
+    r.GET("/api/vpn/config/:client", handlers.GetVPNConfig)
+    r.GET("/api/vpn/status/:client", handlers.CheckVPNKey)
+    r.GET("/api/vpn/stats", handlers.GetVPNStats)
+    r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
+
+    // Админ маршруты для VPN
+    adminVPN := r.Group("/admin/vpn")
+    adminVPN.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    {
+        adminVPN.GET("/keys", handlers.GetAllVPNKeys)
+        adminVPN.GET("/stats", handlers.AdminVPNHandler)
+    }
 
     public := r.Group("/")
     {
