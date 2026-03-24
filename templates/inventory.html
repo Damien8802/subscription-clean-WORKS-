@@ -12,6 +12,11 @@
             border-radius: 16px;
             padding: 20px;
             color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
         .stat-number {
             font-size: 32px;
@@ -35,6 +40,18 @@
         .out-of-stock {
             border-left: 4px solid #f44336;
             opacity: 0.7;
+        }
+        .modal-content {
+            border-radius: 16px;
+        }
+        .btn-action {
+            margin: 0 3px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
         }
     </style>
 </head>
@@ -111,6 +128,11 @@
                             <option value="">Все категории</option>
                         </select>
                     </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-success" onclick="exportProductsCSV()">
+                            <i class="bi bi-download"></i> Экспорт CSV
+                        </button>
+                    </div>
                 </div>
                 <div id="productsList" class="row"></div>
             </div>
@@ -120,7 +142,7 @@
                 <div class="mb-3">
                     <select class="form-select w-auto" id="orderStatusFilter">
                         <option value="">Все статусы</option>
-                        <option value="new">Новый</option>
+                        <option value="pending">Новый</option>
                         <option value="processing">В обработке</option>
                         <option value="shipped">Отправлен</option>
                         <option value="delivered">Доставлен</option>
@@ -240,7 +262,126 @@
         </div>
     </div>
     
+    <!-- Модальное окно редактирования товара -->
+    <div class="modal fade" id="editProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Редактировать товар</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editProductId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Название товара *</label>
+                            <input type="text" id="editName" class="form-control" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Артикул (SKU)</label>
+                            <input type="text" id="editSku" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Штрихкод</label>
+                            <input type="text" id="editBarcode" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label>Цена *</label>
+                            <input type="number" id="editPrice" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Себестоимость</label>
+                            <input type="number" id="editCost" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Количество</label>
+                            <input type="number" id="editQuantity" class="form-control">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Мин. остаток</label>
+                            <input type="number" id="editMinQuantity" class="form-control">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label>Ед. измерения</label>
+                            <select id="editUnit" class="form-select">
+                                <option value="шт">шт</option>
+                                <option value="кг">кг</option>
+                                <option value="л">л</option>
+                                <option value="м">м</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Категория</label>
+                            <input type="text" id="editCategory" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Описание</label>
+                            <textarea id="editDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" id="editActive" class="form-check-input" checked>
+                            <label class="form-check-label">Активен</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="updateProduct()">Сохранить изменения</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно просмотра заказа -->
+    <div class="modal fade" id="viewOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Детали заказа</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="orderDetails">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast уведомления -->
+    <div class="toast-container"></div>
+    
     <script>
+        let editModal;
+        let orderItems = [];
+        
+        // Показать уведомление
+        function showToast(message, type = 'success') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+        
         // Загрузка товаров
         async function loadProducts() {
             const search = document.getElementById('searchProduct').value;
@@ -251,35 +392,151 @@
             if (category) params.push(`category=${encodeURIComponent(category)}`);
             if (params.length) url += '?' + params.join('&');
             
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            const container = document.getElementById('productsList');
-            container.innerHTML = data.products.map(p => `
-                <div class="col-md-4">
-                    <div class="product-card ${p.quantity <= p.min_quantity ? (p.quantity === 0 ? 'out-of-stock' : 'low-stock') : ''}">
-                        <div class="d-flex justify-content-between">
-                            <h5>${p.name}</h5>
-                            <span class="badge ${p.quantity > 0 ? 'bg-success' : 'bg-danger'}">
-                                ${p.quantity} ${p.unit}
-                            </span>
-                        </div>
-                        <div class="text-muted small">Артикул: ${p.sku || '-'}</div>
-                        <div class="mt-2">
-                            <span class="fw-bold">${p.price.toLocaleString()} ₽</span>
-                            ${p.cost > 0 ? `<span class="text-muted ms-2">себестоимость: ${p.cost.toLocaleString()} ₽</span>` : ''}
-                        </div>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editProduct('${p.id}')">
-                                <i class="bi bi-pencil"></i> Редактировать
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p.id}')">
-                                <i class="bi bi-trash"></i> Удалить
-                            </button>
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const container = document.getElementById('productsList');
+                
+                // Проверяем, есть ли товары
+                if (!data.products || data.products.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted">Нет товаров. Добавьте первый товар!</div>';
+                    return;
+                }
+                
+                // Отображаем товары
+                container.innerHTML = data.products.map(p => `
+                    <div class="col-md-4">
+                        <div class="product-card ${p.quantity <= p.min_quantity ? (p.quantity === 0 ? 'out-of-stock' : 'low-stock') : ''}">
+                            <div class="d-flex justify-content-between">
+                                <h5>${escapeHtml(p.name)}</h5>
+                                <span class="badge ${p.quantity > 0 ? 'bg-success' : 'bg-danger'}">
+                                    ${p.quantity} ${p.unit}
+                                </span>
+                            </div>
+                            <div class="text-muted small">Артикул: ${p.sku || '-'}</div>
+                            <div class="mt-2">
+                                <span class="fw-bold">${(p.price || 0).toLocaleString()} ₽</span>
+                                ${p.cost && p.cost > 0 ? `<span class="text-muted ms-2">себестоимость: ${p.cost.toLocaleString()} ₽</span>` : ''}
+                            </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editProduct('${p.id}')">
+                                    <i class="bi bi-pencil"></i> Редактировать
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteProduct('${p.id}', '${escapeHtml(p.name)}')">
+                                    <i class="bi bi-trash"></i> Удалить
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+                
+                // Собираем категории для фильтра
+                const categories = [...new Set(data.products.map(p => p.category).filter(c => c))];
+                const categorySelect = document.getElementById('categoryFilter');
+                const currentValue = categorySelect.value;
+                categorySelect.innerHTML = '<option value="">Все категории</option>' + 
+                    categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                categorySelect.value = currentValue;
+                
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showToast('Ошибка загрузки товаров', 'danger');
+            }
+        }
+        
+        // Редактирование товара
+        async function editProduct(id) {
+            try {
+                const response = await fetch('/api/inventory/products');
+                const data = await response.json();
+                const product = data.products.find(p => p.id === id);
+                
+                if (product) {
+                    document.getElementById('editProductId').value = product.id;
+                    document.getElementById('editName').value = product.name;
+                    document.getElementById('editSku').value = product.sku || '';
+                    document.getElementById('editBarcode').value = product.barcode || '';
+                    document.getElementById('editPrice').value = product.price;
+                    document.getElementById('editCost').value = product.cost || 0;
+                    document.getElementById('editQuantity').value = product.quantity;
+                    document.getElementById('editMinQuantity').value = product.min_quantity || 0;
+                    document.getElementById('editUnit').value = product.unit || 'шт';
+                    document.getElementById('editCategory').value = product.category || '';
+                    document.getElementById('editDescription').value = product.description || '';
+                    document.getElementById('editActive').checked = product.active !== false;
+                    
+                    if (!editModal) {
+                        editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+                    }
+                    editModal.show();
+                }
+            } catch (error) {
+                console.error('Error loading product for edit:', error);
+                showToast('Ошибка загрузки товара для редактирования', 'danger');
+            }
+        }
+        
+        // Обновление товара
+        async function updateProduct() {
+            const id = document.getElementById('editProductId').value;
+            const data = {
+                name: document.getElementById('editName').value,
+                sku: document.getElementById('editSku').value,
+                barcode: document.getElementById('editBarcode').value,
+                price: parseFloat(document.getElementById('editPrice').value),
+                cost: parseFloat(document.getElementById('editCost').value),
+                quantity: parseInt(document.getElementById('editQuantity').value),
+                min_quantity: parseInt(document.getElementById('editMinQuantity').value),
+                unit: document.getElementById('editUnit').value,
+                category: document.getElementById('editCategory').value,
+                description: document.getElementById('editDescription').value,
+                active: document.getElementById('editActive').checked
+            };
+            
+            try {
+                const response = await fetch(`/api/inventory/products/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Товар успешно обновлен!');
+                    editModal.hide();
+                    loadProducts();
+                    loadStats();
+                } else {
+                    showToast('Ошибка: ' + (result.error || 'Не удалось обновить товар'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showToast('Ошибка при обновлении товара', 'danger');
+            }
+        }
+        
+        // Удаление товара
+        async function deleteProduct(id, name) {
+            if (confirm(`Вы уверены, что хотите удалить товар "${name}"?`)) {
+                try {
+                    const response = await fetch(`/api/inventory/products/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    if (response.ok) {
+                        showToast('Товар успешно удален!');
+                        loadProducts();
+                        loadStats();
+                    } else {
+                        showToast('Ошибка: ' + (result.error || 'Не удалось удалить товар'), 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    showToast('Ошибка при удалении товара', 'danger');
+                }
+            }
         }
         
         // Создание товара
@@ -297,40 +554,58 @@
                 description: document.getElementById('productDescription').value
             };
             
-            const response = await fetch('/api/inventory/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            if (!data.name) {
+                showToast('Название товара обязательно!', 'warning');
+                return;
+            }
+            if (!data.price || data.price <= 0) {
+                showToast('Цена должна быть больше 0!', 'warning');
+                return;
+            }
             
-            const result = await response.json();
-            if (response.ok) {
-                alert('Товар успешно создан!');
-                loadProducts();
-                loadStats();
-                // Очищаем форму
-                document.getElementById('productName').value = '';
-                document.getElementById('productSku').value = '';
-                document.getElementById('productBarcode').value = '';
-                document.getElementById('productPrice').value = '';
-                document.getElementById('productCost').value = '';
-                document.getElementById('productQuantity').value = '0';
-                document.getElementById('productMinQuantity').value = '0';
-                document.getElementById('productCategory').value = '';
-                document.getElementById('productDescription').value = '';
-            } else {
-                alert('Ошибка: ' + result.error);
+            try {
+                const response = await fetch('/api/inventory/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Товар успешно создан!');
+                    loadProducts();
+                    loadStats();
+                    // Очищаем форму
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productSku').value = '';
+                    document.getElementById('productBarcode').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productCost').value = '';
+                    document.getElementById('productQuantity').value = '0';
+                    document.getElementById('productMinQuantity').value = '0';
+                    document.getElementById('productCategory').value = '';
+                    document.getElementById('productDescription').value = '';
+                } else {
+                    showToast('Ошибка: ' + (result.error || 'Не удалось создать товар'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating product:', error);
+                showToast('Ошибка при создании товара', 'danger');
             }
         }
         
         // Загрузка статистики
         async function loadStats() {
-            const response = await fetch('/api/inventory/stats');
-            const data = await response.json();
-            document.getElementById('totalProducts').textContent = data.stats.total_products;
-            document.getElementById('totalValue').textContent = data.stats.total_value.toLocaleString() + ' ₽';
-            document.getElementById('lowStock').textContent = data.stats.low_stock_count;
-            document.getElementById('outOfStock').textContent = data.stats.out_of_stock_count;
+            try {
+                const response = await fetch('/api/inventory/stats');
+                const data = await response.json();
+                document.getElementById('totalProducts').textContent = data.stats.total_products || 0;
+                document.getElementById('totalValue').textContent = (data.stats.total_value || 0).toLocaleString() + ' ₽';
+                document.getElementById('lowStock').textContent = data.stats.low_stock_count || 0;
+                document.getElementById('outOfStock').textContent = data.stats.out_of_stock_count || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
         }
         
         // Загрузка заказов
@@ -339,45 +614,275 @@
             let url = '/api/inventory/orders';
             if (status) url += `?status=${status}`;
             
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            const container = document.getElementById('ordersList');
-            container.innerHTML = data.orders.map(o => `
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5>${o.order_number}</h5>
-                            <span class="badge ${o.status === 'new' ? 'bg-primary' : o.status === 'processing' ? 'bg-warning' : o.status === 'delivered' ? 'bg-success' : 'bg-secondary'}">
-                                ${o.status === 'new' ? 'Новый' : o.status === 'processing' ? 'В обработке' : o.status === 'shipped' ? 'Отправлен' : o.status === 'delivered' ? 'Доставлен' : 'Отменен'}
-                            </span>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-md-6">
-                                <div><strong>Клиент:</strong> ${o.customer_name}</div>
-                                <div><strong>Телефон:</strong> ${o.customer_phone || '-'}</div>
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const container = document.getElementById('ordersList');
+                if (!data.orders || data.orders.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted">Нет заказов</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.orders.map(o => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5>${o.order_number}</h5>
+                                <span class="badge ${o.status === 'pending' ? 'bg-primary' : o.status === 'processing' ? 'bg-warning' : o.status === 'shipped' ? 'bg-info' : o.status === 'delivered' ? 'bg-success' : 'bg-danger'}">
+                                    ${o.status === 'pending' ? 'Новый' : o.status === 'processing' ? 'В обработке' : o.status === 'shipped' ? 'Отправлен' : o.status === 'delivered' ? 'Доставлен' : 'Отменен'}
+                                </span>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <div><strong>Сумма:</strong> ${o.total_amount.toLocaleString()} ₽</div>
-                                <div><small class="text-muted">${new Date(o.created_at).toLocaleString()}</small></div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <div><strong>Клиент:</strong> ${escapeHtml(o.customer_name)}</div>
+                                    <div><strong>Телефон:</strong> ${o.customer_phone || '-'}</div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <div><strong>Сумма:</strong> ${(o.total_amount || 0).toLocaleString()} ₽</div>
+                                    <div><small class="text-muted">${new Date(o.created_at).toLocaleString()}</small></div>
+                                </div>
                             </div>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="viewOrder('${o.id}')">
+                                <i class="bi bi-eye"></i> Подробнее
+                            </button>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="viewOrder('${o.id}')">
-                            <i class="bi bi-eye"></i> Подробнее
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+        
+        // Просмотр заказа
+        async function viewOrder(id) {
+            try {
+                const response = await fetch(`/api/inventory/orders/${id}`);
+                const data = await response.json();
+                
+                const modalBody = document.getElementById('orderDetails');
+                modalBody.innerHTML = `
+                    <h6>Информация о заказе</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Номер заказа:</strong> ${data.order.order_number}<br>
+                            <strong>Статус:</strong> ${data.order.status}<br>
+                            <strong>Статус оплаты:</strong> ${data.order.payment_status}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Дата создания:</strong> ${new Date(data.order.created_at).toLocaleString()}<br>
+                            <strong>Сумма:</strong> ${(data.order.total_amount || 0).toLocaleString()} ₽
+                        </div>
+                    </div>
+                    <h6>Данные клиента</h6>
+                    <div class="mb-3">
+                        <strong>Имя:</strong> ${escapeHtml(data.order.customer_name)}<br>
+                        <strong>Телефон:</strong> ${data.order.customer_phone || '-'}<br>
+                        <strong>Email:</strong> ${data.order.customer_email || '-'}<br>
+                        <strong>Адрес:</strong> ${data.order.delivery_address || '-'}<br>
+                        <strong>Примечание:</strong> ${data.order.notes || '-'}
+                    </div>
+                    <h6>Товары в заказе</h6>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr><th>Товар</th><th>Артикул</th><th>Кол-во</th><th>Цена</th><th>Сумма</th>
+                        </thead>
+                        <tbody>
+                            ${data.items.map(item => `
+                                <tr>
+                                    <td>${escapeHtml(item.name)}</td>
+                                    <td>${item.sku || '-'}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${(item.price || 0).toLocaleString()} ₽</td>
+                                    <td>${(item.total || 0).toLocaleString()} ₽</td>
+                                
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                const modal = new bootstrap.Modal(document.getElementById('viewOrderModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error viewing order:', error);
+                showToast('Ошибка загрузки деталей заказа', 'danger');
+            }
+        }
+        
+        // Добавить товар в заказ
+        function addOrderItem() {
+            orderItems.push({ product_id: '', quantity: 1, price: 0 });
+            renderOrderItems();
+        }
+        
+        // Отобразить товары в заказе
+        function renderOrderItems() {
+            const container = document.getElementById('orderItemsList');
+            container.innerHTML = orderItems.map((item, index) => `
+                <div class="row mb-2">
+                    <div class="col-md-5">
+                        <select class="form-select" onchange="updateOrderItem(${index}, 'product_id', this.value)">
+                            <option value="">Выберите товар</option>
+                            ${productsForOrder.map(p => `<option value="${p.id}" ${item.product_id === p.id ? 'selected' : ''}>${p.name} (${p.price} ₽)</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" placeholder="Кол-во" value="${item.quantity}" onchange="updateOrderItem(${index}, 'quantity', parseInt(this.value))">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" placeholder="Цена" value="${item.price}" step="0.01" onchange="updateOrderItem(${index}, 'price', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-danger" onclick="removeOrderItem(${index})">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
                 </div>
             `).join('');
+            updateOrderTotal();
+        }
+        
+        function updateOrderItem(index, field, value) {
+            orderItems[index][field] = value;
+            updateOrderTotal();
+        }
+        
+        function removeOrderItem(index) {
+            orderItems.splice(index, 1);
+            renderOrderItems();
+        }
+        
+        function updateOrderTotal() {
+            const total = orderItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            document.getElementById('orderTotal').textContent = total.toLocaleString();
+        }
+        
+        // Создать заказ
+        async function submitOrder() {
+            const data = {
+                customer_name: document.getElementById('orderCustomerName').value,
+                customer_phone: document.getElementById('orderCustomerPhone').value,
+                customer_email: document.getElementById('orderCustomerEmail').value,
+                delivery_address: document.getElementById('orderAddress').value,
+                notes: document.getElementById('orderNotes').value,
+                items: orderItems.filter(item => item.product_id)
+            };
+            
+            if (!data.customer_name) {
+                showToast('Имя клиента обязательно!', 'warning');
+                return;
+            }
+            if (data.items.length === 0) {
+                showToast('Добавьте хотя бы один товар!', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/inventory/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Заказ успешно создан!');
+                    orderItems = [];
+                    renderOrderItems();
+                    document.getElementById('orderCustomerName').value = '';
+                    document.getElementById('orderCustomerPhone').value = '';
+                    document.getElementById('orderCustomerEmail').value = '';
+                    document.getElementById('orderAddress').value = '';
+                    document.getElementById('orderNotes').value = '';
+                    loadOrders();
+                } else {
+                    showToast('Ошибка: ' + (result.error || 'Не удалось создать заказ'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating order:', error);
+                showToast('Ошибка при создании заказа', 'danger');
+            }
+        }
+        
+        // Экспорт товаров в CSV
+        async function exportProductsCSV() {
+            try {
+                const response = await fetch('/api/inventory/products');
+                const data = await response.json();
+                
+                if (!data.products || data.products.length === 0) {
+                    showToast('Нет товаров для экспорта', 'warning');
+                    return;
+                }
+                
+                const headers = ['ID', 'Название', 'Артикул', 'Штрихкод', 'Цена', 'Себестоимость', 'Количество', 'Мин.остаток', 'Ед.изм', 'Категория', 'Описание'];
+                const rows = data.products.map(p => [
+                    p.id,
+                    p.name,
+                    p.sku || '',
+                    p.barcode || '',
+                    p.price,
+                    p.cost || 0,
+                    p.quantity,
+                    p.min_quantity || 0,
+                    p.unit || 'шт',
+                    p.category || '',
+                    p.description || ''
+                ]);
+                
+                const csvContent = [headers, ...rows].map(row => 
+                    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+                ).join('\n');
+                
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `products_${new Date().toISOString().slice(0,19)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                showToast('Экспорт выполнен успешно!');
+            } catch (error) {
+                console.error('Error exporting products:', error);
+                showToast('Ошибка экспорта товаров', 'danger');
+            }
+        }
+        
+        let productsForOrder = [];
+        
+        // Загрузить товары для заказа
+        async function loadProductsForOrder() {
+            try {
+                const response = await fetch('/api/inventory/products');
+                const data = await response.json();
+                productsForOrder = data.products || [];
+            } catch (error) {
+                console.error('Error loading products for order:', error);
+            }
+        }
+        
+        // Экранирование HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // Инициализация
-        loadProducts();
-        loadStats();
-        loadOrders();
-        
-        document.getElementById('searchProduct').addEventListener('input', loadProducts);
-        document.getElementById('categoryFilter').addEventListener('change', loadProducts);
-        document.getElementById('orderStatusFilter').addEventListener('change', loadOrders);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+            loadStats();
+            loadOrders();
+            loadProductsForOrder();
+            
+            document.getElementById('searchProduct').addEventListener('input', loadProducts);
+            document.getElementById('categoryFilter').addEventListener('change', loadProducts);
+            document.getElementById('orderStatusFilter').addEventListener('change', loadOrders);
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

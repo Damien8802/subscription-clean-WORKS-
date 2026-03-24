@@ -1,5 +1,4 @@
 package handlers
-
 import (
     "bytes"
     "context"
@@ -11,12 +10,13 @@ import (
     "os"
     "time"
 
+    "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
+    
     "subscription-system/config"
     "subscription-system/database"
     "subscription-system/utils"
-    "github.com/gin-gonic/gin"
 )
-
 var (
     cfg          = config.Load()
     emailService = utils.NewEmailService(cfg)
@@ -73,7 +73,7 @@ func GetLocationByIP(ip string) string {
 }
 
 // SendTelegramNotification отправляет уведомление пользователю в Telegram
-func SendTelegramNotification(userID string, message string) error {
+func SendTelegramNotification(userID uuid.UUID, message string) error {
     var telegramID int64
     err := database.Pool.QueryRow(context.Background(),
         "SELECT telegram_id FROM users WHERE id = $1", userID).Scan(&telegramID)
@@ -106,7 +106,7 @@ func SendTelegramNotification(userID string, message string) error {
 }
 
 // SendEmailNotification отправляет уведомление по email
-func SendEmailNotification(userID string, notifType string, details map[string]interface{}) error {
+func SendEmailNotification(userID uuid.UUID, notifType string, details map[string]interface{}) error {
     // Получаем email пользователя
     var email, name string
     err := database.Pool.QueryRow(context.Background(),
@@ -139,7 +139,7 @@ func convertDetails(details map[string]interface{}) map[string]string {
 }
 
 // LogAndNotify логирует событие и отправляет уведомления
-func LogAndNotify(c *gin.Context, userID string, notifType string, details map[string]interface{}) {
+func LogAndNotify(c *gin.Context, userID uuid.UUID, notifType string, details map[string]interface{}) {
     // Определяем местоположение для IP (только для логина)
     if notifType == NotifLoginNewDevice || notifType == NotifSuspiciousLogin {
         if ip, ok := details["ip"].(string); ok && ip != "" {
@@ -228,4 +228,116 @@ func formatNotificationMessage(notifType string, details map[string]interface{})
     default:
         return "⚠️ Уведомление от системы безопасности"
     }
+}
+
+// GetNotifications возвращает список уведомлений пользователя
+func GetNotifications(c *gin.Context) {
+    userID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    
+    userUUID, ok := userID.(uuid.UUID)
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+        return
+    }
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, type, title, message, link, is_read, created_at
+        FROM notifications
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT 50
+    `, userUUID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+    
+    var notifications []map[string]interface{}
+    for rows.Next() {
+        var id uuid.UUID
+        var notifType, title, message, link string
+        var isRead bool
+        var createdAt time.Time
+        
+        rows.Scan(&id, &notifType, &title, &message, &link, &isRead, &createdAt)
+        
+        notifications = append(notifications, map[string]interface{}{
+            "id":         id,
+            "type":       notifType,
+            "title":      title,
+            "message":    message,
+            "link":       link,
+            "is_read":    isRead,
+            "created_at": createdAt,
+        })
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"notifications": notifications})
+}
+
+// MarkNotificationRead отмечает уведомление как прочитанное
+func MarkNotificationRead(c *gin.Context) {
+    userID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    
+    userUUID, ok := userID.(uuid.UUID)
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+        return
+    }
+    
+    notificationID := c.Param("id")
+    if notificationID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "notification id required"})
+        return
+    }
+    
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        UPDATE notifications SET is_read = true
+        WHERE id = $1 AND user_id = $2
+    `, notificationID, userUUID)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update"})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// GetUnreadCount возвращает количество непрочитанных уведомлений
+func GetUnreadCount(c *gin.Context) {
+    userID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    
+    userUUID, ok := userID.(uuid.UUID)
+    if !ok {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+        return
+    }
+    
+    var count int
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT COUNT(*) FROM notifications
+        WHERE user_id = $1 AND is_read = false
+    `, userUUID).Scan(&count)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"unread_count": count})
 }

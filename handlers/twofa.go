@@ -6,6 +6,7 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
     "github.com/pquerna/otp/totp"
     "github.com/skip2/go-qrcode"
 
@@ -104,8 +105,11 @@ func VerifyTwoFACode(c *gin.Context) {
         return
     }
 
+    // Конвертируем userID в UUID для уведомления
+    userUUID, _ := uuid.Parse(req.UserID)
+    
     // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, req.UserID, Notif2FAEnabled, map[string]interface{}{
+    go LogAndNotify(c, userUUID, Notif2FAEnabled, map[string]interface{}{
         "time": time.Now().Format("02.01.2006 15:04"),
     })
 
@@ -151,8 +155,11 @@ func DisableTwoFA(c *gin.Context) {
         return
     }
 
+    // Конвертируем userID в UUID для уведомления
+    userUUID, _ := uuid.Parse(req.UserID)
+    
     // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, req.UserID, Notif2FADisabled, map[string]interface{}{
+    go LogAndNotify(c, userUUID, Notif2FADisabled, map[string]interface{}{
         "time": time.Now().Format("02.01.2006 15:04"),
     })
 

@@ -292,3 +292,59 @@ func ProjectsPageHandler(c *gin.Context) {
         "title": "Проекты и задачи | SaaSPro",
     })
 }
+
+// Получить данные для гант-диаграммы
+func GetGanttData(c *gin.Context) {
+    userID := getUserID(c)
+    projectID := c.Query("project_id")
+    
+    query := `
+        SELECT 
+            t.id,
+            t.title,
+            t.start_date,
+            t.due_date,
+            t.status,
+            t.priority,
+            t.progress
+        FROM tasks t
+        WHERE t.created_by = $1
+    `
+    args := []interface{}{userID}
+    
+    if projectID != "" {
+        query += " AND t.project_id = $2"
+        args = append(args, projectID)
+    }
+    
+    query += " ORDER BY t.start_date"
+    
+    rows, err := database.Pool.Query(c.Request.Context(), query, args...)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+        return
+    }
+    defer rows.Close()
+    
+    var tasks []map[string]interface{}
+    for rows.Next() {
+        var id uuid.UUID
+        var title, status, priority string
+        var startDate, dueDate time.Time
+        var progress int
+        
+        rows.Scan(&id, &title, &startDate, &dueDate, &status, &priority, &progress)
+        
+        tasks = append(tasks, map[string]interface{}{
+            "id":         id,
+            "name":       title,
+            "start_date": startDate.Format("2006-01-02"),
+            "end_date":   dueDate.Format("2006-01-02"),
+            "status":     status,
+            "priority":   priority,
+            "progress":   progress,
+        })
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"tasks": tasks})
+}

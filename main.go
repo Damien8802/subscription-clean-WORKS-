@@ -280,14 +280,30 @@ r.GET("/api/inventory/orders", handlers.GetOrders)
 r.POST("/api/inventory/orders", handlers.CreateOrder)
 r.GET("/api/inventory/orders/:id", handlers.GetOrderDetails)
 r.GET("/api/inventory/stats", handlers.GetInventoryStats)
+r.GET("/api/inventory/products/export/csv", handlers.ExportProductsCSV)
 
-// Задачи и проекты
+//Bitrix24
 r.GET("/projects", handlers.ProjectsPageHandler)
 r.GET("/api/projects", handlers.GetProjects)
 r.POST("/api/projects", handlers.CreateProject)
 r.GET("/api/tasks", handlers.GetTasks)
 r.POST("/api/tasks", handlers.CreateTask)
 r.PUT("/api/tasks/:id", handlers.UpdateTask)
+
+// Уведомления
+r.GET("/api/notifications", handlers.GetNotifications)
+r.PUT("/api/notifications/:id/read", handlers.MarkNotificationRead)
+r.GET("/api/notifications/unread", handlers.GetUnreadCount)
+
+// Гант-диаграмма
+r.GET("/api/gantt", handlers.GetGanttData)
+
+// Обновление статуса заказа
+r.PUT("/api/inventory/orders/:id/status", handlers.UpdateOrderStatus)
+
+// Отчеты
+r.GET("/api/inventory/reports/sales", handlers.GetSalesReport)
+r.GET("/api/inventory/reports/top-products", handlers.GetTopProducts)
 
 // OAuth2 / OpenID Connect маршруты
 r.GET("/.well-known/openid-configuration", handlers.OIDCConfigurationHandler)

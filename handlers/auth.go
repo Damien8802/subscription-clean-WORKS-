@@ -207,7 +207,8 @@ func LoginHandler(c *gin.Context) {
             "device":   c.GetHeader("User-Agent"),
             "time":     time.Now().Format("02.01.2006 15:04"),
         }
-        LogAndNotify(c, userID, NotifLoginNewDevice, details)
+       userUUID, _ := uuid.Parse(user.ID)
+      LogAndNotify(c, userUUID, NotifLoginNewDevice, details)
     }
 
     database.Pool.Exec(context.Background(),

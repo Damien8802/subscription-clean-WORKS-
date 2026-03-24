@@ -5,6 +5,7 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    "github.com/google/uuid"
     "subscription-system/database"
 )
 
@@ -25,11 +26,11 @@ func TrustedDevicesHandler(c *gin.Context) {
 // AddTrustedDevice добавляет устройство в доверенные
 func AddTrustedDevice(c *gin.Context) {
     var req struct {
-        UserID   string `json:"user_id" binding:"required"`
-        DeviceID string `json:"device_id" binding:"required"`
+        UserID     string `json:"user_id"`
+        DeviceID   string `json:"device_id"`
         DeviceName string `json:"device_name"`
+        IP         string `json:"ip"`
     }
-
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
@@ -49,8 +50,11 @@ func AddTrustedDevice(c *gin.Context) {
         return
     }
 
+    // Конвертируем userID в UUID для уведомления
+    userUUID, _ := uuid.Parse(req.UserID)
+    
     // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, req.UserID, NotifDeviceTrusted, map[string]interface{}{
+    go LogAndNotify(c, userUUID, NotifDeviceTrusted, map[string]interface{}{
         "device": req.DeviceName,
         "ip":     c.ClientIP(),
         "time":   time.Now().Format("02.01.2006 15:04"),
@@ -90,8 +94,11 @@ func RevokeTrustedDevice(c *gin.Context) {
         return
     }
 
+    // Конвертируем userID в UUID для уведомления
+    userUUID, _ := uuid.Parse(req.UserID)
+    
     // ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ
-    go LogAndNotify(c, req.UserID, NotifDeviceRevoked, map[string]interface{}{
+    go LogAndNotify(c, userUUID, NotifDeviceRevoked, map[string]interface{}{
         "device": deviceName,
         "time":   time.Now().Format("02.01.2006 15:04"),
     })
@@ -140,7 +147,7 @@ func GetTrustedDevices(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{
-        "success":  true,
+        "success": true,
         "devices": devices,
     })
 }

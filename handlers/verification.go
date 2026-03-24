@@ -12,6 +12,7 @@ import (
     "subscription-system/config"
     "subscription-system/database"
     "subscription-system/utils"
+    "github.com/google/uuid"
 )
 
 // VerificationCode представляет код подтверждения
@@ -176,7 +177,10 @@ func SendVerificationTelegram(c *gin.Context) {
 
     // Отправляем в Telegram
     message := fmt.Sprintf("🔐 Ваш код подтверждения: <b>%s</b>\n\nКод действителен 15 минут.", code)
-    err = SendTelegramNotification(req.UserID, message)
+        userUUID, err := uuid.Parse(req.UserID)
+    if err == nil {
+        err = SendTelegramNotification(userUUID, message)
+    }
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send telegram"})
         return
