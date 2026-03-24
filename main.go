@@ -230,8 +230,8 @@ func main() {
     r.Static("/static", cfg.StaticPath)
     r.Static("/frontend", cfg.FrontendPath)
     r.Static("/app", "C:/Projects/subscription-clean-WORKS/telegram-mini-app")
-    r.GET("/manifest.json", func(c *gin.Context) { c.File("./telegram-mini-app/manifest.json") })
-    r.GET("/service-worker.js", func(c *gin.Context) { c.File("./telegram-mini-app/service-worker.js") })
+    r.GET("/telegram/manifest.json", func(c *gin.Context) { c.File("./telegram-mini-app/manifest.json") })
+    r.GET("/telegram/sw.js", func(c *gin.Context) { c.File("./telegram-mini-app/service-worker.js") })
     r.GET("/app", func(c *gin.Context) { c.File("C:/Projects/subscription-clean-WORKS/telegram-mini-app/index.html") })
     r.GET("/dashboard_improved", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
     r.GET("/dashboard", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
@@ -334,6 +334,13 @@ r.GET("/api/journal-entries/:id", handlers.GetJournalEntry)
 r.POST("/api/journal-entries", handlers.CreateJournalEntry)
 r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
 r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
+
+// Страница поставщиков
+r.GET("/suppliers", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "suppliers.html", gin.H{
+        "title": "Поставщики | SaaSPro",
+    })
+})
 //Bitrix24
 r.GET("/projects", handlers.ProjectsPageHandler)
 r.GET("/api/projects", handlers.GetProjects)
@@ -409,6 +416,18 @@ r.GET("/integration/1c", func(c *gin.Context) {
         "title": "Интеграция с 1С | SaaSPro",
     })
 })
+
+// ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
+
+// PWA
+//r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
+r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
+r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
+r.GET("/api/pwa/info", handlers.GetPWAInfo)
+
+// Push уведомления
+r.POST("/api/push/subscribe", handlers.SavePushSubscription)
+r.GET("/api/push/subscriptions", handlers.GetPushSubscriptions)
 
 // Админские маршруты для управления OAuth клиентами
 adminOAuth := r.Group("/admin/oauth")
