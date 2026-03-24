@@ -304,7 +304,21 @@ r.GET("/goods-receipts", handlers.GoodsReceiptsPageHandler)
 r.GET("/api/goods-receipts", handlers.GetGoodsReceipts)
 r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
 r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
-//Bitrix24
+
+// ========== ФИНАНСОВЫЙ УЧЕТ ==========
+
+// План счетов
+r.GET("/api/chart-of-accounts", handlers.GetChartOfAccounts)
+r.POST("/api/chart-of-accounts", handlers.CreateChartOfAccount)
+r.PUT("/api/chart-of-accounts/:id", handlers.UpdateChartOfAccount)
+r.DELETE("/api/chart-of-accounts/:id", handlers.DeleteChartOfAccount)
+
+// Страница финансов
+r.GET("/finance", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "finance.html", gin.H{
+        "title": "Финансовый учет | SaaSPro",
+    })
+})//Bitrix24
 r.GET("/projects", handlers.ProjectsPageHandler)
 r.GET("/api/projects", handlers.GetProjects)
 r.POST("/api/projects", handlers.CreateProject)

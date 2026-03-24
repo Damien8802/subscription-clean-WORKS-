@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Финансовый учет | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+            transition: all 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .account-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            color: #11998e;
+            font-weight: bold;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        .amount-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .amount-negative {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 p-0 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">SaaSPro</h4>
+                    <a href="/dashboard-improved"><i class="bi bi-speedometer2 me-2"></i> Дашборд</a>
+                    <a href="/inventory"><i class="bi bi-boxes me-2"></i> Склад</a>
+                    <a href="/suppliers"><i class="bi bi-truck me-2"></i> Поставщики</a>
+                    <a href="/goods-receipts"><i class="bi bi-archive me-2"></i> Приемка</a>
+                    <a href="/finance" class="active"><i class="bi bi-currency-ruble me-2"></i> Финансы</a>
+                    <a href="/settings"><i class="bi bi-gear me-2"></i> Настройки</a>
+                </div>
+            </div>
+
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="bi bi-currency-ruble me-2"></i>Финансовый учет</h2>
+                    <div>
+                        <button class="btn btn-success me-2" onclick="showCreateEntryModal()">
+                            <i class="bi bi-plus-lg"></i> Новая проводка
+                        </button>
+                        <button class="btn btn-primary" onclick="showCreatePaymentModal()">
+                            <i class="bi bi-cash-stack"></i> Новый платеж
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Статистика -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalIncoming">0 ₽</div>
+                            <div>Приход</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalOutgoing">0 ₽</div>
+                            <div>Расход</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number" id="cashBalance">0 ₽</div>
+                            <div>Касса</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number" id="bankBalance">0 ₽</div>
+                            <div>Расчетный счет</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладки -->
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="entries-tab" data-bs-toggle="tab" data-bs-target="#entries">
+                            <i class="bi bi-journal"></i> Журнал проводок
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments">
+                            <i class="bi bi-cash"></i> Платежи
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts">
+                            <i class="bi bi-list-ul"></i> План счетов
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="cash-tab" data-bs-toggle="tab" data-bs-target="#cash">
+                            <i class="bi bi-wallet2"></i> Касса
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Журнал проводок -->
+                    <div class="tab-pane fade show active" id="entries">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <input type="date" id="startDate" class="form-control" placeholder="Дата с">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="date" id="endDate" class="form-control" placeholder="Дата по">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary" onclick="loadEntries()">
+                                    <i class="bi bi-search"></i> Фильтр
+                                </button>
+                            </div>
+                        </div>
+                        <div id="entriesList"></div>
+                    </div>
+
+                    <!-- Платежи -->
+                    <div class="tab-pane fade" id="payments">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <select id="paymentTypeFilter" class="form-select" onchange="loadPayments()">
+                                    <option value="">Все платежи</option>
+                                    <option value="incoming">Приход</option>
+                                    <option value="outgoing">Расход</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="paymentStatusFilter" class="form-select" onchange="loadPayments()">
+                                    <option value="">Все статусы</option>
+                                    <option value="pending">Ожидает</option>
+                                    <option value="completed">Проведен</option>
+                                    <option value="cancelled">Отменен</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="paymentsList"></div>
+                    </div>
+
+                    <!-- План счетов -->
+                    <div class="tab-pane fade" id="accounts">
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showCreateAccountModal()">
+                                <i class="bi bi-plus"></i> Добавить счет
+                            </button>
+                        </div>
+                        <div id="accountsList"></div>
+                    </div>
+
+                    <!-- Касса -->
+                    <div class="tab-pane fade" id="cash">
+                        <div class="mb-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showCreateCashModal()">
+                                <i class="bi bi-plus"></i> Кассовая операция
+                            </button>
+                        </div>
+                        <div id="cashList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal создания проводки -->
+    <div class="modal fade" id="entryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новая проводка</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Дата</label>
+                            <input type="date" id="entryDate" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label>Описание</label>
+                            <input type="text" id="entryDescription" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Примечание</label>
+                        <textarea id="entryNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                    
+                    <h5>Проводки</h5>
+                    <div id="postingsList"></div>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="addPosting()">
+                        <i class="bi bi-plus"></i> Добавить проводку
+                    </button>
+                    
+                    <div class="mt-3 text-end">
+                        <h5>Дебет: <span id="totalDebit">0</span> | Кредит: <span id="totalCredit">0</span></h5>
+                        <button class="btn btn-success" onclick="submitEntry()">
+                            <i class="bi bi-save"></i> Сохранить проводку
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal создания платежа -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новый платеж</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Тип платежа</label>
+                        <select id="paymentType" class="form-select" required>
+                            <option value="incoming">Приход</option>
+                            <option value="outgoing">Расход</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Сумма</label>
+                        <input type="number" id="paymentAmount" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Способ оплаты</label>
+                        <select id="paymentMethod" class="form-select">
+                            <option value="cash">Наличные</option>
+                            <option value="card">Карта</option>
+                            <option value="bank_transfer">Безналичный</option>
+                            <option value="crypto">Криптовалюта</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Контрагент</label>
+                        <input type="text" id="counterpartyName" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label>Назначение</label>
+                        <textarea id="paymentPurpose" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="createPayment()">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal создания счета -->
+    <div class="modal fade" id="accountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Новый счет</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Код счета</label>
+                        <input type="text" id="accountCode" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Название</label>
+                        <input type="text" id="accountName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Тип счета</label>
+                        <select id="accountType" class="form-select">
+                            <option value="active">Активный</option>
+                            <option value="passive">Пассивный</option>
+                            <option value="active_passive">Активно-пассивный</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="createAccount()">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal кассовой операции -->
+    <div class="modal fade" id="cashModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Кассовая операция</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Тип операции</label>
+                        <select id="cashType" class="form-select">
+                            <option value="incoming">Приход</option>
+                            <option value="outgoing">Расход</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Сумма</label>
+                        <input type="number" id="cashAmount" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Контрагент</label>
+                        <input type="text" id="cashCounterparty" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label>Назначение</label>
+                        <textarea id="cashPurpose" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>Кассир</label>
+                        <input type="text" id="cashierName" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="createCashOperation()">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let accountsList = [];
+        let postings = [];
+
+        function showToast(message, type = 'success') {
+            const container = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            toast.addEventListener('hidden.bs.toast', () => toast.remove());
+        }
+
+        // Загрузка проводок
+        async function loadEntries() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            let url = '/api/journal-entries';
+            const params = [];
+            if (startDate) params.push(`start_date=${startDate}`);
+            if (endDate) params.push(`end_date=${endDate}`);
+            if (params.length) url += '?' + params.join('&');
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const entries = data.entries || [];
+                
+                const container = document.getElementById('entriesList');
+                if (!entries.length) {
+                    container.innerHTML = '<div class="alert alert-info">Нет проводок</div>';
+                    return;
+                }
+                
+                container.innerHTML = entries.map(e => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>${e.entry_number}</strong>
+                                    <span class="badge ${e.status === 'posted' ? 'bg-success' : 'bg-warning'} ms-2">${e.status === 'posted' ? 'Проведена' : 'Черновик'}</span>
+                                </div>
+                                <div>${new Date(e.entry_date).toLocaleDateString()}</div>
+                            </div>
+                            <div class="mt-2">${e.description}</div>
+                            <div class="text-end mt-2">
+                                <strong>${(e.total_amount || 0).toLocaleString()} ₽</strong>
+                                ${e.status !== 'posted' ? `
+                                    <button class="btn btn-sm btn-success ms-2" onclick="postEntry('${e.id}')">
+                                        <i class="bi bi-check2"></i> Провести
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteEntry('${e.id}')">
+                                        <i class="bi bi-trash"></i> Удалить
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка платежей
+        async function loadPayments() {
+            const type = document.getElementById('paymentTypeFilter').value;
+            const status = document.getElementById('paymentStatusFilter').value;
+            let url = '/api/payments';
+            const params = [];
+            if (type) params.push(`type=${type}`);
+            if (status) params.push(`status=${status}`);
+            if (params.length) url += '?' + params.join('&');
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const payments = data.payments || [];
+                
+                const container = document.getElementById('paymentsList');
+                if (!payments.length) {
+                    container.innerHTML = '<div class="alert alert-info">Нет платежей</div>';
+                    return;
+                }
+                
+                container.innerHTML = payments.map(p => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>${p.payment_number}</strong>
+                                    <span class="badge ${p.payment_type === 'incoming' ? 'bg-success' : 'bg-danger'} ms-2">${p.payment_type === 'incoming' ? 'Приход' : 'Расход'}</span>
+                                    <span class="badge ${p.status === 'completed' ? 'bg-success' : p.status === 'pending' ? 'bg-warning' : 'bg-secondary'} ms-2">${p.status === 'completed' ? 'Проведен' : p.status === 'pending' ? 'Ожидает' : 'Отменен'}</span>
+                                </div>
+                                <div>${new Date(p.payment_date).toLocaleDateString()}</div>
+                            </div>
+                            <div class="mt-2">
+                                <strong class="${p.payment_type === 'incoming' ? 'amount-positive' : 'amount-negative'}">${(p.amount || 0).toLocaleString()} ₽</strong>
+                                ${p.counterparty_name ? `<span class="ms-2">Контрагент: ${p.counterparty_name}</span>` : ''}
+                            </div>
+                            <div class="text-muted small">${p.purpose || '-'}</div>
+                            ${p.status === 'pending' ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success" onclick="updatePaymentStatus('${p.id}', 'completed')">
+                                        <i class="bi bi-check2"></i> Провести
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="updatePaymentStatus('${p.id}', 'cancelled')">
+                                        <i class="bi bi-x"></i> Отменить
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка плана счетов
+        async function loadAccounts() {
+            try {
+                const response = await fetch('/api/chart-of-accounts');
+                const data = await response.json();
+                accountsList = data.accounts || [];
+                
+                const container = document.getElementById('accountsList');
+                if (!accountsList.length) {
+                    container.innerHTML = '<div class="alert alert-info">Нет счетов</div>';
+                    return;
+                }
+                
+                container.innerHTML = accountsList.map(a => `
+                    <div class="account-card">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>${a.code}</strong> - ${a.name}
+                                <span class="badge ${a.account_type === 'active' ? 'bg-primary' : a.account_type === 'passive' ? 'bg-info' : 'bg-secondary'} ms-2">${a.account_type === 'active' ? 'Активный' : a.account_type === 'passive' ? 'Пассивный' : 'Активно-пассивный'}</span>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAccount('${a.id}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка кассовых операций
+        async function loadCash() {
+            try {
+                const response = await fetch('/api/cash-operations');
+                const data = await response.json();
+                const operations = data.operations || [];
+                
+                const container = document.getElementById('cashList');
+                if (!operations.length) {
+                    container.innerHTML = '<div class="alert alert-info">Нет операций</div>';
+                    return;
+                }
+                
+                container.innerHTML = operations.map(o => `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <span class="badge ${o.operation_type === 'incoming' ? 'bg-success' : 'bg-danger'}">${o.operation_type === 'incoming' ? 'Приход' : 'Расход'}</span>
+                                    <strong class="ms-2 ${o.operation_type === 'incoming' ? 'amount-positive' : 'amount-negative'}">${(o.amount || 0).toLocaleString()} ₽</strong>
+                                </div>
+                                <div>${new Date(o.operation_date).toLocaleDateString()}</div>
+                            </div>
+                            <div>${o.counterparty_name ? `Контрагент: ${o.counterparty_name}` : ''}</div>
+                            <div class="text-muted small">${o.purpose || '-'}</div>
+                            ${o.cashier_name ? `<div class="text-muted small">Кассир: ${o.cashier_name}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Функции для проводок
+        function addPosting() {
+            postings.push({ account_id: '', debit: 0, credit: 0 });
+            renderPostings();
+        }
+
+        function renderPostings() {
+            const container = document.getElementById('postingsList');
+            container.innerHTML = postings.map((p, idx) => `
+                <div class="row mb-2">
+                    <div class="col-md-5">
+                        <select class="form-select" onchange="updatePosting(${idx}, 'account_id', this.value)">
+                            <option value="">Выберите счет</option>
+                            ${accountsList.map(a => `<option value="${a.id}" ${p.account_id === a.id ? 'selected' : ''}>${a.code} - ${a.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" placeholder="Дебет" value="${p.debit}" step="0.01" onchange="updatePosting(${idx}, 'debit', parseFloat(this.value) || 0)">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" placeholder="Кредит" value="${p.credit}" step="0.01" onchange="updatePosting(${idx}, 'credit', parseFloat(this.value) || 0)">
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-sm btn-danger" onclick="removePosting(${idx})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            updateTotals();
+        }
+
+        function updatePosting(index, field, value) {
+            postings[index][field] = value;
+            renderPostings();
+        }
+
+        function removePosting(index) {
+            postings.splice(index, 1);
+            renderPostings();
+        }
+
+        function updateTotals() {
+            const totalDebit = postings.reduce((sum, p) => sum + (p.debit || 0), 0);
+            const totalCredit = postings.reduce((sum, p) => sum + (p.credit || 0), 0);
+            document.getElementById('totalDebit').textContent = totalDebit.toLocaleString();
+            document.getElementById('totalCredit').textContent = totalCredit.toLocaleString();
+        }
+
+        async function submitEntry() {
+            if (postings.length === 0) {
+                showToast('Добавьте хотя бы одну проводку', 'warning');
+                return;
+            }
+            
+            const data = {
+                entry_date: document.getElementById('entryDate').value,
+                description: document.getElementById('entryDescription').value,
+                notes: document.getElementById('entryNotes').value,
+                postings: postings.map(p => ({
+                    account_id: p.account_id,
+                    debit_amount: p.debit || 0,
+                    credit_amount: p.credit || 0
+                }))
+            };
+            
+            try {
+                const response = await fetch('/api/journal-entries', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(result.message || 'Проводка создана');
+                    bootstrap.Modal.getInstance(document.getElementById('entryModal')).hide();
+                    postings = [];
+                    loadEntries();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Ошибка создания', 'danger');
+            }
+        }
+
+        async function postEntry(id) {
+            try {
+                const response = await fetch(`/api/journal-entries/${id}/post`, {method: 'POST'});
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Проводка проведена');
+                    loadEntries();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function deleteEntry(id) {
+            if (!confirm('Удалить проводку?')) return;
+            try {
+                const response = await fetch(`/api/journal-entries/${id}`, {method: 'DELETE'});
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Проводка удалена');
+                    loadEntries();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Функции для платежей
+        async function createPayment() {
+            const data = {
+                payment_type: document.getElementById('paymentType').value,
+                amount: parseFloat(document.getElementById('paymentAmount').value),
+                payment_method: document.getElementById('paymentMethod').value,
+                counterparty_name: document.getElementById('counterpartyName').value,
+                purpose: document.getElementById('paymentPurpose').value
+            };
+            
+            if (!data.amount || data.amount <= 0) {
+                showToast('Введите сумму', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/payments', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Платеж создан');
+                    bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+                    loadPayments();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function updatePaymentStatus(id, status) {
+            try {
+                const response = await fetch(`/api/payments/${id}/status`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({status: status})
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(`Статус изменен на ${status}`);
+                    loadPayments();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Функции для счетов
+        async function createAccount() {
+            const data = {
+                code: document.getElementById('accountCode').value,
+                name: document.getElementById('accountName').value,
+                account_type: document.getElementById('accountType').value
+            };
+            
+            try {
+                const response = await fetch('/api/chart-of-accounts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Счет создан');
+                    bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+                    loadAccounts();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function deleteAccount(id) {
+            if (!confirm('Удалить счет?')) return;
+            try {
+                const response = await fetch(`/api/chart-of-accounts/${id}`, {method: 'DELETE'});
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Счет удален');
+                    loadAccounts();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Функции для кассы
+        async function createCashOperation() {
+            const data = {
+                operation_type: document.getElementById('cashType').value,
+                amount: parseFloat(document.getElementById('cashAmount').value),
+                counterparty_name: document.getElementById('cashCounterparty').value,
+                purpose: document.getElementById('cashPurpose').value,
+                cashier_name: document.getElementById('cashierName').value
+            };
+            
+            try {
+                const response = await fetch('/api/cash-operations', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Кассовая операция создана');
+                    bootstrap.Modal.getInstance(document.getElementById('cashModal')).hide();
+                    loadCash();
+                } else {
+                    showToast(result.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function showCreateEntryModal() {
+            document.getElementById('entryDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('entryDescription').value = '';
+            document.getElementById('entryNotes').value = '';
+            postings = [];
+            renderPostings();
+            new bootstrap.Modal(document.getElementById('entryModal')).show();
+        }
+
+        function showCreatePaymentModal() {
+            document.getElementById('paymentType').value = 'incoming';
+            document.getElementById('paymentAmount').value = '';
+            document.getElementById('paymentMethod').value = 'cash';
+            document.getElementById('counterpartyName').value = '';
+            document.getElementById('paymentPurpose').value = '';
+            new bootstrap.Modal(document.getElementById('paymentModal')).show();
+        }
+
+        function showCreateAccountModal() {
+            document.getElementById('accountCode').value = '';
+            document.getElementById('accountName').value = '';
+            document.getElementById('accountType').value = 'active';
+            new bootstrap.Modal(document.getElementById('accountModal')).show();
+        }
+
+        function showCreateCashModal() {
+            document.getElementById('cashType').value = 'incoming';
+            document.getElementById('cashAmount').value = '';
+            document.getElementById('cashCounterparty').value = '';
+            document.getElementById('cashPurpose').value = '';
+            document.getElementById('cashierName').value = '';
+            new bootstrap.Modal(document.getElementById('cashModal')).show();
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            loadEntries();
+            loadPayments();
+            loadAccounts();
+            loadCash();
+        });
+    </script>
+</body>
+</html>
+'@ | Out-File -FilePath "templates\finance.html" -Encoding UTF8
