@@ -296,12 +296,14 @@ r.POST("/api/purchase-orders", handlers.CreatePurchaseOrder)
 r.PUT("/api/purchase-orders/:id/status", handlers.UpdatePurchaseOrderStatus)
 r.DELETE("/api/purchase-orders/:id", handlers.DeletePurchaseOrder)
 
-// Страница поставщиков
-r.GET("/suppliers", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "suppliers.html", gin.H{
-        "title": "Поставщики | SaaSPro",
-    })
-})
+
+
+// Страница приемки товаров
+r.GET("/goods-receipts", handlers.GoodsReceiptsPageHandler)
+// Приемка товаров API
+r.GET("/api/goods-receipts", handlers.GetGoodsReceipts)
+r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
+r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
 //Bitrix24
 r.GET("/projects", handlers.ProjectsPageHandler)
 r.GET("/api/projects", handlers.GetProjects)
