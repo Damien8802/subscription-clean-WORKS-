@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интеграция с 1С | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+            transition: all 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 p-0 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">SaaSPro</h4>
+                    <a href="/dashboard-improved"><i class="bi bi-speedometer2 me-2"></i> Дашборд</a>
+                    <a href="/inventory"><i class="bi bi-boxes me-2"></i> Склад</a>
+                    <a href="/suppliers"><i class="bi bi-truck me-2"></i> Поставщики</a>
+                    <a href="/finance"><i class="bi bi-currency-ruble me-2"></i> Финансы</a>
+                    <a href="/reports"><i class="bi bi-graph-up me-2"></i> Отчеты</a>
+                    <a href="/integration/1c" class="active"><i class="bi bi-arrow-repeat me-2"></i> 1С</a>
+                    <a href="/settings"><i class="bi bi-gear me-2"></i> Настройки</a>
+                </div>
+            </div>
+
+            <div class="col-md-10 main-content">
+                <h2><i class="bi bi-arrow-repeat me-2"></i>Интеграция с 1С</h2>
+                <p class="text-muted">Обмен данными с системой 1С:Предприятие</p>
+
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="export-tab" data-bs-toggle="tab" data-bs-target="#export">
+                            <i class="bi bi-upload"></i> Экспорт
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import">
+                            <i class="bi bi-download"></i> Импорт
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs">
+                            <i class="bi bi-journal"></i> Журнал
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings">
+                            <i class="bi bi-gear"></i> Настройки
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Экспорт -->
+                    <div class="tab-pane fade show active" id="export">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Выгрузка данных в 1С</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-box-seam fs-1 text-primary"></i>
+                                                <h4 class="mt-2">Товары</h4>
+                                                <p class="text-muted">Экспорт номенклатуры в XML формате 1С</p>
+                                                <button class="btn btn-primary" onclick="exportProducts()">
+                                                    <i class="bi bi-download"></i> Экспортировать
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-cart fs-1 text-success"></i>
+                                                <h4 class="mt-2">Заказы</h4>
+                                                <p class="text-muted">Экспорт заказов в JSON формате</p>
+                                                <button class="btn btn-success" onclick="exportOrders()">
+                                                    <i class="bi bi-download"></i> Экспортировать
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Импорт -->
+                    <div class="tab-pane fade" id="import">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Загрузка данных из 1С</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="card">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-file-earmark-xml fs-1 text-warning"></i>
+                                                <h4 class="mt-2">Импорт товаров</h4>
+                                                <p class="text-muted">Загрузите XML файл из 1С (формат "Товары.xml")</p>
+                                                <form id="importForm">
+                                                    <input type="file" id="importFile" class="form-control mb-3" accept=".xml">
+                                                    <button type="button" class="btn btn-warning" onclick="importProducts()">
+                                                        <i class="bi bi-upload"></i> Импортировать
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Журнал -->
+                    <div class="tab-pane fade" id="logs">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 class="mb-0">Журнал синхронизации</h5>
+                                <button class="btn btn-sm btn-secondary" onclick="loadLogs()">
+                                    <i class="bi bi-arrow-repeat"></i> Обновить
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="logsContainer" class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Направление</th>
+                                                <th>Тип</th>
+                                                <th>Записей</th>
+                                                <th>Статус</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="logsBody">
+                                            <tr><td colspan="5" class="text-center">Загрузка...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки -->
+                    <div class="tab-pane fade" id="settings">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Настройки интеграции</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="settingsForm">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="autoSync">
+                                        <label class="form-check-label">Автоматическая синхронизация</label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label>Интервал синхронизации (секунд)</label>
+                                        <input type="number" class="form-control" id="syncInterval" value="3600">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="exportProducts">
+                                        <label class="form-check-label">Экспортировать товары</label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="exportOrders">
+                                        <label class="form-check-label">Экспортировать заказы</label>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="saveSettings()">
+                                        <i class="bi bi-save"></i> Сохранить настройки
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+            container.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function exportProducts() {
+            try {
+                const response = await fetch('/api/1c/export/products');
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Экспортировано ${data.count} товаров. Файл: ${data.file}`);
+                    loadLogs();
+                } else {
+                    showToast(data.error || 'Ошибка экспорта', 'danger');
+                }
+            } catch (error) {
+                showToast('Ошибка', 'danger');
+            }
+        }
+
+        async function exportOrders() {
+            try {
+                const response = await fetch('/api/1c/export/orders');
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Экспортировано ${data.count} заказов. Файл: ${data.file}`);
+                    loadLogs();
+                } else {
+                    showToast(data.error || 'Ошибка экспорта', 'danger');
+                }
+            } catch (error) {
+                showToast('Ошибка', 'danger');
+            }
+        }
+
+        async function importProducts() {
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files.length) {
+                showToast('Выберите XML файл', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const response = await fetch('/api/1c/import/products', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(`Импортировано ${data.imported} из ${data.total} товаров`);
+                    loadLogs();
+                } else {
+                    showToast(data.error || 'Ошибка импорта', 'danger');
+                }
+            } catch (error) {
+                showToast('Ошибка', 'danger');
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/1c/logs');
+                const data = await response.json();
+                const logs = data.logs || [];
+                
+                const tbody = document.getElementById('logsBody');
+                if (!logs.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Нет записей</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = logs.map(log => `
+                    <tr>
+                        <td>${new Date(log.started_at).toLocaleString()}</td>
+                        <td>${log.direction === 'export' ? '📤 Экспорт' : '📥 Импорт'}</td>
+                        <td>${log.entity_type === 'products' ? 'Товары' : 'Заказы'}</td>
+                        <td>${log.record_count}</td>
+                        <td><span class="badge ${log.status === 'completed' ? 'bg-success' : 'bg-warning'}">${log.status}</span></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/1c/settings');
+                const data = await response.json();
+                const settings = data.settings || {};
+                
+                document.getElementById('autoSync').checked = settings.auto_sync || false;
+                document.getElementById('syncInterval').value = settings.sync_interval || 3600;
+                document.getElementById('exportProducts').checked = settings.export_products !== false;
+                document.getElementById('exportOrders').checked = settings.export_orders !== false;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function saveSettings() {
+            const settings = {
+                auto_sync: document.getElementById('autoSync').checked,
+                sync_interval: parseInt(document.getElementById('syncInterval').value),
+                export_products: document.getElementById('exportProducts').checked,
+                export_orders: document.getElementById('exportOrders').checked
+            };
+            
+            try {
+                const response = await fetch('/api/1c/settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({settings: settings})
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Настройки сохранены');
+                } else {
+                    showToast(data.error || 'Ошибка', 'danger');
+                }
+            } catch (error) {
+                showToast('Ошибка', 'danger');
+            }
+        }
+
+        // Инициализация
+        loadLogs();
+        loadSettings();
+    </script>
+</body>
+</html>

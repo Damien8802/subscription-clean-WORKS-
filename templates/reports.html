@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчеты и аналитика | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 10px 15px;
+            display: block;
+            transition: all 0.3s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            color: #11998e;
+            font-weight: bold;
+        }
+        .report-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .total-row {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 p-0 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">SaaSPro</h4>
+                    <a href="/dashboard-improved"><i class="bi bi-speedometer2 me-2"></i> Дашборд</a>
+                    <a href="/inventory"><i class="bi bi-boxes me-2"></i> Склад</a>
+                    <a href="/suppliers"><i class="bi bi-truck me-2"></i> Поставщики</a>
+                    <a href="/goods-receipts"><i class="bi bi-archive me-2"></i> Приемка</a>
+                    <a href="/finance"><i class="bi bi-currency-ruble me-2"></i> Финансы</a>
+                    <a href="/reports" class="active"><i class="bi bi-graph-up me-2"></i> Отчеты</a>
+                    <a href="/settings"><i class="bi bi-gear me-2"></i> Настройки</a>
+                </div>
+            </div>
+
+            <div class="col-md-10 main-content">
+                <h2><i class="bi bi-graph-up me-2"></i>Отчеты и аналитика</h2>
+                <p class="text-muted">Финансовая отчетность, анализ продаж и ключевые показатели</p>
+
+                <!-- Фильтры по дате -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <label>Дата с</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label>Дата по</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label>&nbsp;</label>
+                        <button class="btn btn-primary w-100" onclick="loadAllReports()">
+                            <i class="bi bi-search"></i> Показать
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Вкладки -->
+                <ul class="nav nav-tabs mb-4">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="osv-tab" data-bs-toggle="tab" data-bs-target="#osv">
+                            <i class="bi bi-table"></i> ОСВ
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="pnl-tab" data-bs-toggle="tab" data-bs-target="#pnl">
+                            <i class="bi bi-pie-chart"></i> Прибыль/Убытки
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="sales-tab" data-bs-toggle="tab" data-bs-target="#sales">
+                            <i class="bi bi-bar-chart"></i> Продажи
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Дашборд -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="row" id="dashboardStats">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="revenue">0 ₽</div>
+                                    <div>Выручка за месяц</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="expenses">0 ₽</div>
+                                    <div>Расходы за месяц</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="profit">0 ₽</div>
+                                    <div>Прибыль за месяц</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="bankBalance">0 ₽</div>
+                                    <div>Остаток на счете</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ОСВ -->
+                    <div class="tab-pane fade" id="osv">
+                        <div class="report-table">
+                            <table class="table table-striped mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Счет</th>
+                                        <th>Наименование</th>
+                                        <th class="text-end">Дебет</th>
+                                        <th class="text-end">Кредит</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="osvBody"></tbody>
+                                <tfoot id="osvFooter" class="total-row"></tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Прибыль/Убытки -->
+                    <div class="tab-pane fade" id="pnl">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">Доходы</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h2 id="revenueAmount" class="text-success">0 ₽</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-danger text-white">
+                                        <h5 class="mb-0">Расходы</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h2 id="expensesAmount" class="text-danger">0 ₽</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">Чистая прибыль</h5>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <h1 id="profitAmount" class="text-primary">0 ₽</h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- График продаж -->
+                    <div class="tab-pane fade" id="sales">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <select id="chartPeriod" class="form-select" onchange="loadSalesChart()">
+                                    <option value="month">За месяц</option>
+                                    <option value="quarter">За квартал</option>
+                                    <option value="year">За год</option>
+                                </select>
+                            </div>
+                        </div>
+                        <canvas id="salesChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let salesChart = null;
+
+        // Установка дат по умолчанию
+        function setDefaultDates() {
+            const today = new Date();
+            const lastMonth = new Date(today);
+            lastMonth.setMonth(today.getMonth() - 1);
+            
+            document.getElementById('startDate').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        // Загрузка всех отчетов
+        async function loadAllReports() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            await loadDashboardStats();
+            await loadOSV(startDate, endDate);
+            await loadProfitLoss(startDate, endDate);
+            await loadSalesChart();
+        }
+
+        // Загрузка дашборда
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/reports/dashboard-stats');
+                const data = await response.json();
+                
+                document.getElementById('revenue').textContent = (data.revenue || 0).toLocaleString() + ' ₽';
+                document.getElementById('expenses').textContent = (data.expenses || 0).toLocaleString() + ' ₽';
+                document.getElementById('profit').textContent = (data.profit || 0).toLocaleString() + ' ₽';
+                document.getElementById('bankBalance').textContent = (data.bank_balance || 0).toLocaleString() + ' ₽';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка ОСВ
+        async function loadOSV(startDate, endDate) {
+            try {
+                const url = `/api/reports/turnover-balance?start_date=${startDate}&end_date=${endDate}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('osvBody');
+                const footer = document.getElementById('osvFooter');
+                
+                if (!data.data || data.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Нет данных</td></tr>';
+                    footer.innerHTML = '';
+                    return;
+                }
+                
+                tbody.innerHTML = data.data.map(item => `
+                    <tr>
+                        <td>${item.account_code}</td>
+                        <td>${item.account_name}</td>
+                        <td class="text-end">${(item.period_debit || 0).toLocaleString()} ₽</td>
+                        <td class="text-end">${(item.period_credit || 0).toLocaleString()} ₽</td>
+                    </tr>
+                `).join('');
+                
+                if (data.totals) {
+                    footer.innerHTML = `
+                        <tr>
+                            <td colspan="2" class="fw-bold">ИТОГО:</td>
+                            <td class="text-end fw-bold">${(data.totals.period_debit || 0).toLocaleString()} ₽</td>
+                            <td class="text-end fw-bold">${(data.totals.period_credit || 0).toLocaleString()} ₽</td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка прибыли/убытков
+        async function loadProfitLoss(startDate, endDate) {
+            try {
+                const url = `/api/reports/profit-loss?start_date=${startDate}&end_date=${endDate}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                document.getElementById('revenueAmount').textContent = (data.revenue || 0).toLocaleString() + ' ₽';
+                document.getElementById('expensesAmount').textContent = (data.expenses || 0).toLocaleString() + ' ₽';
+                document.getElementById('profitAmount').textContent = (data.profit || 0).toLocaleString() + ' ₽';
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Загрузка графика продаж
+        async function loadSalesChart() {
+            const period = document.getElementById('chartPeriod').value;
+            
+            try {
+                const response = await fetch(`/api/reports/sales-chart?period=${period}`);
+                const data = await response.json();
+                
+                const ctx = document.getElementById('salesChart').getContext('2d');
+                
+                if (salesChart) {
+                    salesChart.destroy();
+                }
+                
+                salesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Выручка (₽)',
+                            data: data.data || [],
+                            borderColor: '#11998e',
+                            backgroundColor: 'rgba(17, 153, 142, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Динамика продаж'
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            setDefaultDates();
+            loadAllReports();
+            
+            document.getElementById('startDate').addEventListener('change', loadAllReports);
+            document.getElementById('endDate').addEventListener('change', loadAllReports);
+        });
+    </script>
+</body>
+</html>

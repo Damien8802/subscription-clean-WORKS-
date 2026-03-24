@@ -366,6 +366,50 @@ r.GET("/oauth/userinfo", handlers.OAuthUserInfoHandler)
 // Страница Identity Hub
 r.GET("/identity-hub", handlers.IdentityHubPageHandler)
 
+// ========== ОТЧЕТЫ И АНАЛИТИКА ==========
+
+// Оборотно-сальдовая ведомость
+r.GET("/api/reports/turnover-balance", handlers.GetTurnoverBalanceSheet)
+
+// Отчет о прибылях и убытках
+r.GET("/api/reports/profit-loss", handlers.GetProfitAndLoss)
+
+// Статистика для дашборда
+r.GET("/api/reports/dashboard-stats", handlers.GetDashboardStats)
+
+// График продаж
+r.GET("/api/reports/sales-chart", handlers.GetSalesChart)
+
+// Страница отчетов
+r.GET("/reports", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "reports.html", gin.H{
+        "title": "Отчеты и аналитика | SaaSPro",
+    })
+})
+
+// ========== ИНТЕГРАЦИЯ С 1С ==========
+
+// Экспорт
+r.GET("/api/1c/export/products", handlers.ExportProductsTo1C)
+r.GET("/api/1c/export/orders", handlers.ExportOrdersTo1C)
+
+// Импорт
+r.POST("/api/1c/import/products", handlers.ImportProductsFrom1C)
+
+// Журналы
+r.GET("/api/1c/logs", handlers.GetSyncLogs)
+
+// Настройки
+r.GET("/api/1c/settings", handlers.GetSyncSettings)
+r.POST("/api/1c/settings", handlers.UpdateSyncSettings)
+
+// Страница интеграции
+r.GET("/integration/1c", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "integration_1c.html", gin.H{
+        "title": "Интеграция с 1С | SaaSPro",
+    })
+})
+
 // Админские маршруты для управления OAuth клиентами
 adminOAuth := r.Group("/admin/oauth")
 adminOAuth.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
