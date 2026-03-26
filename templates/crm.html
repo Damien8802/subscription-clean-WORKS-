@@ -1481,10 +1481,39 @@
         </div>
     </div>
 
-    <!-- Кнопка AI-ассистента -->
-    <button class="ai-fab" onclick="openAIChat()" title="AI-ассистент CRM">
-        <i class="fas fa-robot"></i>
-    </button>
+  <!-- Кнопка AI-ассистента (СЛЕВА) -->
+<style>
+.ai-fab {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 999;
+    border: none;
+}
+.ai-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+}
+.ai-fab i {
+    pointer-events: none;
+}
+</style>
+<button class="ai-fab" onclick="openAIChat()" title="AI-ассистент CRM">
+    <i class="fas fa-robot"></i>
+</button>
 
     <!-- Модальное окно AI-чата (с голосовым вводом) -->
     <div class="modal fade ai-chat-modal" id="aiChatModal" tabindex="-1" aria-hidden="true">
@@ -3910,10 +3939,7 @@ function openAIChatFromServices() {
 }
 </script>
 
-<!-- Плавающая кнопка услуг слева -->
-<button id="services-fab-left" class="services-fab-left" title="Индивидуальные услуги">
-    <i class="fas fa-cogs"></i>
-</button>
+
 
 <!-- Модальное окно с услугами (без изменений) -->
 <div id="services-modal-left" class="services-modal-left" style="display: none;">
@@ -4252,32 +4278,41 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <style>
-.back-button {
+/* Овальная кнопка Назад справа */
+.btn-back-oval {
     position: fixed;
     bottom: 30px;
     right: 30px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+    padding: 10px 20px;
+    border-radius: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     transition: all 0.3s;
     z-index: 1000;
+    font-family: inherit;
+    border: none;
     cursor: pointer;
 }
-.back-button:hover {
-    transform: scale(1.1);
+.btn-back-oval i {
+    font-size: 14px;
+}
+.btn-back-oval:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
     background: linear-gradient(135deg, #764ba2, #667eea);
     color: white;
 }
 </style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
-</body>
+<a href="javascript:history.back()" class="btn-back-oval">
+    <i class="fas fa-arrow-left"></i>
+    <span>Назад</span>
+</a></body>
 </html>

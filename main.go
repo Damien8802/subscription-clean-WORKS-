@@ -410,6 +410,8 @@ func main() {
  // TeamSphere - Bitrix24 Alternative
     r.GET("/teamsphere", handlers.TeamSphereDashboard)
     r.GET("/integrations", handlers.IntegrationsHandler)
+   // Projects page
+   r.GET("/projects", handlers.ProjectsPageHandler)
 
 
  
@@ -798,12 +800,6 @@ handlers.StartTeamSphereScheduler() // Планировщик TeamSphere
 // Favicon обработка
 r.GET("/favicon.ico", func(c *gin.Context) {
     c.File("./static/favicon.ico")
-})
-
-// Projects редирект (чтобы не было 404)
-r.GET("/projects", func(c *gin.Context) {
-    c.Redirect(301, "/crm")
-})
-    
+})  
     r.Run(port)
 }
