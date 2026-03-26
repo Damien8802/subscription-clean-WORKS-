@@ -1,0 +1,219 @@
+basePath: /api
+definitions:
+  handlers.Customer:
+    properties:
+      company:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      last_seen:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+    type: object
+  handlers.Deal:
+    properties:
+      closed_at:
+        type: string
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      expected_close:
+        type: string
+      id:
+        type: string
+      probability:
+        type: integer
+      stage:
+        type: string
+      title:
+        type: string
+      value:
+        type: number
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@saaspro.ru
+    name: Поддержка API
+    url: http://saaspro.ru/support
+  description: API для управления подписками, AI-чатом и платежами
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://saaspro.ru/terms
+  title: SaaSPro API
+  version: "3.0"
+paths:
+  /api/crm/customers:
+    get:
+      description: Возвращает всех клиентов с фильтрацией
+      parameters:
+      - description: Статус клиента
+        in: query
+        name: status
+        type: string
+      - description: Лимит записей
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.Customer'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Список клиентов
+      tags:
+      - CRM
+  /api/crm/deals:
+    get:
+      description: Возвращает сделки с фильтрацией по стадии
+      parameters:
+      - description: Стадия сделки
+        in: query
+        name: stage
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.Deal'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Список сделок
+      tags:
+      - CRM
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новую сделку в CRM
+      parameters:
+      - description: Данные сделки
+        in: body
+        name: deal
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Deal'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.Deal'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создание сделки
+      tags:
+      - CRM
+  /api/crm/deals/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Изменяет стадию и вероятность сделки
+      parameters:
+      - description: ID сделки
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новая стадия
+        in: body
+        name: stage
+        required: true
+        schema:
+          properties:
+            probability:
+              type: integer
+            stage:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновление стадии сделки
+      tags:
+      - CRM
+  /api/crm/health:
+    get:
+      description: Проверка работоспособности CRM
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Статус CRM
+      tags:
+      - CRM
+  /crm:
+    get:
+      description: Отображает интерфейс CRM системы
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Страница CRM
+      tags:
+      - CRM
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer <token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

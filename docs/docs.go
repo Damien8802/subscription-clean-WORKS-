@@ -9,117 +9,42 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://saaspro.ru/terms",
-        "contact": {
-            "name": "Поддержка API",
-            "url": "http://saaspro.ru/support",
-            "email": "support@saaspro.ru"
-        },
-        "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/crm/advanced-stats": {
+        "/api/1c/export/products": {
             "get": {
-                "description": "Возвращает статистику по ответственным, источникам и динамику за период",
-                "produces": [
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Export products in 1C format (XML/JSON)",
+                "consumes": [
                     "application/json"
                 ],
-                "tags": [
-                    "CRM"
-                ],
-                "summary": "Расширенная аналитика CRM",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Начальная дата (YYYY-MM-DD)",
-                        "name": "date_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Конечная дата (YYYY-MM-DD)",
-                        "name": "date_to",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/crm/attachments/{attachment_id}": {
-            "delete": {
-                "description": "Удаляет файл и запись о нём",
                 "produces": [
-                    "application/json"
+                    "application/xml",
+                    " application/json"
                 ],
                 "tags": [
-                    "CRM"
+                    "Integrations"
                 ],
-                "summary": "Удалить файл",
+                "summary": "📤 Export products to 1C",
                 "parameters": [
                     {
+                        "enum": [
+                            "xml",
+                            "json"
+                        ],
                         "type": "string",
-                        "description": "ID вложения",
-                        "name": "attachment_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/crm/attachments/{attachment_id}/download": {
-            "get": {
-                "description": "Скачивает файл по его ID",
-                "produces": [
-                    "application/octet-stream"
-                ],
-                "tags": [
-                    "CRM"
-                ],
-                "summary": "Скачать файл",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID вложения",
-                        "name": "attachment_id",
-                        "in": "path",
-                        "required": true
+                        "default": "xml",
+                        "description": "Export format",
+                        "name": "format",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -128,9 +53,42 @@ const docTemplate = `{
                         "schema": {
                             "type": "file"
                         }
-                    },
-                    "404": {
-                        "description": "Not Found",
+                    }
+                }
+            }
+        },
+        "/api/1c/import/products": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Import products from 1C",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integrations"
+                ],
+                "summary": "📥 Import products from 1C",
+                "parameters": [
+                    {
+                        "description": "1C data file",
+                        "name": "file",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "import result",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -139,23 +97,312 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/crm/deals/{id}/attachments": {
+        "/api/1c/settings": {
             "get": {
-                "description": "Возвращает все файлы, прикреплённые к сделке",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Интеграция с 1С",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Интеграции"
+                ],
+                "summary": "🔄 Настройки 1С",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/2fa/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Двухфакторная аутентификация",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Безопасность"
+                ],
+                "summary": "🔐 Статус 2FA",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/ask": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Задать вопрос AI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "💬 AI ассистент",
+                "parameters": [
+                    {
+                        "description": "Вопрос",
+                        "name": "question",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bitrix/export/lead": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send lead to Bitrix24 CRM",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integrations"
+                ],
+                "summary": "📤 Export lead to Bitrix24",
+                "parameters": [
+                    {
+                        "description": "Lead data",
+                        "name": "lead",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "export result",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bitrix/settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Интеграция с Bitrix24",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Интеграции"
+                ],
+                "summary": "🌐 Настройки Bitrix24",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/customers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Список клиентов CRM",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "CRM"
                 ],
-                "summary": "Список вложений сделки",
+                "summary": "👥 Получить клиентов",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Страница",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Лимит",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поиск",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Добавляет клиента",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "✨ Создать клиента",
+                "parameters": [
+                    {
+                        "description": "Данные",
+                        "name": "customer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/customers/export/excel": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Export all customers to Excel file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "📊 Export customers to Excel",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/deals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Список сделок",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "💰 Получить сделки",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID сделки",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Стадия",
+                        "name": "stage",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -168,42 +415,58 @@ const docTemplate = `{
                                 "additionalProperties": true
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/api/health": {
+            "get": {
+                "description": "Проверка здоровья",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Система"
+                ],
+                "summary": "❤️ Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Загружает файл и прикрепляет его к указанной сделке",
+            }
+        },
+        "/api/inventory/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Список заказов",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "CRM"
+                    "Заказы"
                 ],
-                "summary": "Загрузить файл для сделки",
+                "summary": "📋 Получить заказы",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID сделки",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Файл для загрузки",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "description": "Статус",
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -213,16 +476,479 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create new order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "➕ Create order",
+                "parameters": [
+                    {
+                        "description": "Order data",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created order",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
+                    }
+                }
+            }
+        },
+        "/api/inventory/products": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список товаров на складе",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Склад"
+                ],
+                "summary": "📦 Получить список товаров",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Страница",
+                        "name": "page",
+                        "in": "query"
                     },
-                    "404": {
-                        "description": "Not Found",
+                    {
+                        "type": "integer",
+                        "description": "Лимит",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поиск",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Добавляет новый товар",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Склад"
+                ],
+                "summary": "💰 Создать товар",
+                "parameters": [
+                    {
+                        "description": "Данные товара",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/inventory/products/export/csv": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Export all products to CSV file",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "Inventory"
+                ],
+                "summary": "📋 Export products to CSV",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/inventory/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Статистика по товарам",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Склад"
+                ],
+                "summary": "📊 Статистика склада",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/journal-entries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns accounting journal entries",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Finance"
+                ],
+                "summary": "📝 Get journal entries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "journal entries",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Список платежей",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Финансы"
+                ],
+                "summary": "💳 Получить платежи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Тип",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Статус",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reports/profit-loss": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generate P\u0026L report for period",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "📈 Profit \u0026 Loss report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "json",
+                            "html",
+                            "excel"
+                        ],
+                        "type": "string",
+                        "default": "json",
+                        "description": "Output format",
+                        "name": "format",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "revenue, expenses, profit, margin",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reports/turnover-balance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generate turnover balance sheet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "📊 Balance sheet",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date",
+                        "name": "to",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "balance sheet",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/security/logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get security events log",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Security"
+                ],
+                "summary": "📜 Security logs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "logs, total",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/system/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Метрики системы",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Система"
+                ],
+                "summary": "📈 Статистика системы",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/vpn/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Статистика VPN",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "VPN"
+                ],
+                "summary": "📊 VPN статистика",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -231,25 +957,17 @@ const docTemplate = `{
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Введите токен в формате: Bearer \u003ctoken\u003e",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "3.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api",
-	Schemes:          []string{"http", "https"},
-	Title:            "SaaSPro API",
-	Description:      "API для управления подписками, AI-чатом и платежами",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
+	Schemes:          []string{},
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -1,104 +1,243 @@
-basePath: /api
-host: localhost:8080
 info:
-  contact:
-    email: support@saaspro.ru
-    name: Поддержка API
-    url: http://saaspro.ru/support
-  description: API для управления подписками, AI-чатом и платежами
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
-  termsOfService: http://saaspro.ru/terms
-  title: SaaSPro API
-  version: "3.0"
+  contact: {}
 paths:
-  /api/crm/advanced-stats:
+  /api/1c/export/products:
     get:
-      description: Возвращает статистику по ответственным, источникам и динамику за
-        период
-      parameters:
-      - description: Начальная дата (YYYY-MM-DD)
-        in: query
-        name: date_from
-        type: string
-      - description: Конечная дата (YYYY-MM-DD)
-        in: query
-        name: date_to
-        type: string
-      produces:
+      consumes:
       - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Расширенная аналитика CRM
-      tags:
-      - CRM
-  /api/crm/attachments/{attachment_id}:
-    delete:
-      description: Удаляет файл и запись о нём
+      description: Export products in 1C format (XML/JSON)
       parameters:
-      - description: ID вложения
-        in: path
-        name: attachment_id
-        required: true
+      - default: xml
+        description: Export format
+        enum:
+        - xml
+        - json
+        in: query
+        name: format
         type: string
       produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Удалить файл
-      tags:
-      - CRM
-  /api/crm/attachments/{attachment_id}/download:
-    get:
-      description: Скачивает файл по его ID
-      parameters:
-      - description: ID вложения
-        in: path
-        name: attachment_id
-        required: true
-        type: string
-      produces:
-      - application/octet-stream
+      - application/xml
+      - ' application/json'
       responses:
         "200":
           description: OK
           schema:
             type: file
-        "404":
-          description: Not Found
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4E4 Export products to 1C"
+      tags:
+      - Integrations
+  /api/1c/import/products:
+    post:
+      consumes:
+      - application/json
+      description: Import products from 1C
+      parameters:
+      - description: 1C data file
+        in: body
+        name: file
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: import result
           schema:
             additionalProperties: true
             type: object
-      summary: Скачать файл
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4E5 Import products from 1C"
+      tags:
+      - Integrations
+  /api/1c/settings:
+    get:
+      consumes:
+      - application/json
+      description: Интеграция с 1С
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F504 Настройки 1С"
+      tags:
+      - Интеграции
+  /api/2fa/status:
+    get:
+      consumes:
+      - application/json
+      description: Двухфакторная аутентификация
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F510 Статус 2FA"
+      tags:
+      - Безопасность
+  /api/ai/ask:
+    post:
+      consumes:
+      - application/json
+      description: Задать вопрос AI
+      parameters:
+      - description: Вопрос
+        in: body
+        name: question
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4AC AI ассистент"
+      tags:
+      - AI
+  /api/bitrix/export/lead:
+    post:
+      consumes:
+      - application/json
+      description: Send lead to Bitrix24 CRM
+      parameters:
+      - description: Lead data
+        in: body
+        name: lead
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: export result
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4E4 Export lead to Bitrix24"
+      tags:
+      - Integrations
+  /api/bitrix/settings:
+    get:
+      consumes:
+      - application/json
+      description: Интеграция с Bitrix24
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F310 Настройки Bitrix24"
+      tags:
+      - Интеграции
+  /api/crm/customers:
+    get:
+      consumes:
+      - application/json
+      description: Список клиентов CRM
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        type: integer
+      - description: Лимит
+        in: query
+        name: limit
+        type: integer
+      - description: Поиск
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F465 Получить клиентов"
       tags:
       - CRM
-  /api/crm/deals/{id}/attachments:
-    get:
-      description: Возвращает все файлы, прикреплённые к сделке
+    post:
+      consumes:
+      - application/json
+      description: Добавляет клиента
       parameters:
-      - description: ID сделки
-        in: path
-        name: id
+      - description: Данные
+        in: body
+        name: customer
         required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: ✨ Создать клиента
+      tags:
+      - CRM
+  /api/crm/customers/export/excel:
+    get:
+      consumes:
+      - application/json
+      description: Export all customers to Excel file
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CA Export customers to Excel"
+      tags:
+      - CRM
+  /api/crm/deals:
+    get:
+      consumes:
+      - application/json
+      description: Список сделок
+      parameters:
+      - description: Стадия
+        in: query
+        name: stage
         type: string
       produces:
       - application/json
@@ -110,29 +249,16 @@ paths:
               additionalProperties: true
               type: object
             type: array
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Список вложений сделки
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4B0 Получить сделки"
       tags:
       - CRM
-    post:
+  /api/health:
+    get:
       consumes:
-      - multipart/form-data
-      description: Загружает файл и прикрепляет его к указанной сделке
-      parameters:
-      - description: ID сделки
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Файл для загрузки
-        in: formData
-        name: file
-        required: true
-        type: file
+      - application/json
+      description: Проверка здоровья
       produces:
       - application/json
       responses:
@@ -141,26 +267,332 @@ paths:
           schema:
             additionalProperties: true
             type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Загрузить файл для сделки
+      summary: ❤️ Health check
       tags:
-      - CRM
-schemes:
-- http
-- https
-securityDefinitions:
-  BearerAuth:
-    description: 'Введите токен в формате: Bearer <token>'
-    in: header
-    name: Authorization
-    type: apiKey
+      - Система
+  /api/inventory/orders:
+    get:
+      consumes:
+      - application/json
+      description: Список заказов
+      parameters:
+      - description: Статус
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CB Получить заказы"
+      tags:
+      - Заказы
+    post:
+      consumes:
+      - application/json
+      description: Create new order
+      parameters:
+      - description: Order data
+        in: body
+        name: order
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created order
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: ➕ Create order
+      tags:
+      - Orders
+  /api/inventory/products:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список товаров на складе
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        type: integer
+      - description: Лимит
+        in: query
+        name: limit
+        type: integer
+      - description: Поиск
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4E6 Получить список товаров"
+      tags:
+      - Склад
+    post:
+      consumes:
+      - application/json
+      description: Добавляет новый товар
+      parameters:
+      - description: Данные товара
+        in: body
+        name: product
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4B0 Создать товар"
+      tags:
+      - Склад
+  /api/inventory/products/export/csv:
+    get:
+      consumes:
+      - application/json
+      description: Export all products to CSV file
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CB Export products to CSV"
+      tags:
+      - Inventory
+  /api/inventory/stats:
+    get:
+      consumes:
+      - application/json
+      description: Статистика по товарам
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CA Статистика склада"
+      tags:
+      - Склад
+  /api/journal-entries:
+    get:
+      consumes:
+      - application/json
+      description: Returns accounting journal entries
+      parameters:
+      - description: Start date
+        in: query
+        name: from
+        type: string
+      - description: End date
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: journal entries
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4DD Get journal entries"
+      tags:
+      - Finance
+  /api/payments:
+    get:
+      consumes:
+      - application/json
+      description: Список платежей
+      parameters:
+      - description: Тип
+        in: query
+        name: type
+        type: string
+      - description: Статус
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4B3 Получить платежи"
+      tags:
+      - Финансы
+  /api/reports/profit-loss:
+    get:
+      consumes:
+      - application/json
+      description: Generate P&L report for period
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: to
+        required: true
+        type: string
+      - default: json
+        description: Output format
+        enum:
+        - json
+        - html
+        - excel
+        in: query
+        name: format
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: revenue, expenses, profit, margin
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4C8 Profit & Loss report"
+      tags:
+      - Reports
+  /api/reports/turnover-balance:
+    get:
+      consumes:
+      - application/json
+      description: Generate turnover balance sheet
+      parameters:
+      - description: Start date
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: End date
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: balance sheet
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CA Balance sheet"
+      tags:
+      - Reports
+  /api/security/logs:
+    get:
+      consumes:
+      - application/json
+      description: Get security events log
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: logs, total
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4DC Security logs"
+      tags:
+      - Security
+  /api/system/stats:
+    get:
+      consumes:
+      - application/json
+      description: Метрики системы
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4C8 Статистика системы"
+      tags:
+      - Система
+  /api/vpn/stats:
+    get:
+      consumes:
+      - application/json
+      description: Статистика VPN
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: "\U0001F4CA VPN статистика"
+      tags:
+      - VPN
 swagger: "2.0"

@@ -407,6 +407,13 @@ func main() {
     r.GET("/api/bitrix/tasks", handlers.GetBitrixTasks)
     r.POST("/api/bitrix/webhook", handlers.BitrixWebhookHandler)
 
+ // TeamSphere - Bitrix24 Alternative
+    r.GET("/teamsphere", handlers.TeamSphereDashboard)
+    r.GET("/integrations", handlers.IntegrationsHandler)
+
+
+ 
+
     // ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
     r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
     r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
@@ -511,7 +518,6 @@ func main() {
         protected.GET("/security-hub", handlers.SecurityHubHandler)
         protected.GET("/security-panel", handlers.SecurityPanelHandler)
         protected.GET("/trusted-devices", handlers.TrustedDevicesHandler)
-        protected.GET("/integrations", handlers.IntegrationsHandler)
         protected.GET("/monetization", handlers.MonetizationHandler)
         protected.GET("/profile", handlers.ProfilePageHandler)
         protected.GET("/calendar", handlers.CalendarHandler)
@@ -787,6 +793,7 @@ func main() {
     // Запуск планировщиков
     handlers.StartSyncScheduler()
     handlers.StartBitrixSyncScheduler()
+  
     
     r.Run(port)
 }

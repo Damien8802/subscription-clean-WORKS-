@@ -1,0 +1,241 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "API для управления подписками, AI-чатом и платежами",
+        "title": "SaaSPro API",
+        "termsOfService": "http://saaspro.ru/terms",
+        "contact": {
+            "name": "Поддержка API",
+            "url": "http://saaspro.ru/support",
+            "email": "support@saaspro.ru"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
+        "version": "3.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/api/crm/advanced-stats": {
+            "get": {
+                "description": "Возвращает статистику по ответственным, источникам и динамику за период",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Расширенная аналитика CRM",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Начальная дата (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Конечная дата (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/attachments/{attachment_id}": {
+            "delete": {
+                "description": "Удаляет файл и запись о нём",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Удалить файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID вложения",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/attachments/{attachment_id}/download": {
+            "get": {
+                "description": "Скачивает файл по его ID",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Скачать файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID вложения",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/crm/deals/{id}/attachments": {
+            "get": {
+                "description": "Возвращает все файлы, прикреплённые к сделке",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Список вложений сделки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID сделки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Загружает файл и прикрепляет его к указанной сделке",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CRM"
+                ],
+                "summary": "Загрузить файл для сделки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID сделки",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Файл для загрузки",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Введите токен в формате: Bearer \u003ctoken\u003e",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

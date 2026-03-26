@@ -1,277 +1,109 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaSPro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .navbar {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 1rem 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .brand-logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-            text-decoration: none;
-            transition: transform 0.3s;
-            display: inline-block;
-        }
-        
-        .brand-logo:hover {
-            transform: scale(1.05);
-        }
-        
-        .nav-menu {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .nav-item {
-            position: relative;
-        }
-        
-        .dropbtn {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            padding: 10px 20px;
-            font-size: 14px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .dropbtn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background: white;
-            min-width: 220px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            border-radius: 8px;
-            z-index: 1;
-            top: 100%;
-            left: 0;
-            margin-top: 5px;
-        }
-        
-        .dropdown-content a {
-            color: #333;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            transition: background 0.3s;
-            font-size: 14px;
-        }
-        
-        .dropdown-content a:hover {
-            background: #f0f0f0;
-            padding-left: 20px;
-        }
-        
-        .nav-item:hover .dropdown-content {
-            display: block;
-        }
-        
-        .nav-auth {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .user-name {
-            color: white;
-            padding: 8px 15px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            font-size: 14px;
-        }
-        
-        .btn-login, .btn-register, .btn-logout {
-            padding: 8px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        
-        .btn-login {
-            background: transparent;
-            color: white;
-            border: 1px solid white;
-        }
-        
-        .btn-login:hover {
-            background: white;
-            color: #1e3c72;
-        }
-        
-        .btn-register {
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .btn-register:hover {
-            background: #d97706;
-        }
-        
-        .btn-logout {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-logout:hover {
-            background: #dc2626;
-        }
-        
-        @media (max-width: 768px) {
-            .nav-container {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .nav-menu {
-                justify-content: center;
-            }
-            
-            .dropdown-content {
-                position: static;
-                display: none;
-            }
-            
-            .nav-item:hover .dropdown-content {
-                display: block;
-                position: absolute;
-            }
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <a href="/" class="brand-logo">🚀 SaaSPro</a>
-            </div>
-            
-            <div class="nav-menu">
-                <!-- Дашборды -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">📊 Дашборды</button>
-                    <div class="dropdown-content">
-                        <a href="/dashboard-improved">Главный дашборд</a>
-                        <a href="/realtime-dashboard">Real-time</a>
-                        <a href="/revenue-dashboard">Выручка</a>
-                        <a href="/partner-dashboard">Партнёрский</a>
-                    </div>
-                </div>
-
-                <!-- Склад -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">📦 Склад</button>
-                    <div class="dropdown-content">
-                        <a href="/inventory">Товары</a>
-                        <a href="/inventory?tab=orders">Заказы клиентов</a>
-                        <a href="/suppliers">Поставщики</a>
-                        <a href="/goods-receipts">📥 Приемка товаров</a>
-                        <a href="/purchases">Закупки</a>
-                    </div>
-                </div>
-
-                <!-- AI Сервисы -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">🤖 AI Сервисы</button>
-                    <div class="dropdown-content">
-                        <a href="/ai">AI Чат</a>
-                        <a href="/ai-agents">AI Агенты</a>
-                        <a href="/ai-settings">Настройки AI</a>
-                        <a href="/transcriptions">Транскрибация</a>
-                    </div>
-                </div>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-cloud-upload-alt"></i> SaaSPro ERP
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- Главная -->
+                <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-home"></i> Home</a></li>
                 
-                <!-- Продукты -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">💳 Продукты</button>
-                    <div class="dropdown-content">
-                        <a href="/api-sales">📦 API для поиска цен</a>
-                        <a href="/vpn">🔒 VPN Сервис</a>
-                        <a href="/pricing">💰 Тарифы</a>
-                    </div>
-                </div>
+                <!-- CRM Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-users"></i> CRM
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/crm">📊 CRM Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/crm/customers">👥 Customers</a></li>
+                        <li><a class="dropdown-item" href="/crm/deals">💰 Deals</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/teamsphere">✨ TeamSphere (Bitrix24 Alt)</a></li>
+                    </ul>
+                </li>
                 
-                <!-- Бизнес (объединенный) -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">🏢 Бизнес</button>
-                    <div class="dropdown-content">
-                        <a href="/crm">CRM</a>
-                        <a href="/analytics">Аналитика</a>
-                        <a href="/integration/1c">🔄 1С Интеграция</a>
-                       <a href="/project-hub"><i class="bi bi-kanban"></i> Project Hub</a>
-                        <a href="/finance">Финансы</a>
-                        <a href="/reports">📊 Отчеты</a>
-                        <a href="/logistics">Логистика</a>
-                        <a href="/track">Отслеживание</a>
-                    </div>
-                </div>
+                <!-- Склад Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-boxes"></i> Warehouse
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/inventory">📦 Inventory</a></li>
+                        <li><a class="dropdown-item" href="/inventory/products">🏷️ Products</a></li>
+                        <li><a class="dropdown-item" href="/inventory/orders">📋 Orders</a></li>
+                    </ul>
+                </li>
                 
-                <!-- Аккаунт -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">👤 Аккаунт</button>
-                    <div class="dropdown-content">
-                        <a href="/profile">Профиль</a>
-                        <a href="/my-subscriptions">Мои подписки</a>
-                        <a href="/api-keys">API ключи</a>
-                        <a href="/my-keys">Мои ключи</a>
-                        <a href="/referral">Реферальная программа</a>
-                        <a href="/settings">Настройки</a>
-                        <a href="/security">Безопасность</a>
-                    </div>
-                </div>
+                <!-- Финансы Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-chart-line"></i> Finance
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/finance">💰 Finance Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/payments">💳 Payments</a></li>
+                        <li><a class="dropdown-item" href="/journal-entries">📝 Journal</a></li>
+                    </ul>
+                </li>
                 
-                <!-- Админ -->
-                <div class="nav-item dropdown">
-                    <button class="dropbtn">⚙️ Админ</button>
-                    <div class="dropdown-content">
-                        <a href="/admin">Панель админа</a>
-                        <a href="/admin/users">Пользователи</a>
-                        <a href="/admin/subscriptions">Подписки</a>
-                        <a href="/admin/api-keys">API ключи админ</a>
-                        <a href="/admin/vpn/keys">VPN ключи</a>
-                        <a href="/admin/vpn/stats">VPN статистика</a>
-                    </div>
-                </div>
-            </div>
+                <!-- Закупки Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-truck"></i> Procurement
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/suppliers">🚚 Suppliers</a></li>
+                        <li><a class="dropdown-item" href="/purchases">📦 Purchase Orders</a></li>
+                        <li><a class="dropdown-item" href="/goods-receipts">✅ Goods Receipts</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Интеграции Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-plug"></i> Integrations
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/integration/1c">🔄 1C:Enterprise</a></li>
+                        <li><a class="dropdown-item" href="/integration/bitrix">🌐 Bitrix24</a></li>
+                        <li><a class="dropdown-item" href="/teamsphere/integrations">✨ TeamSphere Integrations</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/api/1c/settings">⚙️ 1C Settings</a></li>
+                        <li><a class="dropdown-item" href="/api/bitrix/settings">⚙️ Bitrix24 Settings</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Отчеты -->
+                <li class="nav-item"><a class="nav-link" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                
+                <!-- Админка -->
+                <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-crown"></i> Admin</a></li>
+                
+                <!-- API Docs -->
+                <li class="nav-item"><a class="nav-link" href="/swagger/index.html"><i class="fas fa-book"></i> API</a></li>
+            </ul>
             
-            <div class="nav-auth">
-                {{if .User}}
-                    <span class="user-name">👤 {{.User}}</span>
-                    <a href="/logout" class="btn-logout">Выйти</a>
-                {{else}}
-                    <a href="/login" class="btn-login">Вход</a>
-                    <a href="/register" class="btn-register">Регистрация</a>
-                {{end}}
-            </div>
+            <!-- User Menu -->
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle"></i> Account
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/profile">👤 Profile</a></li>
+                        <li><a class="dropdown-item" href="/settings">⚙️ Settings</a></li>
+                        <li><a class="dropdown-item" href="/security">🔒 Security</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/logout">🚪 Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
         </div>
-    </nav>
-</body>
-</html>
+    </div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+

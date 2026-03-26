@@ -1,0 +1,166 @@
+basePath: /api
+host: localhost:8080
+info:
+  contact:
+    email: support@saaspro.ru
+    name: Поддержка API
+    url: http://saaspro.ru/support
+  description: API для управления подписками, AI-чатом и платежами
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://saaspro.ru/terms
+  title: SaaSPro API
+  version: "3.0"
+paths:
+  /api/crm/advanced-stats:
+    get:
+      description: Возвращает статистику по ответственным, источникам и динамику за
+        период
+      parameters:
+      - description: Начальная дата (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Конечная дата (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Расширенная аналитика CRM
+      tags:
+      - CRM
+  /api/crm/attachments/{attachment_id}:
+    delete:
+      description: Удаляет файл и запись о нём
+      parameters:
+      - description: ID вложения
+        in: path
+        name: attachment_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Удалить файл
+      tags:
+      - CRM
+  /api/crm/attachments/{attachment_id}/download:
+    get:
+      description: Скачивает файл по его ID
+      parameters:
+      - description: ID вложения
+        in: path
+        name: attachment_id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Скачать файл
+      tags:
+      - CRM
+  /api/crm/deals/{id}/attachments:
+    get:
+      description: Возвращает все файлы, прикреплённые к сделке
+      parameters:
+      - description: ID сделки
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Список вложений сделки
+      tags:
+      - CRM
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает файл и прикрепляет его к указанной сделке
+      parameters:
+      - description: ID сделки
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Файл для загрузки
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Загрузить файл для сделки
+      tags:
+      - CRM
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer <token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -189,4 +189,10 @@ func SubscriptionsHandler(c *gin.Context) {
         "Version": "3.0",
         "Time":    time.Now().Format("2006-01-02 15:04:05"),
     })
+}// IntegrationsPageHandler - страница интеграций
+func IntegrationsPageHandler(c *gin.Context) {
+    c.HTML(http.StatusOK, "integrations.html", gin.H{
+        "title": "Integrations - SaaSPro ERP",
+        "active": "integrations",
+    })
 }
