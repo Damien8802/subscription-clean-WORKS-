@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeamSphere | Премиум альтернатива Bitrix24</title>
+    <title>TeamSphere - Дашборд | Управление командой</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -13,10 +14,8 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
             min-height: 100vh;
-            overflow-x: hidden;
         }
         
-        /* Анимированный фон */
         .animated-bg {
             position: fixed;
             top: 0;
@@ -26,7 +25,6 @@
             z-index: -1;
             overflow: hidden;
         }
-        
         .animated-bg::before {
             content: '';
             position: absolute;
@@ -35,13 +33,11 @@
             background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
             animation: rotate 20s linear infinite;
         }
-        
         @keyframes rotate {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
-        /* Премиум навбар */
         .navbar {
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(20px);
@@ -50,495 +46,334 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            transition: all 0.3s;
         }
-        
         .navbar-brand {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            transition: 0.3s;
         }
-        
-        .navbar-brand:hover {
-            transform: scale(1.05);
-        }
-        
-        .nav-link {
-            color: #4a5568;
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 30px;
+            text-decoration: none;
             font-weight: 500;
-            margin: 0 0.5rem;
-            position: relative;
             transition: 0.3s;
+            color: #4a5568;
         }
-        
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0;
-            height: 2px;
+        .nav-btn:hover, .nav-btn.active {
             background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: 0.3s;
-        }
-        
-        .nav-link:hover::after {
-            width: 100%;
-        }
-        
-        .nav-link:hover {
-            color: #667eea;
+            color: white;
             transform: translateY(-2px);
         }
         
-        /* Герой секция */
         .hero {
             text-align: center;
-            padding: 120px 20px;
+            padding: 40px 20px;
             color: white;
-            position: relative;
         }
-        
         .hero h1 {
-            font-size: 5rem;
+            font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 20px;
-            animation: fadeInUp 0.8s ease;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
         }
-        
         .hero h1 i {
-            font-size: 4rem;
-            margin-right: 15px;
-            animation: pulse 2s infinite;
+            font-size: 2rem;
+            margin-right: 10px;
         }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
         .hero p {
-            font-size: 1.3rem;
-            opacity: 0.95;
-            margin-bottom: 40px;
-            animation: fadeInUp 1s ease;
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
         
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .badge-bitrix {
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            padding: 12px 30px;
-            border-radius: 50px;
-            display: inline-block;
-            margin-bottom: 30px;
-            font-size: 1rem;
-            font-weight: 500;
-            animation: fadeInUp 0.6s ease;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        
-        /* Премиум кнопки */
-        .btn-premium {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            padding: 14px 40px;
-            border-radius: 50px;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s;
-            margin: 0 10px;
-            display: inline-block;
-            text-decoration: none;
-            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-premium::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .btn-premium:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .btn-outline-premium {
-            border: 2px solid white;
-            background: transparent;
-            padding: 14px 40px;
-            border-radius: 50px;
-            color: white;
-            font-weight: 600;
-            transition: all 0.3s;
-            margin: 0 10px;
-            display: inline-block;
-            text-decoration: none;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-outline-premium:hover {
-            background: white;
-            color: #667eea;
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        
-        .btn-premium:hover, .btn-outline-premium:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        
-        /* Статистика */
         .stats-section {
-            padding: 80px 0;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
+            padding: 30px 0;
         }
-        
         .stat-card {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 35px;
+            padding: 20px;
             text-align: center;
-            transition: all 0.4s;
+            transition: all 0.3s;
             border: 1px solid rgba(255,255,255,0.2);
-            cursor: pointer;
         }
-        
         .stat-card:hover {
-            transform: translateY(-15px) scale(1.02);
+            transform: translateY(-5px);
             background: rgba(255,255,255,0.2);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        
         .stat-number {
-            font-size: 3.5rem;
+            font-size: 2rem;
             font-weight: 800;
             color: #fff;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
-        
         .stat-label {
             color: rgba(255,255,255,0.9);
-            margin-top: 15px;
-            font-size: 1rem;
+            margin-top: 8px;
+            font-size: 0.85rem;
         }
         
-        /* Карточки функций */
-        .features-section {
-            padding: 100px 0;
-            background: white;
-            border-radius: 50px 50px 0 0;
-            position: relative;
+        .chart-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
-        
-        .section-title {
-            text-align: center;
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 60px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .feature-card {
-            background: white;
-            border-radius: 25px;
-            padding: 40px 30px;
-            text-align: center;
-            transition: all 0.4s;
-            margin-bottom: 30px;
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            transition: 0.5s;
-            z-index: 0;
-            opacity: 0;
-        }
-        
-        .feature-card:hover::before {
-            left: 0;
-            opacity: 0.1;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-        
-        .feature-icon {
-            font-size: 3.5rem;
-            margin-bottom: 25px;
-            position: relative;
-            z-index: 1;
-            display: inline-block;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .feature-card h4 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .feature-card p {
-            color: #6c757d;
-            line-height: 1.6;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Футер */
-        .footer {
-            background: linear-gradient(135deg, #0f0c29, #24243e);
+        .chart-title {
             color: white;
-            padding: 60px 0 30px;
-            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        canvas {
+            max-height: 250px;
         }
         
-        .footer a {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
+        .activity-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
             transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .activity-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+        .activity-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(102,126,234,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .activity-content {
+            flex: 1;
+        }
+        .activity-title {
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .activity-time {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.7rem;
         }
         
-        .footer a:hover {
-            color: #667eea;
-        }
-        
-        /* Кнопка назад */
-        .back-btn {
+        .btn-back {
             position: fixed;
             bottom: 30px;
             right: 30px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
+            padding: 12px 28px;
+            border-radius: 30px;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
             text-decoration: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: all 0.3s;
+            font-weight: 500;
+            transition: 0.3s;
             z-index: 1000;
-            animation: bounce 2s infinite;
+        }
+        .btn-back:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
         }
         
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        
-        .back-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        
-        /* Адаптивность */
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .hero p { font-size: 1rem; }
-            .stat-number { font-size: 2rem; }
-            .section-title { font-size: 2rem; }
-        }
-        
-        /* Плавная прокрутка */
-        html {
-            scroll-behavior: smooth;
+            .hero h1 { font-size: 1.8rem; }
+            .stat-number { font-size: 1.5rem; }
+            .btn-back { padding: 10px 20px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
 
-<div class="animated-bg"></div>
-
-<nav class="navbar navbar-expand-lg">
+<nav class="navbar">
     <div class="container">
-        <a class="navbar-brand" href="/teamsphere">
-            <i class="fas fa-globe"></i> TeamSphere
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/teamsphere"><i class="fas fa-home"></i> Главная</a></li>
-                <li class="nav-item"><a class="nav-link" href="/crm"><i class="fas fa-users"></i> CRM</a></li>
-                <li class="nav-item"><a class="nav-link" href="/teamsphere/integrations"><i class="fas fa-plug"></i> Интеграции</a></li>
-                <li class="nav-item"><a class="nav-link" href="/swagger/index.html"><i class="fas fa-book"></i> API Документация</a></li>
-            </ul>
+        <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
+        <div class="d-flex">
+            <a href="/teamsphere" class="nav-btn active"><i class="fas fa-home"></i> Главная</a>
+            <a href="/crm" class="nav-btn"><i class="fas fa-users"></i> CRM</a>
+            <a href="/projects" class="nav-btn"><i class="fas fa-tasks"></i> Проекты</a>
+            <a href="/team/team" class="nav-btn"><i class="fas fa-user-friends"></i> Команда</a>
+            <a href="/tasks" class="nav-btn"><i class="fas fa-check-square"></i> Задачи</a>
+            <a href="/swagger/index.html" class="nav-btn"><i class="fas fa-book"></i> API</a>
         </div>
     </div>
 </nav>
 
+<div class="animated-bg"></div>
+
+<!-- Герой -->
 <div class="hero">
-    <div class="badge-bitrix">
-        <i class="fas fa-star"></i> Полноценная альтернатива Bitrix24 | 100% совместимость с API
-    </div>
-    <h1><i class="fas fa-globe"></i> TeamSphere</h1>
-    <p>Полная платформа для управления командой и совместной работы</p>
-    <div>
-        <a href="/crm" class="btn-premium"><i class="fas fa-chart-line"></i> Запустить CRM</a>
-        <a href="/teamsphere/integrations" class="btn-outline-premium"><i class="fas fa-plug"></i> Интеграции</a>
-        <a href="/swagger/index.html" class="btn-outline-premium"><i class="fas fa-book"></i> API Документация</a>
-    </div>
+    <h1><i class="fas fa-chart-line"></i> Дашборд TeamSphere</h1>
+    <p>Аналитика и ключевые показатели вашей команды</p>
 </div>
 
-<div class="stats-section">
-    <div class="container">
+<div class="container">
+    <!-- Статистика -->
+    <div class="stats-section">
         <div class="row">
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" id="customers">9</div>
-                    <div class="stat-label"><i class="fas fa-users"></i> Активных клиентов</div>
+                    <div class="stat-number" id="totalProjects">12</div>
+                    <div class="stat-label"><i class="fas fa-tasks me-1"></i> Всего проектов</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" id="deals">3</div>
-                    <div class="stat-label"><i class="fas fa-chart-line"></i> Активных сделок</div>
+                    <div class="stat-number" id="activeProjects">8</div>
+                    <div class="stat-label"><i class="fas fa-play me-1"></i> Активных</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" id="revenue">900</div>
-                    <div class="stat-label"><i class="fas fa-ruble-sign"></i> Выручка (тыс. руб)</div>
+                    <div class="stat-number" id="completedProjects">4</div>
+                    <div class="stat-label"><i class="fas fa-check-circle me-1"></i> Завершено</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card">
-                    <div class="stat-number" id="conversion">75</div>
-                    <div class="stat-label"><i class="fas fa-chart-simple"></i> Конверсия, %</div>
+                    <div class="stat-number" id="teamMembers">15</div>
+                    <div class="stat-label"><i class="fas fa-users me-1"></i> Участников</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="chart-card">
+                <div class="chart-title"><i class="fas fa-chart-line me-2"></i>Динамика проектов</div>
+                <canvas id="projectsChart"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-card">
+                <div class="chart-title"><i class="fas fa-chart-pie me-2"></i>Статусы проектов</div>
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние активности -->
+    <div class="row mt-3 mb-5">
+        <div class="col-md-12">
+            <div class="chart-card">
+                <div class="chart-title"><i class="fas fa-clock me-2"></i>Последние активности</div>
+                <div class="activity-list" id="activityList">
+                    <div class="activity-item">
+                        <div class="activity-icon"><i class="fas fa-plus text-success"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Создан новый проект "CRM Разработка"</div>
+                            <div class="activity-time">2 часа назад</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon"><i class="fas fa-check-circle text-primary"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Завершена задача "Интеграция с 1С"</div>
+                            <div class="activity-time">5 часов назад</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon"><i class="fas fa-user-plus text-info"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Новый участник: Анна присоединилась к проекту</div>
+                            <div class="activity-time">Вчера</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon"><i class="fas fa-chart-line text-warning"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Прогресс проекта "Мобильное приложение" 75%</div>
+                            <div class="activity-time">Вчера</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="features-section">
-    <div class="container">
-        <h2 class="section-title">Почему TeamSphere?</h2>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">🤝</div>
-                    <h4>Командная работа</h4>
-                    <p>Общение и управление задачами в реальном времени</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h4>Управление проектами</h4>
-                    <p>Отслеживание проектов, дедлайнов и этапов</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">🔌</div>
-                    <h4>Совместимость с API</h4>
-                    <p>100% совместимость с API Bitrix24</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h4>Корпоративная безопасность</h4>
-                    <p>2FA, логи безопасности, контроль доступа</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">📱</div>
-                    <h4>Мобильное приложение</h4>
-                    <p>PWA приложение, работа офлайн</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
-                    <h4>AI Ассистент</h4>
-                    <p>Умные подсказки и автоматизация</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="footer">
-    <div class="container">
-        <p class="mb-3">TeamSphere v3.12.0 | Полноценная альтернатива Bitrix24</p>
-        <small>© 2024 TeamSphere. Все права защищены.</small>
-    </div>
-</div>
-
-<a href="javascript:history.back()" class="back-btn">
-    <i class="fas fa-arrow-left fa-lg"></i>
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Назад
 </a>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    async function loadStats() {
-        try {
-            const response = await fetch('/api/crm/stats');
-            const data = await response.json();
-            if (data.total_customers) document.getElementById('customers').textContent = data.total_customers;
-            if (data.total_deals) document.getElementById('deals').textContent = data.total_deals;
-            if (data.total_amount) document.getElementById('revenue').textContent = Math.round(data.total_amount / 1000);
-            if (data.conversion_rate) document.getElementById('conversion').textContent = data.conversion_rate;
-        } catch(e) { console.log('Загрузка статистики...'); }
-    }
-    loadStats();
-    setInterval(loadStats, 30000);
+    // График динамики проектов
+    const ctx1 = document.getElementById('projectsChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+            datasets: [{
+                label: 'Проекты',
+                data: [5, 7, 9, 10, 12, 15],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102,126,234,0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#667eea',
+                pointBorderColor: '#fff',
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { labels: { color: '#fff' } }
+            },
+            scales: {
+                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } },
+                x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#fff' } }
+            }
+        }
+    });
+
+    // График статусов проектов
+    const ctx2 = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Активные', 'Завершены', 'В плане'],
+            datasets: [{
+                data: [8, 4, 3],
+                backgroundColor: ['#667eea', '#4ade80', '#fbbf24'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { labels: { color: '#fff' } }
+            }
+        }
+    });
 </script>
 </body>
 </html>

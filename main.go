@@ -801,5 +801,21 @@ handlers.StartTeamSphereScheduler() // Планировщик TeamSphere
 r.GET("/favicon.ico", func(c *gin.Context) {
     c.File("./static/favicon.ico")
 })  
+        // Team page
+    r.GET("/team/team", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "team.html", gin.H{
+            "title": "Команда - TeamSphere",
+        })
+    })
+    
+        // Tasks page
+    r.GET("/tasks", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "tasks.html", gin.H{
+            "title": "Задачи - TeamSphere",
+        })
+    })
+    
     r.Run(port)
 }
+
+
