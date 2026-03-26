@@ -432,6 +432,20 @@ func main() {
     r.GET("/api/vpn/stats", handlers.GetVPNStats)
     r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
 
+// ========== БЕЗОПАСНОСТЬ ==========
+
+// Логи безопасности
+r.GET("/api/security/logs", handlers.GetSecurityLogs)
+r.GET("/api/security/stats", handlers.GetSecurityStats)
+
+// Блокировка IP (только для админов)
+r.GET("/api/security/blocked-ips", handlers.GetBlockedIPs)
+r.DELETE("/api/security/blocked-ips/:ip", handlers.UnblockIP)
+
+// Применяем middleware безопасности
+r.Use(handlers.SecurityMiddleware())
+
+
     // Админ маршруты для VPN
     adminVPN := r.Group("/admin/vpn")
     adminVPN.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))

@@ -4,6 +4,7 @@ import (
     "context"
     "crypto/rand"
     "encoding/hex"
+    "encoding/json"
     "fmt"
     "log"
     "net/http"
@@ -30,6 +31,60 @@ func generateRandomStringAuth(length int) string {
     return hex.EncodeToString(bytes)[:length]
 }
 
+// logAuthEvent логирует события безопасности
+func logAuthEvent(userID uuid.UUID, action, ip, userAgent string, details map[string]interface{}, status string) {
+    detailsJSON, _ := json.Marshal(details)
+    database.Pool.Exec(context.Background(), `
+        INSERT INTO security_logs (user_id, action, ip, user_agent, details, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    `, userID, action, ip, userAgent, detailsJSON, status)
+}
+
+// recordFailedAttempt записывает неудачную попытку
+func recordFailedAttempt(ip string, userID *uuid.UUID, action string) {
+    ctx := context.Background()
+    
+    _, err := database.Pool.Exec(ctx, `
+        INSERT INTO failed_attempts (ip, user_id, action, attempt_count, last_attempt)
+        VALUES ($1, $2, $3, 1, NOW())
+        ON CONFLICT (ip, user_id, action) DO UPDATE SET
+            attempt_count = failed_attempts.attempt_count + 1,
+            last_attempt = NOW()
+    `, ip, userID, action)
+    
+    if err != nil {
+        log.Printf("❌ Ошибка записи неудачной попытки: %v", err)
+        return
+    }
+    
+    var attemptCount int
+    database.Pool.QueryRow(ctx, `
+        SELECT attempt_count FROM failed_attempts
+        WHERE ip = $1 AND user_id IS NOT DISTINCT FROM $2 AND action = $3
+    `, ip, userID, action).Scan(&attemptCount)
+    
+    if attemptCount >= 5 {
+        blockUntil := time.Now().Add(15 * time.Minute)
+        database.Pool.Exec(ctx, `
+            INSERT INTO blocked_ips (ip, reason, blocked_until)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (ip) DO UPDATE SET
+                blocked_until = EXCLUDED.blocked_until,
+                reason = EXCLUDED.reason
+        `, ip, fmt.Sprintf("Слишком много неудачных попыток (%d)", attemptCount), blockUntil)
+        
+        log.Printf("🚫 IP %s заблокирован до %s", ip, blockUntil.Format("2006-01-02 15:04:05"))
+    }
+}
+
+// resetFailedAttempts сбрасывает счетчик неудачных попыток
+func resetFailedAttempts(ip string, userID *uuid.UUID, action string) {
+    database.Pool.Exec(context.Background(), `
+        DELETE FROM failed_attempts
+        WHERE ip = $1 AND user_id IS NOT DISTINCT FROM $2 AND action = $3
+    `, ip, userID, action)
+}
+
 // SendPhoneCode отправляет код на телефон
 func SendPhoneCode(c *gin.Context) {
     var req struct {
@@ -40,11 +95,9 @@ func SendPhoneCode(c *gin.Context) {
         return
     }
     
-    // Генерируем 6-значный код
     code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
-    
-    // Сохраняем код в БД
     expiresAt := time.Now().Add(5 * time.Minute)
+    
     _, err := database.Pool.Exec(c.Request.Context(), `
         INSERT INTO phone_auth_codes (phone, code, expires_at)
         VALUES ($1, $2, $3)
@@ -76,7 +129,6 @@ func VerifyPhoneCode(c *gin.Context) {
         return
     }
     
-    // Проверяем код
     var storedCode string
     var expiresAt time.Time
     err := database.Pool.QueryRow(c.Request.Context(), `
@@ -89,7 +141,6 @@ func VerifyPhoneCode(c *gin.Context) {
         return
     }
     
-    // Находим или создаем пользователя
     var userID uuid.UUID
     err = database.Pool.QueryRow(c.Request.Context(), `
         SELECT id FROM users WHERE phone = $1
@@ -101,7 +152,6 @@ func VerifyPhoneCode(c *gin.Context) {
     }
     
     if err != nil {
-        // Создаем нового пользователя
         email := fmt.Sprintf("%s@phone.saaspro.ru", generateRandomStringAuth(8))
         err = database.Pool.QueryRow(c.Request.Context(), `
             INSERT INTO users (phone, name, email, role) VALUES ($1, $2, $3, 'user') RETURNING id
@@ -112,14 +162,12 @@ func VerifyPhoneCode(c *gin.Context) {
         }
     }
     
-    // Генерируем JWT токен
     token, err := GenerateJWTForUser(userID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
         return
     }
     
-    // Удаляем использованный код
     database.Pool.Exec(c.Request.Context(), "DELETE FROM phone_auth_codes WHERE phone = $1", req.Phone)
     
     c.JSON(http.StatusOK, gin.H{
@@ -144,6 +192,9 @@ func LoginHandler(c *gin.Context) {
         return
     }
 
+    ip := c.ClientIP()
+    userAgent := c.GetHeader("User-Agent")
+
     var user models.User
     var passwordHash string
     var emailVerified bool
@@ -152,11 +203,28 @@ func LoginHandler(c *gin.Context) {
         req.Email).Scan(&user.ID, &user.Email, &passwordHash, &user.Name, &user.Role, &emailVerified)
     
     if err != nil {
+        recordFailedAttempt(ip, nil, "login")
+        logAuthEvent(uuid.Nil, "login_failed", ip, userAgent, map[string]interface{}{
+            "email":  req.Email,
+            "reason": "user_not_found",
+        }, "failed")
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
 
+    // Конвертируем string в uuid.UUID
+    userUUID, parseErr := uuid.Parse(user.ID)
+    if parseErr != nil {
+        log.Printf("❌ Ошибка парсинга user ID: %v", parseErr)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+        return
+    }
+
     if !emailVerified {
+        logAuthEvent(userUUID, "login_failed", ip, userAgent, map[string]interface{}{
+            "email":  req.Email,
+            "reason": "email_not_verified",
+        }, "failed")
         c.JSON(http.StatusUnauthorized, gin.H{
             "error":                  "Email not verified. Please check your email for verification code.",
             "requires_verification": true,
@@ -166,9 +234,21 @@ func LoginHandler(c *gin.Context) {
     }
 
     if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+        recordFailedAttempt(ip, &userUUID, "login")
+        logAuthEvent(userUUID, "login_failed", ip, userAgent, map[string]interface{}{
+            "email":  req.Email,
+            "reason": "invalid_password",
+        }, "failed")
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
+
+    // Успешный вход
+    resetFailedAttempts(ip, &userUUID, "login")
+    logAuthEvent(userUUID, "login_success", ip, userAgent, map[string]interface{}{
+        "email":    req.Email,
+        "remember": req.Remember,
+    }, "success")
 
     var accessExpiry, refreshExpiry time.Duration
     if req.Remember {
@@ -193,27 +273,24 @@ func LoginHandler(c *gin.Context) {
         log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
-    userID := user.ID
-    
     var lastLoginIP string
     database.Pool.QueryRow(context.Background(),
         "SELECT ip_address FROM login_history WHERE user_id = $1 ORDER BY login_time DESC LIMIT 1",
-        userID).Scan(&lastLoginIP)
+        user.ID).Scan(&lastLoginIP)
 
-    if lastLoginIP != "" && lastLoginIP != c.ClientIP() {
+    if lastLoginIP != "" && lastLoginIP != ip {
         details := map[string]interface{}{
-            "ip":       c.ClientIP(),
-            "location": "Неизвестно",
-            "device":   c.GetHeader("User-Agent"),
+            "ip":       ip,
+            "location": GetLocationByIP(ip),
+            "device":   userAgent,
             "time":     time.Now().Format("02.01.2006 15:04"),
         }
-       userUUID, _ := uuid.Parse(user.ID)
-      LogAndNotify(c, userUUID, NotifLoginNewDevice, details)
+        LogAndNotify(c, userUUID, NotifLoginNewDevice, details)
     }
 
     database.Pool.Exec(context.Background(),
         "INSERT INTO login_history (user_id, ip_address, user_agent, login_time) VALUES ($1, $2, $3, $4)",
-        userID, c.ClientIP(), c.GetHeader("User-Agent"), time.Now())
+        user.ID, ip, userAgent, time.Now())
 
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
