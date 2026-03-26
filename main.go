@@ -790,10 +790,20 @@ func main() {
 
     log.Printf("🚀 Сервер запущен на порту %s", port)
     
-    // Запуск планировщиков
-    handlers.StartSyncScheduler()
-    handlers.StartBitrixSyncScheduler()
-  
+   // Запуск планировщиков
+handlers.StartSyncScheduler()
+handlers.StartBitrixSyncScheduler()
+handlers.StartTeamSphereScheduler() // Планировщик TeamSphere
+
+// Favicon обработка
+r.GET("/favicon.ico", func(c *gin.Context) {
+    c.File("./static/favicon.ico")
+})
+
+// Projects редирект (чтобы не было 404)
+r.GET("/projects", func(c *gin.Context) {
+    c.Redirect(301, "/crm")
+})
     
     r.Run(port)
 }

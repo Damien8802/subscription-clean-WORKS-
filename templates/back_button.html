@@ -1,0 +1,37 @@
+<style>
+.btn-back-oval {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    z-index: 1000;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+}
+.btn-back-oval i {
+    font-size: 14px;
+}
+.btn-back-oval:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+}
+</style>
+<a href="javascript:history.back()" class="btn-back-oval">
+    <i class="fas fa-arrow-left"></i>
+    <span>Назад</span>
+</a>
