@@ -3,165 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .Title }} - Календарь сделок</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- FullCalendar -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/main.min.js"></script>
-    <!-- Moment.js (опционально, для форматирования) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <title>TeamSphere Календарь | Управление событиями</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/ru.js"></script>
     <style>
-        body { background-color: #f8f9fa; }
-        #calendar {
-            max-width: 1100px;
-            margin: 20px auto;
-            padding: 0 10px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
         }
-        .fc-toolbar-title { font-size: 1.5rem; }
-        .fc-event { cursor: pointer; }
+        
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            color: #4a5568;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .hero h1 i {
+            font-size: 2rem;
+            margin-right: 10px;
+        }
+        .hero p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .calendar-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
+        }
+        
+        #calendar {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 15px;
+        }
+        
+        .fc {
+            color: white;
+        }
+        
+        .fc .fc-button-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 8px 16px;
+            font-weight: 500;
+        }
+        
+        .fc .fc-button-primary:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+        }
+        
+        .fc .fc-button-primary:active {
+            transform: translateY(0);
+        }
+        
+        .fc .fc-daygrid-day {
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        
+        .fc .fc-daygrid-day:hover {
+            background: rgba(255,255,255,0.12);
+        }
+        
+        .fc .fc-day-today {
+            background: rgba(102,126,234,0.2) !important;
+        }
+        
+        .fc-theme-standard .fc-scrollgrid,
+        .fc-theme-standard td, 
+        .fc-theme-standard th {
+            border-color: rgba(255,255,255,0.15);
+        }
+        
+        .fc-col-header-cell-cushion,
+        .fc-daygrid-day-number {
+            color: white;
+            font-weight: 500;
+        }
+        
+        .fc-daygrid-day-number {
+            padding: 8px !important;
+        }
+        
+        .fc-event {
+            cursor: pointer;
+            border-radius: 12px;
+            padding: 4px 8px;
+            margin: 2px 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .fc-event:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .fc-event-title {
+            font-weight: 500;
+        }
+        
+        .btn-add {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            z-index: 1000;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+        }
+        
+        .btn-add:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.5);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
+        }
+        
+        .btn-back {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 14px 32px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
+        }
+        
+        .modal-content {
+            background: rgba(25,25,45,0.98);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 24px;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding: 20px 25px;
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid rgba(255,255,255,0.15);
+            padding: 20px 25px;
+        }
+        
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(255,255,255,0.2);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+            color: white;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .btn-close-white {
+            filter: brightness(0) invert(1);
+        }
+        
+        .toast-notify {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            z-index: 1100;
+            min-width: 300px;
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8rem; }
+            .btn-add, .btn-back { padding: 10px 20px; font-size: 12px; }
+            .btn-add { left: 20px; }
+            .btn-back { right: 20px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container-fluid mt-3">
-        <h1 class="mb-3">Календарь сделок</h1>
-        <div id="calendar"></div>
-    </div>
 
-    <!-- Модальное окно для просмотра/редактирования сделки (опционально) -->
-    <div class="modal fade" id="dealModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Сделка</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
+        <div class="d-flex">
+            <a href="/teamsphere" class="nav-btn"><i class="fas fa-home"></i> Главная</a>
+            <a href="/crm" class="nav-btn"><i class="fas fa-users"></i> CRM</a>
+            <a href="/projects" class="nav-btn"><i class="fas fa-tasks"></i> Проекты</a>
+            <a href="/team/team" class="nav-btn"><i class="fas fa-user-friends"></i> Команда</a>
+            <a href="/tasks" class="nav-btn"><i class="fas fa-check-square"></i> Задачи</a>
+            <a href="/chat" class="nav-btn"><i class="fas fa-comments"></i> Чат</a>
+            <a href="/team-calendar" class="nav-btn active"><i class="fas fa-calendar-alt"></i> Календарь</a>
+            <a href="/swagger/index.html" class="nav-btn"><i class="fas fa-book"></i> API</a>
+        </div>
+    </div>
+</nav>
+
+<div class="animated-bg"></div>
+
+<div class="hero">
+    <h1><i class="fas fa-calendar-alt"></i> Календарь событий</h1>
+    <p>Планируйте встречи, отслеживайте дедлайны и управляйте временем</p>
+</div>
+
+<div class="calendar-container">
+    <div id="calendar"></div>
+</div>
+
+<button class="btn-add" onclick="openAddEventModal()">
+    <i class="fas fa-plus"></i> Добавить событие
+</button>
+<a href="javascript:history.back()" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<!-- Модальное окно добавления события -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>Создать событие</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Название события *</label>
+                    <input type="text" class="form-control" id="eventTitle" placeholder="Введите название">
                 </div>
-                <div class="modal-body" id="dealModalBody">
-                    Загрузка...
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Дата</label>
+                        <input type="date" class="form-control" id="eventDate">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Время</label>
+                        <input type="time" class="form-control" id="eventTime">
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                    <a href="#" class="btn btn-primary" id="dealModalLink" target="_blank">Перейти к сделке</a>
+                <div class="mb-3">
+                    <label class="form-label">Тип события</label>
+                    <select class="form-select" id="eventType">
+                        <option value="meeting">📅 Встреча</option>
+                        <option value="deadline">⏰ Дедлайн</option>
+                        <option value="call">📞 Звонок</option>
+                        <option value="reminder">🔔 Напоминание</option>
+                        <option value="birthday">🎂 День рождения</option>
+                    </select>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="eventDescription" rows="3" placeholder="Дополнительная информация"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="addEvent()">Сохранить</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const calendarEl = document.getElementById('calendar');
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'ru',
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                },
-                buttonText: {
-                    today: 'Сегодня',
-                    month: 'Месяц',
-                    week: 'Неделя',
-                    day: 'День'
-                },
-                events: function(fetchInfo, successCallback, failureCallback) {
-                    // Загружаем сделки с next_action_date через API
-                    fetch('/api/crm/deals?has_next_action=true&page=1&page_size=1000')
-                        .then(response => response.json())
-                        .then(data => {
-                            const events = data.data.map(deal => ({
-                                id: deal.id,
-                                title: deal.title,
-                                start: deal.next_action_date ? moment(deal.next_action_date).format('YYYY-MM-DD') : null,
-                                description: `Сумма: ${deal.value} ₽ | Ответственный: ${deal.responsible || 'не назначен'}`,
-                                backgroundColor: deal.stage === 'closed_won' ? '#28a745' : 
-                                                deal.stage === 'closed_lost' ? '#dc3545' : 
-                                                deal.stage === 'lead' ? '#007bff' : '#ffc107',
-                                borderColor: '#333',
-                                extendedProps: {
-                                    dealId: deal.id,
-                                    value: deal.value,
-                                    responsible: deal.responsible,
-                                    stage: deal.stage,
-                                    customerId: deal.customer_id
-                                }
-                            })).filter(e => e.start); // только с датой
-                            successCallback(events);
-                        })
-                        .catch(err => {
-                            console.error('Error loading deals for calendar:', err);
-                            failureCallback(err);
-                        });
-                },
-                eventClick: function(info) {
-                    const deal = info.event.extendedProps;
-                    document.getElementById('dealModalBody').innerHTML = `
-                        <p><strong>${info.event.title}</strong></p>
-                        <p>Сумма: ${deal.value} ₽</p>
-                        <p>Стадия: ${deal.stage}</p>
-                        <p>Ответственный: ${deal.responsible || 'не назначен'}</p>
-                        <p>Клиент ID: ${deal.customerId}</p>
-                    `;
-                    document.getElementById('dealModalLink').href = `/crm#deal-${deal.dealId}`; // предположим, что можно перейти
-                    new bootstrap.Modal(document.getElementById('dealModal')).show();
-                },
-                eventDrop: function(info) {
-                    // При перетаскивании обновляем дату
-                    const dealId = info.event.id;
-                    const newDate = moment(info.event.start).format('YYYY-MM-DD');
-                    fetch(`/api/crm/deals/${dealId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ next_action_date: newDate + 'T00:00:00Z' })
-                    }).then(response => {
-                        if (!response.ok) {
-                            alert('Ошибка при обновлении даты');
-                            info.revert();
-                        }
-                    }).catch(() => {
-                        alert('Ошибка сети');
-                        info.revert();
-                    });
-                },
-                editable: true,
-                selectable: false
-            });
-            calendar.render();
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let events = [];
+    
+    function loadEvents() {
+        const saved = localStorage.getItem('teamsphere_calendar_events');
+        if (saved && saved !== 'undefined') {
+            try {
+                events = JSON.parse(saved);
+                console.log('✅ Загружено событий:', events.length);
+            } catch(e) {
+                console.error('Ошибка парсинга:', e);
+                events = [];
+            }
+        }
+        
+        if (!events || events.length === 0) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dayAfter = new Date(today);
+            dayAfter.setDate(dayAfter.getDate() + 2);
+            
+            events = [
+                {id: 1, title: "Командная встреча", date: today.toISOString().split('T')[0], time: "10:00", type: "meeting", description: "Обсуждение планов на неделю"},
+                {id: 2, title: "Дедлайн: Отчет по проекту", date: today.toISOString().split('T')[0], time: "18:00", type: "deadline", description: "Сдать отчет по разработке"},
+                {id: 3, title: "Звонок с клиентом", date: tomorrow.toISOString().split('T')[0], time: "11:00", type: "call", description: "Обсуждение условий сотрудничества"},
+                {id: 4, title: "Планирование спринта", date: tomorrow.toISOString().split('T')[0], time: "15:00", type: "meeting", description: "Планирование задач"},
+                {id: 5, title: "День рождения Анны", date: dayAfter.toISOString().split('T')[0], time: "12:00", type: "birthday", description: "Поздравляем Анну! 🎉"}
+            ];
+            saveEvents();
+        }
+        renderCalendar();
+    }
+    
+    function saveEvents() {
+        localStorage.setItem('teamsphere_calendar_events', JSON.stringify(events));
+        console.log('💾 Сохранено событий:', events.length);
+    }
+    
+    function getEventColor(type) {
+        const colors = { meeting: '#667eea', deadline: '#f59e0b', call: '#10b981', reminder: '#8b5cf6', birthday: '#ec489a' };
+        return colors[type] || '#6c757d';
+    }
+    
+    function getEventIcon(type) {
+        const icons = { meeting: '📅', deadline: '⏰', call: '📞', reminder: '🔔', birthday: '🎂' };
+        return icons[type] || '📌';
+    }
+    
+    function renderCalendar() {
+        const calendarEl = document.getElementById('calendar');
+        
+        if (window.calendar) {
+            try { window.calendar.destroy(); } catch(e) {}
+            window.calendar = null;
+        }
+        
+        if (calendarEl) {
+            calendarEl.innerHTML = '';
+        }
+        
+        const calendarEvents = events.map(event => ({
+            id: event.id,
+            title: `${getEventIcon(event.type)} ${event.title}`,
+            start: `${event.date}T${event.time}:00`,
+            backgroundColor: getEventColor(event.type),
+            borderColor: getEventColor(event.type)
+        }));
+        
+        window.calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'ru',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: { today: 'Сегодня', month: 'Месяц', week: 'Неделя', day: 'День' },
+            events: calendarEvents,
+            eventClick: function(info) {
+                const event = events.find(e => e.id == info.event.id);
+                if (event) {
+                    alert(`${getEventIcon(event.type)} ${event.title}\n\n📅 ${event.date} в ${event.time}\n📝 ${event.description || 'Нет описания'}`);
+                }
+            },
+            selectable: true,
+            select: function(info) {
+                document.getElementById('eventDate').value = info.start.toISOString().split('T')[0];
+                document.getElementById('eventTime').value = '12:00';
+                openAddEventModal();
+            }
         });
-    </script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-}
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
+        
+        window.calendar.render();
+    }
+    
+    function openAddEventModal() {
+        if (!document.getElementById('eventDate').value) {
+            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('eventTime').value = '12:00';
+        }
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventType').value = 'meeting';
+        document.getElementById('eventDescription').value = '';
+        new bootstrap.Modal(document.getElementById('eventModal')).show();
+    }
+    
+    function addEvent() {
+        const title = document.getElementById('eventTitle').value.trim();
+        const date = document.getElementById('eventDate').value;
+        const time = document.getElementById('eventTime').value;
+        const type = document.getElementById('eventType').value;
+        const description = document.getElementById('eventDescription').value.trim();
+        
+        if (!title) { alert('Введите название события'); return; }
+        if (!date) { alert('Выберите дату'); return; }
+        if (!time) { alert('Выберите время'); return; }
+        
+        const newEvent = {
+            id: Date.now(),
+            title: title,
+            date: date,
+            time: time,
+            type: type,
+            description: description || ''
+        };
+        
+        events.push(newEvent);
+        saveEvents();
+        renderCalendar();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('eventModal'));
+        if (modal) modal.hide();
+        
+        alert(`✅ Событие "${title}" добавлено!`);
+        
+        document.getElementById('eventTitle').value = '';
+        document.getElementById('eventDescription').value = '';
+    }
+    
+    loadEvents();
+</script>
 </body>
 </html>

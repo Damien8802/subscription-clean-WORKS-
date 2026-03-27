@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат | TeamSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            color: #4a5568;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+        
+        .chat-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .chat-sidebar {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            height: calc(100vh - 250px);
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .chat-main {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            height: calc(100vh - 250px);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 600;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .chat-input-area {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input-area input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 12px 20px;
+            color: white;
+            outline: none;
+        }
+        
+        .chat-input-area input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .chat-input-area button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 30px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+        
+        .chat-input-area button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-sender {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .message-text {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 15px;
+            border-radius: 15px;
+            color: white;
+            display: inline-block;
+            max-width: 80%;
+        }
+        
+        .message-time {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 5px;
+        }
+        
+        .message.own {
+            flex-direction: row-reverse;
+        }
+        
+        .message.own .message-text {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        .chat-list-item {
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .chat-list-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .chat-list-item.active {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .chat-info {
+            flex: 1;
+        }
+        
+        .chat-name {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .chat-preview {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+        }
+        
+        .chat-time {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .btn-back {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            z-index: 1000;
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.8rem; }
+            .chat-sidebar { display: none; }
+            .btn-back { padding: 10px 20px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
+        <div class="d-flex">
+            <a href="/teamsphere" class="nav-btn"><i class="fas fa-home"></i> Главная</a>
+            <a href="/crm" class="nav-btn"><i class="fas fa-users"></i> CRM</a>
+            <a href="/projects" class="nav-btn"><i class="fas fa-tasks"></i> Проекты</a>
+            <a href="/team/team" class="nav-btn"><i class="fas fa-user-friends"></i> Команда</a>
+            <a href="/tasks" class="nav-btn"><i class="fas fa-check-square"></i> Задачи</a>
+            <a href="/chat" class="nav-btn"><i class="fas fa-comments"></i> Чат</a>
+            <a href="/calendar" class="nav-btn"><i class="fas fa-calendar-alt"></i> Календарь</a>
+            <a href="/swagger/index.html" class="nav-btn"><i class="fas fa-book"></i> API</a>
+        </div>
+    </div>
+</nav>
+
+
+
+<div class="animated-bg"></div>
+
+<div class="hero">
+    <h1><i class="fas fa-comments"></i> Командный чат</h1>
+</div>
+
+<div class="chat-container">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="chat-sidebar">
+                <div class="chat-list-item active" onclick="selectChat('Общий чат')">
+                    <div class="chat-avatar"><i class="fas fa-users"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">Общий чат</div>
+                        <div class="chat-preview">Последнее сообщение...</div>
+                    </div>
+                    <div class="chat-time">сейчас</div>
+                </div>
+                <div class="chat-list-item" onclick="selectChat('Проект CRM')">
+                    <div class="chat-avatar"><i class="fas fa-project-diagram"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">Проект CRM</div>
+                        <div class="chat-preview">Обсуждение задач...</div>
+                    </div>
+                    <div class="chat-time">10 мин</div>
+                </div>
+                <div class="chat-list-item" onclick="selectChat('Разработка')">
+                    <div class="chat-avatar"><i class="fas fa-code"></i></div>
+                    <div class="chat-info">
+                        <div class="chat-name">Разработка</div>
+                        <div class="chat-preview">Технические вопросы...</div>
+                    </div>
+                    <div class="chat-time">1 час</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="chat-main">
+                <div class="chat-header" id="currentChat">Общий чат</div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message">
+                        <div class="message-avatar"><i class="fas fa-user"></i></div>
+                        <div class="message-content">
+                            <div class="message-sender">Алексей</div>
+                            <div class="message-text">Всем привет! Начинаем обсуждение нового проекта</div>
+                            <div class="message-time">10:30</div>
+                        </div>
+                    </div>
+                    <div class="message">
+                        <div class="message-avatar"><i class="fas fa-user"></i></div>
+                        <div class="message-content">
+                            <div class="message-sender">Мария</div>
+                            <div class="message-text">Отлично! Уже готовы первые наработки</div>
+                            <div class="message-time">10:32</div>
+                        </div>
+                    </div>
+                    <div class="message own">
+                        <div class="message-avatar"><i class="fas fa-user"></i></div>
+                        <div class="message-content">
+                            <div class="message-sender">Вы</div>
+                            <div class="message-text">Когда планируем созвониться?</div>
+                            <div class="message-time">10:35</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="messageInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="javascript:history.back()" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let currentChat = 'Общий чат';
+    
+    function selectChat(chatName) {
+        currentChat = chatName;
+        document.getElementById('currentChat').innerText = chatName;
+        
+        // Подсветка активного чата
+        document.querySelectorAll('.chat-list-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+        
+        // Здесь будет загрузка сообщений для выбранного чата
+        loadMessages(chatName);
+    }
+    
+    function loadMessages(chatName) {
+        const messagesContainer = document.getElementById('chatMessages');
+        // В реальном приложении здесь будет запрос к API
+        messagesContainer.innerHTML = '<div class="text-center text-white py-5">Загрузка сообщений...</div>';
+        
+        setTimeout(() => {
+            messagesContainer.innerHTML = `
+                <div class="message">
+                    <div class="message-avatar"><i class="fas fa-user"></i></div>
+                    <div class="message-content">
+                        <div class="message-sender">Система</div>
+                        <div class="message-text">Добро пожаловать в чат "${chatName}"</div>
+                        <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `;
+        }, 500);
+    }
+    
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        const messagesContainer = document.getElementById('chatMessages');
+        const time = new Date().toLocaleTimeString();
+        
+        const messageHtml = `
+            <div class="message own">
+                <div class="message-avatar"><i class="fas fa-user"></i></div>
+                <div class="message-content">
+                    <div class="message-sender">Вы</div>
+                    <div class="message-text">${escapeHtml(message)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            </div>
+        `;
+        
+        messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+        input.value = '';
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Автоматическая прокрутка
+    const messagesContainer = document.getElementById('chatMessages');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+</script>
+</body>
+</html>
+

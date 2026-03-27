@@ -815,7 +815,21 @@ r.GET("/favicon.ico", func(c *gin.Context) {
         })
     })
     
+// Chat page
+r.GET("/chat", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "chat.html", gin.H{
+        "title": "Чат - TeamSphere",
+    })
+})
+     // TeamSphere Calendar page
+r.GET("/team-calendar", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "calendar.html", gin.H{
+        "title": "Календарь - TeamSphere",
+    })
+})
+    
     r.Run(port)
 }
+
 
 
