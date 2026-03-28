@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Публичная оферта | TeamSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            color: #4a5568;
+        }
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .content {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            color: white;
+        }
+        .content h1 { margin-bottom: 30px; color: #667eea; }
+        .content h2 { margin: 30px 0 15px; color: #9f7aea; font-size: 1.3rem; }
+        .content p, .content li { line-height: 1.6; color: rgba(255,255,255,0.9); }
+        .content ul { margin-bottom: 20px; }
+        .btn-back {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        .last-updated {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            font-size: 0.8rem;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
+        <div class="d-flex flex-wrap">
+            <a href="/teamsphere" class="nav-btn"><i class="fas fa-home"></i> Главная</a>
+            <a href="/teamsphere/dashboard" class="nav-btn"><i class="fas fa-chart-line"></i> Дашборд</a>
+            <a href="/pricing" class="nav-btn"><i class="fas fa-tags"></i> Тарифы</a>
+            <a href="/offer" class="nav-btn active"><i class="fas fa-file-contract"></i> Оферта</a>
+            <a href="/privacy" class="nav-btn"><i class="fas fa-shield-alt"></i> Конфиденциальность</a>
+            <a href="/sla" class="nav-btn"><i class="fas fa-chart-line"></i> SLA</a>
+        </div>
+    </div>
+</nav>
+
+<div class="content">
+    <h1><i class="fas fa-file-contract me-2"></i> Публичная оферта</h1>
+    <p>Настоящий документ является официальным предложением (публичной офертой) TeamSphere (далее — «Исполнитель») заключить договор об оказании услуг с любым физическим или юридическим лицом (далее — «Клиент»).</p>
+
+    <h2>1. Предмет договора</h2>
+    <p>1.1. Исполнитель предоставляет Клиенту доступ к SaaS-платформе TeamSphere — системе для управления проектами, командой и бизнес-процессами, на условиях, указанных в настоящей оферте.</p>
+    <p>1.2. Доступ предоставляется через интернет с использованием учетной записи (логин/пароль), созданной Клиентом при регистрации.</p>
+    <p>1.3. Исполнитель гарантирует полную изоляцию данных Клиента. Каждый Клиент имеет уникальный идентификатор (tenant_id), исключающий доступ третьих лиц к данным.</p>
+
+    <h2>2. Конфиденциальность и безопасность данных</h2>
+    <p>2.1. Исполнитель обязуется:</p>
+    <ul>
+        <li>Обеспечить полную изоляцию данных каждого Клиента (мультитенантная архитектура);</li>
+        <li>Хранить данные на серверах, расположенных на территории РФ;</li>
+        <li>Осуществлять ежедневное резервное копирование данных с хранением в течение 30 дней;</li>
+        <li>Не разглашать данные Клиента третьим лицам, за исключением случаев, предусмотренных законодательством РФ;</li>
+        <li>Обеспечить шифрование передачи данных по протоколу HTTPS;</li>
+        <li>Хранить пароли пользователей в зашифрованном виде (хеширование).</li>
+    </ul>
+
+    <h2>3. Ответственность сторон</h2>
+    <p>3.1. Исполнитель несет ответственность за сохранность данных Клиента в пределах, установленных законодательством РФ.</p>
+    <p>3.2. В случае недоступности сервиса по вине Исполнителя, Клиент имеет право на пропорциональный возврат средств за время недоступности.</p>
+    <p>3.3. Клиент несет ответственность за корректность вводимых данных, соблюдение авторских прав при загрузке контента.</p>
+    <p>3.4. Исполнитель не несет ответственности за:</p>
+    <ul>
+        <li>Убытки, возникшие в результате неправомерных действий третьих лиц (взлом, DDoS-атаки), если такие действия не являются следствием халатности Исполнителя;</li>
+        <li>Убытки, связанные с действиями или бездействием самого Клиента;</li>
+        <li>Убытки, возникшие вследствие форс-мажорных обстоятельств.</li>
+    </ul>
+
+    <h2>4. Стоимость и порядок расчетов</h2>
+    <p>4.1. Стоимость услуг определяется тарифами, размещенными на странице <a href="/pricing" style="color:#667eea">/pricing</a>.</p>
+    <p>4.2. Оплата производится ежемесячно или ежегодно (в зависимости от выбранного тарифа) по реквизитам Исполнителя.</p>
+    <p>4.3. В случае просрочки оплаты более чем на 5 рабочих дней, Исполнитель имеет право приостановить доступ к сервису до момента полного погашения задолженности.</p>
+
+    <h2>5. Права и обязанности сторон</h2>
+    <p><strong>Исполнитель обязуется:</strong></p>
+    <ul>
+        <li>Обеспечить круглосуточный доступ к сервису 24/7;</li>
+        <li>Обеспечить время реакции на инциденты — не более 2 часов в рабочее время (с 9:00 до 18:00 МСК);</li>
+        <li>Уведомлять Клиента о плановых технических работах не менее чем за 24 часа;</li>
+        <li>Предоставлять техническую поддержку по электронной почте и в Telegram.</li>
+    </ul>
+    <p><strong>Клиент обязуется:</strong></p>
+    <ul>
+        <li>Своевременно оплачивать услуги;</li>
+        <li>Не использовать сервис для незаконной деятельности;</li>
+        <li>Обеспечить сохранность своих учетных данных (логин/пароль).</li>
+    </ul>
+
+    <h2>6. Срок действия оферты</h2>
+    <p>6.1. Настоящая оферта вступает в силу с момента акцепта (регистрации Клиента на сайте) и действует до момента расторжения договора.</p>
+    <p>6.2. Исполнитель имеет право в одностороннем порядке изменять условия оферты с предварительным уведомлением Клиента за 14 дней.</p>
+
+    <div class="last-updated">
+        <i class="fas fa-calendar-alt me-1"></i> Последнее обновление: 28 марта 2026 г.<br>
+        Версия 1.0
+    </div>
+</div>
+
+<a href="javascript:history.back()" class="btn-back"><i class="fas fa-arrow-left"></i> Назад</a>
+</body>
+</html>

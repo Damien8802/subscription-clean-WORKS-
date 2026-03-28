@@ -454,16 +454,48 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         adminVPN.GET("/stats", handlers.AdminVPNHandler)
     }
 
-    // Публичные маршруты
-    public := r.Group("/")
-    {
-        public.GET("/", handlers.HomeHandler)
-        public.GET("/about", handlers.AboutHandler)
-        public.GET("/contact", handlers.ContactHandler)
-        public.GET("/info", handlers.InfoHandler)
-        public.GET("/pricing", handlers.PricingPageHandler)
-        public.GET("/partner", handlers.PartnerHandler)
-    }
+   // Публичные маршруты
+public := r.Group("/")
+{
+    public.GET("/", handlers.HomeHandler)
+    public.GET("/about", handlers.AboutHandler)
+    public.GET("/contact", handlers.ContactHandler)
+    public.GET("/info", handlers.InfoHandler)
+    public.GET("/pricing", handlers.PricingPageHandler)
+    public.GET("/partner", handlers.PartnerHandler)
+    
+    // ДОБАВЬ ЭТИ СТРОКИ ВНУТРЬ СУЩЕСТВУЮЩЕГО БЛОКА:
+    public.GET("/offer", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "offer.html", gin.H{
+            "title": "Публичная оферта | SaaSPro",
+        })
+    })
+    public.GET("/privacy", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "privacy.html", gin.H{
+            "title": "Политика конфиденциальности | SaaSPro",
+        })
+    })
+    public.GET("/sla", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "sla.html", gin.H{
+            "title": "SLA | SaaSPro",
+        })
+    })
+    public.GET("/docs", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "docs.html", gin.H{
+            "title": "Документация | SaaSPro",
+        })
+    })
+    public.GET("/security-data", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "security-data.html", gin.H{
+            "title": "Безопасность данных | SaaSPro",
+        })
+    })
+    public.GET("/audit", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "audit.html", gin.H{
+            "title": "Аудит и сертификация | SaaSPro",
+        })
+    })
+}
 
     r.POST("/api/service-order", serviceOrderHandler)
 

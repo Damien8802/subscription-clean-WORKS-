@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Безопасность аккаунта - SaaSPro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2 i {
+            color: #667eea;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status-enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .qr-container img {
+            max-width: 200px;
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+
+        .secret-box {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+            margin: 15px 0;
+            letter-spacing: 2px;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-secondary {
+            background: #a0aec0;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #718096;
+        }
+
+        .backup-codes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .backup-code {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 16px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .device-list {
+            list-style: none;
+        }
+
+        .device-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .device-meta {
+            font-size: 13px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .device-expires {
+            font-size: 12px;
+            color: #48bb78;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #333;
+        }
+
+        .close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Безопасность аккаунта</h1>
+            <p>Управляйте настройками безопасности вашего аккаунта</p>
+        </div>
+
+        <div class="content">
+            
+            <div class="card">
+                <h2><i>🔐</i> Двухфакторная аутентификация (2FA)</h2>
+                
+                <div id="statusContainer">
+                    <div id="statusBadge" class="status-badge status-disabled">Статус: Выключено</div>
+                </div>
+
+                
+                <div id="setupSection" style="display: block;">
+                    <div class="qr-container" id="qrContainer">
+                        <img id="qrImage" src="" alt="QR Code" style="display: none;">
+                    </div>
+                    
+                    <div class="secret-box" id="secretKey">-</div>
+                    
+                    <div class="input-group">
+                        <label>Код из приложения</label>
+                        <input type="text" id="verificationCode" maxlength="6" placeholder="6 цифр">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="trustDevice">
+                        <label for="trustDevice">Запомнить это устройство на 30 дней</label>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="verifyAndEnable2FA()">Подтвердить и включить</button>
+                    <button class="btn btn-secondary" onclick="generateQR()">Сгенерировать новый QR</button>
+                </div>
+
+                
+                <div id="manageSection" style="display: none;">
+                    <div class="status-badge status-enabled" id="enabledBadge">Статус: Включено</div>
+                    
+                    <button class="btn btn-danger" onclick="showDisableModal()">Отключить 2FA</button>
+                    <button class="btn btn-primary" onclick="showBackupCodes()">Показать резервные коды</button>
+                </div>
+            </div>
+
+            
+            <div>
+                
+                <div class="card" style="margin-bottom: 30px;">
+                    <h2><i>🔑</i> Резервные коды</h2>
+                    <p style="color: #666; margin-bottom: 15px;">Используйте эти коды для входа, если потеряли доступ к телефону. Каждый код можно использовать только один раз.</p>
+                    
+                    <div id="backupCodesContainer">
+                        <p class="loading">Нажмите "Сгенерировать" чтобы создать коды</p>
+                    </div>
+
+                    <button class="btn btn-success" onclick="generateBackupCodes()">Сгенерировать новые коды</button>
+                </div>
+
+                
+                <div class="card">
+                    <h2><i>💻</i> Доверенные устройства</h2>
+                    <p style="color: #666; margin-bottom: 15px;">Устройства, которым доверяют на 30 дней</p>
+                    
+                    <div id="devicesList">
+                        <p class="loading">Загрузка устройств...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal" id="disableModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Отключение 2FA</h3>
+                <span class="close" onclick="closeDisableModal()">&times;</span>
+            </div>
+            <div class="input-group">
+                <label>Введите код из приложения</label>
+                <input type="text" id="disableCode" maxlength="6" placeholder="6 цифр">
+            </div>
+            <button class="btn btn-danger" onclick="disable2FA()">Отключить</button>
+            <button class="btn btn-secondary" onclick="closeDisableModal()">Отмена</button>
+        </div>
+    </div>
+
+    
+    <div class="modal" id="backupCodesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ваши резервные коды</h3>
+                <span class="close" onclick="closeBackupCodesModal()">&times;</span>
+            </div>
+            <p style="color: #666; margin-bottom: 20px;">Сохраните эти коды в надёжном месте! Они больше не покажутся.</p>
+            <div class="backup-codes" id="backupCodesList"></div>
+            <button class="btn btn-primary" onclick="closeBackupCodesModal()">Я сохранил(а)</button>
+        </div>
+    </div>
+
+    
+    <div class="alert" id="alert"></div>
+
+    <script>
+        
+        const USER_ID = "5cb6521a-3146-4e0a-a336-fb3d28fdea05";
+        const DEVICE_ID = getDeviceId();
+
+        
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('device_id', deviceId);
+            }
+            return deviceId;
+        }
+
+        
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        
+        async function load2FAStatus() {
+            try {
+                const response = await fetch(`/api/2fa/settings?user_id=${USER_ID}`);
+                const data = await response.json();
+                
+                if (data.enabled) {
+                    document.getElementById('setupSection').style.display = 'none';
+                    document.getElementById('manageSection').style.display = 'block';
+                } else {
+                    document.getElementById('setupSection').style.display = 'block';
+                    document.getElementById('manageSection').style.display = 'none';
+                }
+
+                
+                loadTrustedDevices();
+                
+            } catch (error) {
+                showAlert('Ошибка загрузки статуса 2FA', 'error');
+            }
+        }
+
+        
+        async function generateQR() {
+            try {
+                const response = await fetch(`/api/2fa/generate?user_id=${USER_ID}`);
+                const data = await response.json();
+                
+                document.getElementById('qrImage').src = 'data:image/png;base64,' + data.qr;
+                document.getElementById('qrImage').style.display = 'block';
+                document.getElementById('secretKey').textContent = data.secret;
+                
+            } catch (error) {
+                showAlert('Ошибка генерации QR кода', 'error');
+            }
+        }
+
+        
+        async function verifyAndEnable2FA() {
+            const code = document.getElementById('verificationCode').value;
+            
+            if (!code || code.length !== 6) {
+                showAlert('Введите 6-значный код из приложения', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: USER_ID, code: code })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('2FA успешно включена!', 'success');
+                    
+                    
+                    if (document.getElementById('trustDevice').checked) {
+                        await trustDevice(code);
+                    }
+                    
+                    load2FAStatus();
+                } else {
+                    showAlert('Неверный код', 'error');
+                }
+                
+            } catch (error) {
+                showAlert('Ошибка при включении 2FA', 'error');
+            }
+        }
+
+        
+        async function trustDevice(code) {
+            try {
+                await fetch('/api/2fa/trust-device', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: USER_ID, 
+                        device_id: DEVICE_ID,
+                        code: code 
+                    })
+                });
+            } catch (error) {
+                console.error('Error trusting device:', error);
+            }
+        }
+
+        
+        async function generateBackupCodes() {
+            try {
+                const response = await fetch('/api/2fa/backup-codes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: USER_ID })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showBackupCodesModal(data.backup_codes);
+                }
+                
+            } catch (error) {
+                showAlert('Ошибка генерации кодов', 'error');
+            }
+        }
+
+        
+        async function loadTrustedDevices() {
+            try {
+                const response = await fetch(`/api/2fa/settings?user_id=${USER_ID}`);
+                const data = await response.json();
+                
+                const devicesList = document.getElementById('devicesList');
+                
+                if (data.trusted_devices && data.trusted_devices.length > 0) {
+                    devicesList.innerHTML = data.trusted_devices.map(device => `
+                        <div class="device-item">
+                            <div class="device-info">
+                                <div class="device-name">${device.name}</div>
+                                <div class="device-meta">IP: ${device.ip}</div>
+                                <div class="device-expires">Действует до: ${new Date(device.expires_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    devicesList.innerHTML = '<p style="color: #888; text-align: center;">Нет доверенных устройств</p>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        
+        function showDisableModal() {
+            document.getElementById('disableModal').style.display = 'flex';
+        }
+
+        function closeDisableModal() {
+            document.getElementById('disableModal').style.display = 'none';
+            document.getElementById('disableCode').value = '';
+        }
+
+        
+        async function disable2FA() {
+            const code = document.getElementById('disableCode').value;
+            
+            if (!code || code.length !== 6) {
+                showAlert('Введите код из приложения', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/2fa/disable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: USER_ID, code: code })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('2FA отключена', 'success');
+                    closeDisableModal();
+                    load2FAStatus();
+                } else {
+                    showAlert('Неверный код', 'error');
+                }
+                
+            } catch (error) {
+                showAlert('Ошибка при отключении', 'error');
+            }
+        }
+
+        
+        function showBackupCodesModal(codes) {
+            const modal = document.getElementById('backupCodesModal');
+            const list = document.getElementById('backupCodesList');
+            
+            list.innerHTML = codes.map(code => 
+                `<div class="backup-code">${code}</div>`
+            ).join('');
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeBackupCodesModal() {
+            document.getElementById('backupCodesModal').style.display = 'none';
+        }
+
+        async function showBackupCodes() {
+            try {
+                const response = await fetch(`/api/2fa/settings?user_id=${USER_ID}`);
+                const data = await response.json();
+                
+                if (!data.has_backup_codes) {
+                    if (confirm('У вас нет резервных кодов. Сгенерировать новые?')) {
+                        generateBackupCodes();
+                    }
+                    return;
+                }
+                
+                alert('Резервные коды можно получить только при генерации. Сгенерируйте новые, если нужны коды.');
+                
+            } catch (error) {
+                showAlert('Ошибка', 'error');
+            }
+        }
+
+        
+        async function checkTrustOnLoad() {
+            try {
+                const response = await fetch(`/api/2fa/check-trust?user_id=${USER_ID}&device_id=${DEVICE_ID}`);
+                const data = await response.json();
+                
+                if (data.trusted) {
+                    console.log('✅ Устройство доверенное до:', new Date(data.expires_at).toLocaleDateString());
+                }
+                
+            } catch (error) {
+                console.error('Error checking trust:', error);
+            }
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            load2FAStatus();
+            checkTrustOnLoad();
+            
+            
+            setTimeout(generateQR, 500);
+        });
+    </script>
+<style>
+.back-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s;
+    z-index: 1000;
+    cursor: pointer;
+}
+.back-button:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+}
+</style>
+<a href="javascript:history.back()" class="back-button" title="Go Back">
+    <i class="fas fa-arrow-left fa-lg"></i>
+</a>
+</body>
+</html>
+

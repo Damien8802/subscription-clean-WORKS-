@@ -634,22 +634,37 @@
     <!-- ФУТЕР -->
     <div class="footer">
         <div class="footer-grid">
-            <div class="footer-col"><h4>SaaSPro</h4><p>Платформа для управления подписками нового поколения. Эффективно, безопасно, масштабируемо.</p></div>
-            <div class="footer-col"><h4>Продукты</h4><a href="/vpn">VPN Сервис</a><a href="/ai">AI Чат</a></div>
-            <div class="footer-col"><h4>Ресурсы</h4><a href="/docs">Документация</a><a href="/support">Поддержка</a><a href="/pricing">Тарифы</a></div>
-            <div class="footer-col"><h4>Контакты</h4><p>📧 support@saaspro.ru</p><p>📞 +7 (999) 123-45-67</p></div>
+            <div class="footer-col">
+                <h4>SaaSPro</h4>
+                <p>Платформа для управления подписками нового поколения. Эффективно, безопасно, масштабируемо.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Ресурсы</h4>
+                <a href="/docs">Документация</a>
+                <a href="/support">Поддержка</a>
+                <a href="/pricing">Тарифы</a>
+                <a href="/offer">Публичная оферта</a>
+                <a href="/privacy">Политика конфиденциальности</a>
+                <a href="/sla">SLA</a>
+                <a href="/security-data">Безопасность данных</a>
+                <a href="/audit">Аудит</a>
+            </div>
+            <div class="footer-col">
+                <h4>Контакты</h4>
+                <p>📧 support@saaspro.ru</p>
+                <p>📞 +7 (999) 123-45-67</p>
+            </div>
         </div>
         <div class="copyright">© 2024 SaaSPro. Все права защищены.</div>
     </div>
 
+    <!-- AI Консультант скрипт -->
     <script>
-        // ========== AI Консультант с эффектом печатания и автоскроллом ==========
         let sessionId = localStorage.getItem('consultantSessionId') || '';
         let messagesDiv = document.getElementById('messages');
         let typingDiv = document.getElementById('typingIndicator');
         let isTyping = false;
         
-        // Функция прокрутки вниз
         function scrollToBottom() {
             if (messagesDiv) {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -660,7 +675,6 @@
             return new Promise((resolve) => {
                 let i = 0;
                 element.textContent = '';
-                
                 function type() {
                     if (i < text.length) {
                         element.textContent += text.charAt(i);
@@ -671,7 +685,6 @@
                         resolve();
                     }
                 }
-                
                 type();
             });
         }
@@ -679,7 +692,6 @@
         function addMessage(text, isUser) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            
             if (!isUser) {
                 msgDiv.textContent = '';
                 messagesDiv.appendChild(msgDiv);
@@ -706,11 +718,9 @@
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             if (!message || isTyping) return;
-            
             addMessage(message, true);
             input.value = '';
             showTyping();
-            
             try {
                 const response = await fetch('/api/ai/consultant', {
                     method: 'POST',
@@ -718,19 +728,15 @@
                     body: JSON.stringify({ session_id: sessionId, message: message })
                 });
                 const data = await response.json();
-                
                 if (data.session_id) {
                     sessionId = data.session_id;
                     localStorage.setItem('consultantSessionId', sessionId);
                 }
-                
                 hideTyping();
-                
                 const msgPromise = addMessage('', false);
                 if (msgPromise) {
                     await typeMessage(data.message, msgPromise.element);
                 }
-                
                 if (data.completed) {
                     setTimeout(() => {
                         if (confirm('Хотите оформить ещё одну заявку?')) {
@@ -756,8 +762,7 @@
             if (e.key === 'Enter') sendMessage();
         });
         
-        // Наблюдатель за изменениями для автоскролла
-        const observer = new MutationObserver(function(mutations) {
+        const observer = new MutationObserver(function() {
             scrollToBottom();
         });
         if (messagesDiv) {
@@ -780,92 +785,60 @@
             }, 500);
         }
     </script>
-<!-- PWA регистрация -->
-<script>
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => {
-            console.log('Service Worker registered:', reg);
-        })
-        .catch(err => {
-            console.error('Service Worker registration failed:', err);
-        });
-}
-
-// Запрос разрешения на push-уведомления
-async function subscribeToPush() {
-    if (!('PushManager' in window)) {
-        console.log('Push messaging is not supported');
-        return;
-    }
     
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
-        });
-        
-        await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(subscription)
-        });
-        
-        console.log('Push subscription successful');
-    } catch (err) {
-        console.error('Push subscription failed:', err);
+    <!-- PWA регистрация -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => {
+                console.log('Service Worker registered:', reg);
+            })
+            .catch(err => {
+                console.error('Service Worker registration failed:', err);
+            });
     }
-}
 
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
+    async function subscribeToPush() {
+        if (!('PushManager' in window)) {
+            console.log('Push messaging is not supported');
+            return;
+        }
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
+            });
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(subscription)
+            });
+            console.log('Push subscription successful');
+        } catch (err) {
+            console.error('Push subscription failed:', err);
+        }
     }
-    return outputArray;
-}
 
-// Предлагаем подписаться при заходе на сайт
-setTimeout(() => {
-    if (confirm('Хотите получать push-уведомления?')) {
-        subscribeToPush();
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
     }
-}, 5000);
-</script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-}
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
-</body>
+
+    setTimeout(() => {
+        if (confirm('Хотите получать push-уведомления?')) {
+            subscribeToPush();
+        }
+    }, 5000);
+    </script>
+    
+   </body>
 </html>
-
