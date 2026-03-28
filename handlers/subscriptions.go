@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -8,6 +9,7 @@ import (
 
 // MySubscriptionsPageHandler отображает страницу с подписками пользователя
 func MySubscriptionsPageHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("userID")
     if !exists {
         userID = "test-user-123"
@@ -21,6 +23,7 @@ func MySubscriptionsPageHandler(c *gin.Context) {
 
 // CreateSubscriptionHandler - создание новой подписки (заглушка)
 func CreateSubscriptionHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         PlanCode string `json:"plan_code" binding:"required"`
         UserID   string `json:"user_id"`
@@ -39,6 +42,7 @@ func CreateSubscriptionHandler(c *gin.Context) {
 
 // GetUserSubscriptionsHandler - список подписок пользователя (заглушка)
 func GetUserSubscriptionsHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID := c.Query("user_id")
     if userID == "" {
         userID = "test-user-123"
@@ -49,3 +53,6 @@ func GetUserSubscriptionsHandler(c *gin.Context) {
         "subscriptions": []interface{}{},
     })
 }
+
+
+

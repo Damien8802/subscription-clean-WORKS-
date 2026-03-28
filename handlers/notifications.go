@@ -1,5 +1,6 @@
 package handlers
 import (
+    
     "bytes"
     "context"
     "encoding/json"
@@ -232,6 +233,7 @@ func formatNotificationMessage(notifType string, details map[string]interface{})
 
 // GetNotifications возвращает список уведомлений пользователя
 func GetNotifications(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("user_id")
     if !exists {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -283,6 +285,7 @@ func GetNotifications(c *gin.Context) {
 
 // MarkNotificationRead отмечает уведомление как прочитанное
 func MarkNotificationRead(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("user_id")
     if !exists {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -316,6 +319,7 @@ func MarkNotificationRead(c *gin.Context) {
 
 // GetUnreadCount возвращает количество непрочитанных уведомлений
 func GetUnreadCount(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("user_id")
     if !exists {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -341,3 +345,6 @@ func GetUnreadCount(c *gin.Context) {
     
     c.JSON(http.StatusOK, gin.H{"unread_count": count})
 }
+
+
+

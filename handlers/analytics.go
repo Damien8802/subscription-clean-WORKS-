@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "net/http"
     "time"
 
@@ -18,6 +19,7 @@ type AnalyticsData struct {
 }
 
 func AnalyticsHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     start := time.Now()
     
     var data AnalyticsData
@@ -50,3 +52,6 @@ func AnalyticsHandler(c *gin.Context) {
         "Version": "3.0",
     })
 }
+
+
+

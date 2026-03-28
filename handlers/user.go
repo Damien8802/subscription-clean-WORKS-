@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "net/http"
     "subscription-system/database"
     "subscription-system/models"
@@ -8,6 +9,7 @@ import (
 )
 
 func GetUserProfile(c *gin.Context) {
+    // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("userID")
     if !exists {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -104,3 +106,5 @@ func GetUserProfile(c *gin.Context) {
 
     c.JSON(http.StatusOK, response)
 }
+
+

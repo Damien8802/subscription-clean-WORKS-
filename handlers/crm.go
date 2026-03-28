@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "bytes"
     "context"
     "database/sql"
@@ -202,6 +203,7 @@ func addHistory(ctx context.Context, entityType, entityID, action string, userID
 }
 
 func GetEntityHistory(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     entityType := c.Param("type")
     entityID := c.Param("id")
     if entityType != "customer" && entityType != "deal" {
@@ -264,6 +266,7 @@ func GetEntityHistory(c *gin.Context) {
 
 // CRMHandler отображает страницу CRM
 func CRMHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     c.HTML(http.StatusOK, "crm.html", gin.H{
         "Title": "CRM система - SaaSPro",
     })
@@ -271,6 +274,7 @@ func CRMHandler(c *gin.Context) {
 
 // CRMHealthHandler возвращает статус CRM
 func CRMHealthHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     c.JSON(http.StatusOK, gin.H{
         "status": "operational",
         "crm":    "online",
@@ -279,6 +283,7 @@ func CRMHealthHandler(c *gin.Context) {
 }
 
 func GetCustomers(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
@@ -462,6 +467,7 @@ func GetCustomers(c *gin.Context) {
 
 // CreateCustomer создаёт нового клиента
 func CreateCustomer(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req Customer
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -527,6 +533,7 @@ func CreateCustomer(c *gin.Context) {
 
 // UpdateCustomer обновляет данные клиента
 func UpdateCustomer(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     var req Customer
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -674,6 +681,7 @@ func UpdateCustomer(c *gin.Context) {
 
 // DeleteCustomer удаляет клиента
 func DeleteCustomer(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -702,6 +710,7 @@ func DeleteCustomer(c *gin.Context) {
 // ========== МАССОВЫЕ ОПЕРАЦИИ ДЛЯ КЛИЕНТОВ ==========
 
 func BatchDeleteCustomers(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var ids []string
     if err := c.ShouldBindJSON(&ids); err != nil || len(ids) == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -756,6 +765,7 @@ func BatchDeleteCustomers(c *gin.Context) {
 }
 
 func BatchUpdateCustomersStatus(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         IDs    []string `json:"ids"`
         Status string   `json:"status"`
@@ -816,6 +826,7 @@ func BatchUpdateCustomersStatus(c *gin.Context) {
 }
 
 func GetDeals(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
 
@@ -1042,6 +1053,7 @@ func GetDeals(c *gin.Context) {
 }
 
 func CreateDeal(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var d Deal
     if err := c.ShouldBindJSON(&d); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -1088,6 +1100,7 @@ func CreateDeal(c *gin.Context) {
 }
 
 func UpdateDeal(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     var d Deal
     if err := c.ShouldBindJSON(&d); err != nil {
@@ -1236,6 +1249,7 @@ func UpdateDeal(c *gin.Context) {
 }
 
 func UpdateDealStage(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     var req struct {
         Stage       string `json:"stage"`
@@ -1299,6 +1313,7 @@ func UpdateDealStage(c *gin.Context) {
 }
 
 func DeleteDeal(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -1339,6 +1354,7 @@ func DeleteDeal(c *gin.Context) {
 // ========== МАССОВЫЕ ОПЕРАЦИИ ДЛЯ СДЕЛОК ==========
 
 func BatchDeleteDeals(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var ids []string
     if err := c.ShouldBindJSON(&ids); err != nil || len(ids) == 0 {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -1413,6 +1429,7 @@ func BatchDeleteDeals(c *gin.Context) {
 }
 
 func BatchUpdateDealsStage(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         IDs         []string `json:"ids"`
         Stage       string   `json:"stage"`
@@ -1499,6 +1516,7 @@ func BatchUpdateDealsStage(c *gin.Context) {
 }
 
 func BatchUpdateDealsResponsible(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         IDs         []string `json:"ids"`
         Responsible string   `json:"responsible"`
@@ -1585,6 +1603,7 @@ func BatchUpdateDealsResponsible(c *gin.Context) {
 // ========== АНАЛИТИКА ==========
 
 func GetCRMStats(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     ctx := c.Request.Context()
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -1684,6 +1703,7 @@ func GetCRMStats(c *gin.Context) {
 // ========== РАСШИРЕННАЯ АНАЛИТИКА ==========
 
 func GetCRMAdvancedStats(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     dateFrom := c.Query("date_from")
     dateTo := c.Query("date_to")
     ctx := c.Request.Context()
@@ -1827,6 +1847,7 @@ func getUserFilterSQL(c *gin.Context) (string, []interface{}) {
 // GetSalesForecast возвращает прогноз продаж на 3 месяца
 // на основе среднемесячных значений за последние 6 месяцев и текущих сделок.
 func GetSalesForecast(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     ctx := c.Request.Context()
     userFilter, args := getUserFilterSQL(c)
 
@@ -1891,6 +1912,7 @@ func GetSalesForecast(c *gin.Context) {
 
 // GetStageConversion возвращает конверсию по этапам воронки продаж.
 func GetStageConversion(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     ctx := c.Request.Context()
     userFilter, args := getUserFilterSQL(c)
 
@@ -1930,6 +1952,7 @@ func GetStageConversion(c *gin.Context) {
 const uploadDir = "./uploads/crm"
 
 func UploadDealAttachment(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     dealID := c.Param("id")
     if dealID == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "deal_id required"})
@@ -1993,6 +2016,7 @@ func UploadDealAttachment(c *gin.Context) {
 }
 
 func GetDealAttachments(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     dealID := c.Param("id")
     if dealID == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "deal_id required"})
@@ -2052,6 +2076,7 @@ func GetDealAttachments(c *gin.Context) {
     c.JSON(http.StatusOK, attachments) // теперь всегда массив, даже пустой
 }
 func DownloadDealAttachment(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "attachment_id required"})
@@ -2083,6 +2108,7 @@ func DownloadDealAttachment(c *gin.Context) {
 }
 
 func DeleteDealAttachment(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     attachmentID := c.Param("attachment_id")
     if attachmentID == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "attachment_id required"})
@@ -2210,6 +2236,7 @@ func exportFilteredCustomers(c *gin.Context) ([]Customer, error) {
 }
 
 func ExportCustomersCSV(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     customers, err := exportFilteredCustomers(c)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -2252,6 +2279,7 @@ func ExportCustomersCSV(c *gin.Context) {
 }
 
 func ExportCustomersExcel(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     customers, err := exportFilteredCustomers(c)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -2415,6 +2443,7 @@ func exportFilteredDeals(c *gin.Context) ([]Deal, error) {
 }
 
 func ExportDealsCSV(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     deals, err := exportFilteredDeals(c)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -2465,6 +2494,7 @@ func ExportDealsCSV(c *gin.Context) {
 }
 
 func ExportDealsExcel(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     deals, err := exportFilteredDeals(c)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -2540,6 +2570,7 @@ func ExportDealsExcel(c *gin.Context) {
 
 // GetTags возвращает список всех тегов
 func GetTags(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     rows, err := database.Pool.Query(c.Request.Context(), `
         SELECT id, name, color, created_at FROM tags ORDER BY name
     `)
@@ -2561,6 +2592,7 @@ func GetTags(c *gin.Context) {
 }
 // CreateTag создаёт новый тег
 func CreateTag(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req Tag
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -2587,6 +2619,7 @@ func CreateTag(c *gin.Context) {
 
 // UpdateTag обновляет существующий тег
 func UpdateTag(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     var req Tag
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -2613,6 +2646,7 @@ func UpdateTag(c *gin.Context) {
 
 // DeleteTag удаляет тег
 func DeleteTag(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     id := c.Param("id")
     _, err := database.Pool.Exec(c.Request.Context(), "DELETE FROM tags WHERE id = $1", id)
     if err != nil {
@@ -2686,6 +2720,7 @@ func updateEntityTags(ctx context.Context, entityType, entityID string, tagIDs [
 
 // AddActivity добавляет активность (комментарий, звонок и т.д.)
 func AddActivity(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     var req Activity
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -2718,6 +2753,7 @@ func AddActivity(c *gin.Context) {
 
 // GetActivities возвращает активности для сущности
 func GetActivities(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     entityType := c.Param("type")
     entityID := c.Param("id")
     if entityType != "customer" && entityType != "deal" {
@@ -2757,6 +2793,7 @@ func GetActivities(c *gin.Context) {
 }
 // ========== ДОБАВЛЕНО: УДАЛЕНИЕ АКТИВНОСТИ ==========
 func DeleteActivity(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     activityID := c.Param("id")
     if activityID == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "activity_id required"})
@@ -2819,7 +2856,11 @@ func DeleteActivity(c *gin.Context) {
 
 // CalendarHandler отображает страницу календаря сделок
 func CalendarHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     c.HTML(http.StatusOK, "calendar.html", gin.H{
         "Title": "Календарь сделок - SaaSPro",
     })
 }
+
+
+

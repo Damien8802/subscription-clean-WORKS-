@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -8,6 +9,7 @@ import (
 
 // SecurityPageHandler отображает страницу безопасности
 func SecurityPageHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
     // Получаем user_id из контекста или используем тестовый
     userID, exists := c.Get("userID")
     if !exists {
@@ -23,3 +25,6 @@ func SecurityPageHandler(c *gin.Context) {
         "user_id": userID,
     })
 }
+
+
+

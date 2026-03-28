@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
@@ -8,6 +9,7 @@ import (
 
 // ==================== ПЛАТЕЖНЫЕ СТРАНИЦЫ ====================
 func BankCardPaymentHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
 	c.HTML(http.StatusOK, "bank_card_payment.html", gin.H{
 		"Title":   "Оплата картой - SaaSPro",
 		"Version": "3.0",
@@ -16,6 +18,7 @@ func BankCardPaymentHandler(c *gin.Context) {
 }
 
 func PaymentSuccessHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
 	c.HTML(http.StatusOK, "payment-success.html", gin.H{
 		"Title":   "Успешная оплата - SaaSPro",
 		"Version": "3.0",
@@ -24,6 +27,7 @@ func PaymentSuccessHandler(c *gin.Context) {
 }
 
 func USDTPaymentHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
 	c.HTML(http.StatusOK, "usdt-payment.html", gin.H{
 		"Title":   "Оплата USDT - SaaSPro",
 		"Version": "3.0",
@@ -32,9 +36,14 @@ func USDTPaymentHandler(c *gin.Context) {
 }
 
 func RUBPaymentHandler(c *gin.Context) {
+    // // tenantID := middleware.GetTenantIDFromContext(c)
 	c.HTML(http.StatusOK, "rub-payment.html", gin.H{
 		"Title":   "Оплата RUB - SaaSPro",
 		"Version": "3.0",
 		"Time":    time.Now().Format("2006-01-02 15:04:05"),
 	})
 }
+
+
+
+

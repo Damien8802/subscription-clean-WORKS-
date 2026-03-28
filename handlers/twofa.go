@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    
     "encoding/base64"
     "net/http"
     "time"
@@ -15,6 +16,7 @@ import (
 
 // GenerateTwoFASecret создаёт новый секрет для 2FA
 func GenerateTwoFASecret(c *gin.Context) {
+    // tenantID := middleware.GetTenantIDFromContext(c)
     userID, exists := c.Get("userID")
     if !exists {
         userID = c.Query("user_id")
@@ -71,6 +73,7 @@ func GenerateTwoFASecret(c *gin.Context) {
 
 // VerifyTwoFACode проверяет код из Google Authenticator
 func VerifyTwoFACode(c *gin.Context) {
+    // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         UserID string `json:"user_id" binding:"required"`
         Code   string `json:"code" binding:"required,len=6"`
@@ -121,6 +124,7 @@ func VerifyTwoFACode(c *gin.Context) {
 
 // DisableTwoFA отключает 2FA
 func DisableTwoFA(c *gin.Context) {
+    // tenantID := middleware.GetTenantIDFromContext(c)
     var req struct {
         UserID string `json:"user_id" binding:"required"`
         Code   string `json:"code" binding:"required,len=6"`
@@ -171,6 +175,7 @@ func DisableTwoFA(c *gin.Context) {
 
 // GetTwoFAStatus возвращает статус 2FA
 func GetTwoFAStatus(c *gin.Context) {
+    // tenantID := middleware.GetTenantIDFromContext(c)
     userID := c.Query("user_id")
     if userID == "" {
         userID = "test-user-123"
@@ -194,3 +199,5 @@ func GetTwoFAStatus(c *gin.Context) {
         "exists":  true,
     })
 }
+
+
