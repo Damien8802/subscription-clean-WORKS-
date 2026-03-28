@@ -715,29 +715,42 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         // Зарезервировано
     }
 
-    adminAPI := r.Group("/api/admin")
-    adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
-    {
-        adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
-        adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
-        adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
-        adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
-        adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
-        adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
-        adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
-        adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
-        adminAPI.GET("/stats", handlers.AdminStatsHandler)
-        adminAPI.GET("/users", handlers.AdminUsersHandler)
-        adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
-        adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
-        adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
-        adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
-        adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
-        adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
-        adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
-        adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
-    }
+  adminAPI := r.Group("/api/admin")
+adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
+    adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
+    adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
+    adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
+    adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
+    adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
+    adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
+    adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
+    adminAPI.GET("/stats", handlers.AdminStatsHandler)
+    adminAPI.GET("/users", handlers.AdminUsersHandler)
+    adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
+    adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
+    adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
+    adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
+    adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
+    adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
+    adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
+    adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
+    
+    // ДОБАВЬ ЭТИ СТРОКИ:
+    adminAPI.GET("/tenants", handlers.GetTenants)
+    adminAPI.POST("/tenants", handlers.CreateTenant)
+    adminAPI.PUT("/tenants/:id", handlers.UpdateTenant)
+    adminAPI.DELETE("/tenants/:id", handlers.DeleteTenant)
+    adminAPI.POST("/tenants/:id/switch", handlers.SwitchTenant)
+}
 
+// Админская страница для управления компаниями (отдельно)
+adminTenants := r.Group("/admin/tenants")
+adminTenants.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    adminTenants.GET("/", handlers.TenantAdminPage)
+}
    // API Documentation with back button
 r.GET("/api-docs", func(c *gin.Context) {
     c.HTML(http.StatusOK, "api_with_back.html", gin.H{

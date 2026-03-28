@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление компаниями | TeamSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 8px 20px;
+            margin: 0 5px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            color: #4a5568;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .container-custom {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
+        }
+        .card-header {
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 20px 25px;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+        .tenant-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+            border-left: 4px solid #667eea;
+        }
+        .tenant-card:hover {
+            transform: translateX(5px);
+            background: rgba(255,255,255,0.2);
+        }
+        .badge-active {
+            background: #4ade80;
+            color: #1a2e1a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        .badge-inactive {
+            background: #f87171;
+            color: #3a1a1a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        .btn-back {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
+        <div class="d-flex flex-wrap">
+            <a href="/teamsphere" class="nav-btn"><i class="fas fa-home"></i> Главная</a>
+            <a href="/teamsphere/dashboard" class="nav-btn"><i class="fas fa-chart-line"></i> Дашборд</a>
+            <a href="/admin/tenants" class="nav-btn active"><i class="fas fa-building"></i> Компании</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-custom">
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-plus-circle me-2"></i> Создать новую компанию
+        </div>
+        <div class="card-body p-4">
+            <form id="createTenantForm">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-white">Название компании</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="tenantName" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-white">Subdomain</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="tenantSubdomain" required>
+                        <small class="text-muted">например: acme, techstart</small>
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">➕ Создать компанию</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-building me-2"></i> Список компаний
+        </div>
+        <div class="card-body p-4">
+            <div id="tenantsList"></div>
+        </div>
+    </div>
+
+    <div class="alert alert-info bg-dark text-white border-info mt-3">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Как использовать subdomain:</strong> 
+        Для доступа к компании используйте <code>http://{subdomain}.localhost:8080</code><br>
+        Например: <code>http://acme.localhost:8080</code> или <code>http://techstart.localhost:8080</code>
+    </div>
+</div>
+
+<a href="javascript:history.back()" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<script>
+    async function loadTenants() {
+        const response = await fetch('/api/admin/tenants');
+        const data = await response.json();
+        const container = document.getElementById('tenantsList');
+        
+        if (data.tenants && data.tenants.length > 0) {
+            container.innerHTML = data.tenants.map(t => `
+                <div class="tenant-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-white mb-1">${escapeHtml(t.name)}</h5>
+                            <div class="text-white-50 small">
+                                <i class="fas fa-globe me-1"></i> ${t.subdomain}.localhost:8080
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge ${t.status === 'active' ? 'badge-active' : 'badge-inactive'}">
+                                    ${t.status === 'active' ? 'Активна' : 'Неактивна'}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editTenant('${t.id}')">
+                                <i class="fas fa-edit"></i> Редактировать
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTenant('${t.id}')">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="text-center text-white-50">Нет созданных компаний</p>';
+        }
+    }
+
+    document.getElementById('createTenantForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById('tenantName').value;
+        const subdomain = document.getElementById('tenantSubdomain').value;
+        
+        const response = await fetch('/api/admin/tenants', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, subdomain })
+        });
+        
+        if (response.ok) {
+            alert('Компания создана!');
+            document.getElementById('tenantName').value = '';
+            document.getElementById('tenantSubdomain').value = '';
+            loadTenants();
+        } else {
+            alert('Ошибка при создании компании');
+        }
+    });
+
+    async function editTenant(id) {
+        const newName = prompt('Введите новое название компании:');
+        if (newName) {
+            await fetch(`/api/admin/tenants/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            });
+            loadTenants();
+        }
+    }
+
+    async function deleteTenant(id) {
+        if (confirm('Удалить компанию? Все данные будут потеряны!')) {
+            await fetch(`/api/admin/tenants/${id}`, { method: 'DELETE' });
+            loadTenants();
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    loadTenants();
+</script>
+</body>
+</html>
