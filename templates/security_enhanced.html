@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Безопасность | SaaSPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .security-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .security-card:hover {
+            transform: translateY(-5px);
+        }
+        .security-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .security-header h1 {
+            color: white;
+            font-size: 2.5rem;
+        }
+        .btn-2fa {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+        }
+        .qrcode {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .backup-codes {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .code-item {
+            font-family: monospace;
+            font-size: 14px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            display: inline-block;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-enabled {
+            background: #4caf50;
+            color: white;
+        }
+        .status-disabled {
+            background: #ff9800;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 20px;
+            letter-spacing: 5px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mt-2 { margin-top: 10px; }
+        .mt-3 { margin-top: 15px; }
+        .w-100 { width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="security-header">
+            <h1><i class="fas fa-shield-alt"></i> Центр безопасности</h1>
+            <p style="color: white;">Защитите свой аккаунт максимально</p>
+        </div>
+
+        <div class="security-card">
+            <h2><i class="fas fa-mobile-alt"></i> Двухфакторная аутентификация (2FA)</h2>
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p>Добавьте дополнительный уровень защиты с помощью Google Authenticator или Authy</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span id="2faStatusBadge" class="status-badge status-disabled">❌ Не настроена</span>
+                    <button class="btn-2fa mt-2" onclick="setup2FA()" id="2faBtn">
+                        <i class="fas fa-qrcode"></i> Настроить 2FA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="security-card" id="backupCodesCard" style="display: none;">
+            <h2><i class="fas fa-key"></i> Резервные коды</h2>
+            <p>Сохраните эти коды в надежном месте. Каждый код можно использовать только один раз.</p>
+            <div id="backupCodesContainer"></div>
+            <button class="btn-2fa mt-2" onclick="generateNewBackupCodes()">
+                <i class="fas fa-sync-alt"></i> Создать новые коды
+            </button>
+        </div>
+
+        <div class="security-card">
+            <h2><i class="fas fa-history"></i> Активность аккаунта</h2>
+            <div id="activityLog">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для 2FA -->
+    <div class="modal" id="modal2FA">
+        <div class="modal-content">
+            <h3 id="modalTitle">Настройка 2FA</h3>
+            <div id="modalBody"></div>
+            <button class="btn-2fa mt-3" onclick="closeModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('userId') || 'test-user-123';
+        
+        async function setup2FA() {
+            showModal('Настройка 2FA', '<div class="text-center">Загрузка QR кода...</div>');
+            
+            try {
+                const response = await fetch(`/api/2fa/generate?user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('modalBody').innerHTML = `
+                        <div class="qrcode">
+                            <img src="data:image/png;base64,${data.qr}" style="border-radius: 10px; max-width: 200px;">
+                        </div>
+                        <p class="text-center">Отсканируйте QR-код в Google Authenticator</p>
+                        <div class="alert alert-info">
+                            <small>Секретный ключ: <code>${data.secret}</code></small>
+                        </div>
+                        <input type="text" id="2faCode" class="form-control" placeholder="Введите 6-значный код" maxlength="6">
+                        <button class="btn-2fa mt-2 w-100" onclick="verify2FA('${data.secret}')">Подтвердить</button>
+                    `;
+                }
+            } catch (e) {
+                document.getElementById('modalBody').innerHTML = '<div class="alert alert-danger">Ошибка загрузки QR кода</div>';
+            }
+        }
+        
+        async function verify2FA(secret) {
+            const code = document.getElementById('2faCode').value;
+            if (!code || code.length !== 6) {
+                alert('Введите 6-значный код');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, code: code, secret: secret })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal();
+                    alert('✅ 2FA успешно настроена!');
+                    load2FAStatus();
+                    if (data.backup_codes) {
+                        showBackupCodes(data.backup_codes);
+                    }
+                } else {
+                    alert('❌ Неверный код. Попробуйте еще раз.');
+                }
+            } catch (e) {
+                alert('Ошибка проверки кода');
+            }
+        }
+        
+        async function load2FAStatus() {
+            try {
+                const response = await fetch(`/api/2fa/status?user_id=${userId}`);
+                const data = await response.json();
+                
+                const badge = document.getElementById('2faStatusBadge');
+                const btn = document.getElementById('2faBtn');
+                
+                if (data.enabled) {
+                    badge.innerHTML = '✅ Включена';
+                    badge.className = 'status-badge status-enabled';
+                    btn.innerHTML = '<i class="fas fa-trash"></i> Отключить 2FA';
+                    btn.onclick = disable2FA;
+                    document.getElementById('backupCodesCard').style.display = 'block';
+                    loadBackupCodes();
+                } else {
+                    badge.innerHTML = '❌ Не настроена';
+                    badge.className = 'status-badge status-disabled';
+                    btn.innerHTML = '<i class="fas fa-qrcode"></i> Настроить 2FA';
+                    btn.onclick = setup2FA;
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки статуса 2FA:', e);
+            }
+        }
+        
+        async function loadBackupCodes() {
+            try {
+                const response = await fetch(`/api/2fa/backup-codes?user_id=${userId}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('backupCodesContainer');
+                if (data.codes && data.codes.length > 0) {
+                    container.innerHTML = `
+                        <div class="backup-codes">
+                            ${data.codes.map(c => `<span class="code-item"><code>${c}</code></span>`).join('')}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<p>Резервные коды не созданы. Нажмите "Создать новые коды"</p>';
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки кодов:', e);
+                document.getElementById('backupCodesContainer').innerHTML = '<p>Ошибка загрузки кодов</p>';
+            }
+        }
+        
+        async function generateNewBackupCodes() {
+            try {
+                const response = await fetch('/api/2fa/backup-codes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const data = await response.json();
+                console.log('Generated codes:', data);
+                if (data.codes && data.codes.length > 0) {
+                    showBackupCodes(data.codes);
+                } else {
+                    alert('Ошибка: коды не сгенерировались');
+                }
+            } catch (e) {
+                console.error('Ошибка:', e);
+                alert('Ошибка генерации кодов: ' + e.message);
+            }
+        }
+        
+        async function disable2FA() {
+            if (!confirm('Вы уверены, что хотите отключить 2FA?')) return;
+            const code = prompt('Введите код из Google Authenticator:');
+            if (!code) return;
+            
+            try {
+                const response = await fetch('/api/2fa/disable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, code: code })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('2FA отключена');
+                    load2FAStatus();
+                    document.getElementById('backupCodesCard').style.display = 'none';
+                } else {
+                    alert('Неверный код');
+                }
+            } catch (e) {
+                alert('Ошибка отключения 2FA');
+            }
+        }
+        
+        function showBackupCodes(codes) {
+            showModal('Резервные коды', `
+                <div class="alert-warning">
+                    <strong>⚠️ ВАЖНО!</strong> Сохраните эти коды в надежном месте.<br>
+                    Каждый код можно использовать только один раз.
+                </div>
+                <div class="backup-codes">
+                    ${codes.map(c => `<span class="code-item"><code>${c}</code></span>`).join('')}
+                </div>
+                <button class="btn-2fa mt-2 w-100" onclick="closeModal(); loadBackupCodes();">✅ Понятно, сохранил</button>
+            `);
+        }
+        
+        function showModal(title, body) {
+            document.getElementById('modalTitle').innerHTML = title;
+            document.getElementById('modalBody').innerHTML = body;
+            document.getElementById('modal2FA').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('modal2FA').style.display = 'none';
+        }
+        
+        // Инициализация
+        load2FAStatus();
+    </script>
+</body>
+</html>

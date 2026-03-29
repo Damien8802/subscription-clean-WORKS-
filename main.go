@@ -93,38 +93,19 @@ func main() {
         log.Println("✅ Таблица vpn_plans готова")
     }
     
-    _, err = database.Pool.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS vpn_keys (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            client_name VARCHAR(100) NOT NULL,
-            client_ip VARCHAR(15),
-            private_key TEXT NOT NULL,
-            public_key TEXT NOT NULL,
-            plan_id INTEGER REFERENCES vpn_plans(id),
-            expires_at TIMESTAMP NOT NULL,
-            active BOOLEAN DEFAULT true,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    `)
-    if err != nil {
-        log.Printf("⚠️ Ошибка создания vpn_keys: %v", err)
-    } else {
-        log.Println("✅ Таблица vpn_keys готова")
-    }
-    
-    _, err = database.Pool.Exec(ctx, `
-        INSERT INTO vpn_plans (name, price, days, speed, devices) 
-        VALUES ($1, $2, $3, $4, $5),
-               ($6, $7, $8, $9, $10),
-               ($11, $12, $13, $14, $15),
-               ($16, $17, $18, $19, $20)
-        ON CONFLICT (id) DO NOTHING
-    `,
-        "Пробный", 0, 3, "10 Mbps", 1,
-        "Старт", 299, 30, "50 Mbps", 2,
-        "Про", 999, 90, "100 Mbps", 5,
-        "Премиум", 2999, 365, "1 Gbps", 10,
-    )
+   _, err = database.Pool.Exec(ctx, `
+    INSERT INTO vpn_plans (name, price, days, speed, devices, tenant_id) 
+    VALUES ($1, $2, $3, $4, $5, $6),
+           ($7, $8, $9, $10, $11, $12),
+           ($13, $14, $15, $16, $17, $18),
+           ($19, $20, $21, $22, $23, $24)
+    ON CONFLICT (id) DO NOTHING
+`,
+    "Пробный", 0, 3, "10 Mbps", 1, "11111111-1111-1111-1111-111111111111",
+    "Старт", 299, 30, "50 Mbps", 2, "11111111-1111-1111-1111-111111111111",
+    "Про", 999, 90, "100 Mbps", 5, "11111111-1111-1111-1111-111111111111",
+    "Премиум", 2999, 365, "1 Gbps", 10, "11111111-1111-1111-1111-111111111111",
+)
     if err != nil {
         log.Printf("⚠️ Ошибка вставки тарифов: %v", err)
     } else {
@@ -161,9 +142,12 @@ func main() {
     r.Use(middleware.SetupCORS(cfg))
     r.Use(middleware.TenantMiddleware(database.Pool))
 
+
+
     rateLimiter := middleware.NewRateLimiter(30, time.Minute)
     r.Use(middleware.SecurityMonitor())
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
+
 
     subFS, err := fs.Sub(templateFS, "templates")
     if err != nil {
@@ -630,11 +614,12 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
         api.POST("/2fa/verify", handlers.VerifyTwoFACode)
         api.POST("/2fa/disable", handlers.DisableTwoFA)
-        api.GET("/2fa/settings", handlers.Get2FASettings)
-        api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
-        api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
-        api.POST("/2fa/trust-device", handlers.TrustDevice)
-        api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+api.GET("/2fa/backup-codes", handlers.GetBackupCodes)
+api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
+api.GET("/2fa/settings", handlers.Get2FASettings)
+api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+api.POST("/2fa/trust-device", handlers.TrustDevice)
+api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/crm/customers", handlers.GetCustomers)
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
@@ -887,6 +872,13 @@ r.GET("/team-analytics", func(c *gin.Context) {
 r.GET("/team-security", func(c *gin.Context) {
     c.HTML(http.StatusOK, "team_security.html", gin.H{
         "title": "Безопасность | TeamSphere",
+    })
+})
+
+
+r.GET("/security-center", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "security_universal.html", gin.H{
+        "title": "Security Center | SaaSPro",
     })
 })
     r.Run(port)
