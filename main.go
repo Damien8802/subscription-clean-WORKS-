@@ -218,7 +218,6 @@ func main() {
     r.GET("/my-keys", handlers.MyKeysPageHandler)
     r.GET("/api-keys", handlers.APIKeysPageHandler)
     r.GET("/support", handlers.SupportPageHandler)
-    r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
     r.GET("/transcriptions", handlers.TranscriptionsPage)
@@ -508,8 +507,6 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
     {
         protected.GET("/settings", handlers.SettingsHandler)
         protected.GET("/my-subscriptions", handlers.MySubscriptionsPageHandler)
-        protected.GET("/security-hub", handlers.SecurityHubHandler)
-        protected.GET("/security-panel", handlers.SecurityPanelHandler)
         protected.GET("/trusted-devices", handlers.TrustedDevicesHandler)
         protected.GET("/monetization", handlers.MonetizationHandler)
         protected.GET("/profile", handlers.ProfilePageHandler)
@@ -769,9 +766,7 @@ r.NoRoute(func(c *gin.Context) {
 
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port
-    fmt.Printf("\n============================================================\n")
-    fmt.Printf("   🚀 SaaSPro - ПОЛНАЯ ВЕРСИЯ 3.0 (УНИФИЦИРОВАННАЯ)\n")
-    fmt.Printf("============================================================\n\n")
+    fmt.Printf("   🔒 Безопасность     %s/security-center\n", baseURL)
     fmt.Printf("📍 ВСЕ ИНТЕРФЕЙСЫ ДОСТУПНЫ ПО ССЫЛКАМ:\n\n")
     fmt.Printf("   🔹 Главная           %s/\n", baseURL)
     fmt.Printf("   🔹 Дашборд          %s/dashboard-improved\n", baseURL)
@@ -792,9 +787,6 @@ r.NoRoute(func(c *gin.Context) {
     fmt.Printf("   ⚙️  Подписки        %s/subscriptions\n", baseURL)
     fmt.Printf("   ⚙️  Мои подписки    %s/my-subscriptions\n", baseURL)
     fmt.Printf("   👤 Профиль          %s/profile\n\n", baseURL)
-    fmt.Printf("   🔒 Безопасность     %s/security\n", baseURL)
-    fmt.Printf("   🔒 Центр безопасн.  %s/security-hub\n", baseURL)
-    fmt.Printf("   🔒 Панель безопасн. %s/security-panel\n\n", baseURL)
     fmt.Printf("   💳 Оплата картой    %s/bank_card_payment\n", baseURL)
     fmt.Printf("   💳 USDT             %s/usdt-payment\n", baseURL)
     fmt.Printf("   💳 RUB              %s/rub-payment\n", baseURL)
@@ -868,12 +860,6 @@ r.GET("/team-analytics", func(c *gin.Context) {
     })
 })
 
-// TeamSphere Security page
-r.GET("/team-security", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "team_security.html", gin.H{
-        "title": "Безопасность | TeamSphere",
-    })
-})
 
 
 r.GET("/security-center", func(c *gin.Context) {
