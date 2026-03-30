@@ -340,5 +340,56 @@
 <a href="javascript:history.back()" class="btn-back">
     <i class="fas fa-arrow-left"></i> Назад
 </a>
+
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="back-button" title="Назад">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<style>
+.back-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 40px !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    z-index: 9999;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    width: auto;
+    height: auto;
+}
+.back-button:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    text-decoration: none;
+}
+@media (max-width: 768px) {
+    .back-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        bottom: 20px;
+        right: 20px;
+    }
+}
+</style>
 </body>
 </html>
+
+
+
+
+
+

@@ -676,7 +676,7 @@
             <a href="/tasks" class="nav-btn"><i class="fas fa-check-square"></i> Задачи</a>
             <a href="/chat" class="nav-btn"><i class="fas fa-comments"></i> Чат</a>
             <a href="/team-calendar" class="nav-btn"><i class="fas fa-calendar-alt"></i> Календарь</a>
-            <a href="/team-analytics" class="nav-btn active"><i class="fas fa-chart-line"></i> Аналитика</a>
+            <a href="/analytics" class="nav-btn active"><i class="fas fa-chart-line"></i> Аналитика</a>
             <a href="/swagger/index.html" class="nav-btn"><i class="fas fa-book"></i> API</a>
         </div>
     </div>
@@ -4333,8 +4333,56 @@ document.addEventListener('DOMContentLoaded', function() {
 <a href="javascript:history.back()" class="btn-back-oval">
     <i class="fas fa-arrow-left"></i>
     <span>Назад</span>
-</a></body>
+</a>
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="back-button" title="Назад">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<style>
+.back-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 40px !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    z-index: 9999;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    width: auto;
+    height: auto;
+}
+.back-button:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    text-decoration: none;
+}
+@media (max-width: 768px) {
+    .back-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        bottom: 20px;
+        right: 20px;
+    }
+}
+</style>
+</body>
 </html>
+
+
+
 
 
 

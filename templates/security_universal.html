@@ -3,1160 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaSPro Security Center | Максимальная защита</title>
+    <title>Безопасность | SaaSPro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', sans-serif;
             min-height: 100vh;
-            padding: 30px 20px;
+            padding: 30px;
         }
-        
-        /* Анимированный фон */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(102,126,234,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Контейнер */
-        .security-container {
-            max-width: 900px;
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
             margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Заголовок */
-        .security-header {
-            text-align: center;
-            margin-bottom: 40px;
-            animation: fadeInDown 0.8s ease;
-        }
-        
-        .security-header h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff, #a8c0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 15px;
-        }
-        
-        .security-header p {
-            color: rgba(255,255,255,0.8);
-            font-size: 1.1rem;
-        }
-        
-        /* Карточки */
-        .security-card {
-            background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            padding: 32px;
-            margin-bottom: 24px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.2);
         }
-        
-        .security-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 16px;
-        }
-        
-        .card-header i {
-            font-size: 32px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .card-header h2 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            color: #1a1a2e;
-            margin: 0;
-        }
-        
-        /* Бейджи статуса */
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 13px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .status-enabled {
-            background: linear-gradient(135deg, #00b09b, #96c93d);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0,176,155,0.3);
-        }
-        
-        .status-disabled {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-            box-shadow: 0 4px 15px rgba(245,87,108,0.3);
-        }
-        
-        /* Кнопки */
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
-            color: white;
-        }
-        
-        .btn-danger-custom {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        /* Резервные коды */
-        .backup-codes-grid {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 20px;
-            padding: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
-        .code-card {
-            background: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        
-        .code-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        /* Модальное окно */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(15px);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 32px;
-            padding: 35px;
-            max-width: 520px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-            animation: slideUp 0.4s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes fadeInDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .qr-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .qr-container img {
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            background: white;
-            padding: 15px;
-        }
-        
-        .secret-box {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 14px;
-            margin: 15px 0;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .code-input {
-            text-align: center;
-            font-size: 28px;
-            letter-spacing: 10px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 16px;
-            width: 100%;
-            font-family: monospace;
-        }
-        
-        .warning-box {
-            background: linear-gradient(135deg, #fff3cd, #ffe69e);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 20px;
-            border-left: 5px solid #ffc107;
-        }
-        
-        .text-gradient {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .footer-note {
-            text-align: center;
-            margin-top: 30px;
-            color: rgba(255,255,255,0.6);
-            font-size: 0.85rem;
-        }
-        
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 13px;
-        }
-        
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-    </style>
-</head>
-<body>
-    <div class="bg-animation"></div>
-    
-    <div class="security-container">
-        <div class="security-header">
-            <h1><i class="fas fa-shield-haltered"></i> Security Center</h1>
-            <p>Максимальная защита вашего аккаунта</p>
-        </div>
-
-        <!-- 2FA Карточка -->
-        <div class="security-card">
-            <div class="card-header">
-                <i class="fas fa-mobile-alt"></i>
-                <h2>Двухфакторная аутентификация</h2>
-            </div>
-            <div class="flex-between">
-                <div>
-                    <p><strong>Защитите аккаунт дополнительным кодом</strong></p>
-                    <p class="text-muted" style="margin: 0;">Google Authenticator • Authy • Microsoft Authenticator</p>
-                </div>
-                <div>
-                    <span id="twofaStatusBadge" class="status-badge status-disabled">
-                        <i class="fas fa-times-circle"></i> Не настроена
-                    </span>
-                    <button id="twofaActionBtn" class="btn-primary-custom mt-2" style="display: block; width: 100%;" onclick="setup2FA()">
-                        <i class="fas fa-qrcode"></i> Настроить 2FA
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Резервные коды Карточка -->
-        <div class="security-card" id="backupCodesSection" style="display: none;">
-            <div class="card-header">
-                <i class="fas fa-key"></i>
-                <h2>Резервные коды доступа</h2>
-            </div>
-            <p><i class="fas fa-exclamation-triangle" style="color: #ffc107;"></i> <strong>Сохраните эти коды в надежном месте!</strong> Каждый код можно использовать только один раз.</p>
-            <div id="backupCodesList"></div>
-            <button class="btn-primary-custom mt-3" onclick="generateBackupCodes()">
-                <i class="fas fa-sync-alt"></i> Создать новые коды
-            </button>
-        </div>
-
-        <!-- Активность Карточка -->
-        <div class="security-card">
-            <div class="card-header">
-                <i class="fas fa-history"></i>
-                <h2>Активность аккаунта</h2>
-            </div>
-            <div id="activityInfo">
-                <p><i class="fas fa-check-circle" style="color: #4caf50;"></i> Защита активна</p>
-                <p><i class="fas fa-shield-alt"></i> 2FA статус: <span id="twofaStatusText">Не настроена</span></p>
-            </div>
-        </div>
-        
-        <div class="footer-note">
-            <i class="fas fa-lock"></i> Ваши данные надежно защищены
-        </div>
-    </div>
-
-    <!-- Модальное окно -->
-    <div id="securityModal" class="modal">
-        <div class="modal-content">
-            <h3 id="modalTitle" class="text-gradient" style="margin-bottom: 20px;"></h3>
-            <div id="modalBody"></div>
-            <button class="btn-primary-custom w-100 mt-3" onclick="closeModal()">
-                <i class="fas fa-times"></i> Закрыть
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // Конфигурация
-        const API_BASE = '/api/2fa';
-        const USER_ID = 'test-user-123';
-        
-        // Загрузка статуса 2FA
-        async function load2FAStatus() {
-            try {
-                const response = await fetch(`${API_BASE}/status?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                const badge = document.getElementById('twofaStatusBadge');
-                const btn = document.getElementById('twofaActionBtn');
-                const statusText = document.getElementById('twofaStatusText');
-                
-                if (data.enabled === true) {
-                    badge.innerHTML = '<i class="fas fa-check-circle"></i> Включена';
-                    badge.className = 'status-badge status-enabled';
-                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Отключить 2FA';
-                    btn.onclick = disable2FA;
-                    btn.className = 'btn-danger-custom mt-2';
-                    statusText.innerHTML = '<strong style="color: #4caf50;">✅ Включена</strong>';
-                    document.getElementById('backupCodesSection').style.display = 'block';
-                    loadBackupCodes();
-                } else {
-                    badge.innerHTML = '<i class="fas fa-times-circle"></i> Не настроена';
-                    badge.className = 'status-badge status-disabled';
-                    btn.innerHTML = '<i class="fas fa-qrcode"></i> Настроить 2FA';
-                    btn.onclick = setup2FA;
-                    btn.className = 'btn-primary-custom mt-2';
-                    statusText.innerHTML = '<span style="color: #ff9800;">⚠️ Не настроена</span>';
-                    document.getElementById('backupCodesSection').style.display = 'none';
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки статуса:', e);
-            }
-        }
-        
-        // Настройка 2FA - генерация QR
-        async function setup2FA() {
-            showModal('Настройка 2FA', '<div class="text-center"><div class="spinner-border text-primary"></div><p>Загрузка...</p></div>');
-            
-            try {
-                const response = await fetch(`${API_BASE}/generate?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('modalBody').innerHTML = `
-                        <div class="qr-container">
-                            <img src="data:image/png;base64,${data.qr}" style="max-width: 220px;">
-                        </div>
-                        <p class="text-center"><strong>1. Отсканируйте QR-код</strong><br>в приложении-аутентификаторе</p>
-                        <div class="secret-box">
-                            <small>Секретный ключ (если не получается отсканировать):</small><br>
-                            <code style="font-size: 13px;">${data.secret}</code>
-                        </div>
-                        <p class="text-center"><strong>2. Введите код подтверждения</strong></p>
-                       <input type="text" id="twofaCode" class="code-input" placeholder="000000" maxlength="6" onkeypress="if(event.key === 'Enter') verify2FA(currentSecret)">
-                        <button class="btn-primary-custom w-100 mt-3" onclick="verify2FA('${data.secret}')">
-                            <i class="fas fa-check"></i> Подтвердить и включить
-                        </button>
-                    `;
-                }
-            } catch (e) {
-                document.getElementById('modalBody').innerHTML = `<div class="alert alert-danger">Ошибка: ${e.message}</div>`;
-            }
-        }
-        
-        // Подтверждение 2FA
-        async function verify2FA(secret) {
-            const code = document.getElementById('twofaCode').value;
-            if (!code || code.length !== 6) {
-                alert('Пожалуйста, введите 6-значный код из приложения');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID, code: code, secret: secret })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal();
-                    alert('🎉 Поздравляем! 2FA успешно настроена!');
-                    load2FAStatus();
-                    if (data.backup_codes) {
-                        showBackupCodesModal(data.backup_codes);
-                    }
-                } else {
-                    alert('❌ Неверный код. Попробуйте еще раз.');
-                }
-            } catch (e) {
-                alert('Ошибка проверки кода');
-            }
-        }
-        
-        // Отключение 2FA
-        async function disable2FA() {
-            if (!confirm('⚠️ Вы уверены, что хотите отключить двухфакторную аутентификацию? Это снизит безопасность вашего аккаунта.')) {
-                return;
-            }
-            
-            const code = prompt('Для подтверждения введите код из Google Authenticator:');
-            if (!code) return;
-            
-            try {
-                const response = await fetch(`${API_BASE}/disable`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID, code: code })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('2FA отключена');
-                    load2FAStatus();
-                } else {
-                    alert('Неверный код');
-                }
-            } catch (e) {
-                alert('Ошибка отключения 2FA');
-            }
-        }
-        
-        // Загрузка резервных кодов
-        async function loadBackupCodes() {
-            try {
-                const response = await fetch(`${API_BASE}/backup-codes?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                const container = document.getElementById('backupCodesList');
-                if (data.codes && data.codes.length > 0) {
-                    container.innerHTML = `
-                        <div class="backup-codes-grid">
-                            ${data.codes.map(code => `
-                                <div class="code-card" onclick="copyToClipboard('${code}')" title="Нажмите чтобы скопировать">
-                                    ${code}
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<p class="text-muted">Нет резервных кодов. Нажмите "Создать новые коды"</p>';
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки кодов:', e);
-            }
-        }
-        
-        // Генерация новых резервных кодов
-        async function generateBackupCodes() {
-            try {
-                const response = await fetch(`${API_BASE}/backup-codes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID })
-                });
-                const data = await response.json();
-                
-                if (data.codes && data.codes.length > 0) {
-                    showBackupCodesModal(data.codes);
-                    loadBackupCodes();
-                } else {
-                    alert('Ошибка генерации кодов');
-                }
-            } catch (e) {
-                alert('Ошибка: ' + e.message);
-            }
-        }
-        
-      <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaSPro Security Center | Максимальная защита</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            padding: 30px 20px;
-        }
-        
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(102,126,234,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .security-container {
-            max-width: 900px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .security-header {
-            text-align: center;
-            margin-bottom: 40px;
-            animation: fadeInDown 0.8s ease;
-        }
-        
-        .security-header h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff, #a8c0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 15px;
-        }
-        
-        .security-header p {
-            color: rgba(255,255,255,0.8);
-            font-size: 1.1rem;
-        }
-        
-        .security-card {
-            background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .security-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 30px 50px rgba(0,0,0,0.3);
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 16px;
-        }
-        
-        .card-header i {
-            font-size: 32px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .card-header h2 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            color: #1a1a2e;
-            margin: 0;
-        }
-        
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-size: 13px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .status-enabled {
-            background: linear-gradient(135deg, #00b09b, #96c93d);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0,176,155,0.3);
-        }
-        
-        .status-disabled {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-            box-shadow: 0 4px 15px rgba(245,87,108,0.3);
-        }
-        
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .btn-primary-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102,126,234,0.4);
-            color: white;
-        }
-        
-        .btn-danger-custom {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .backup-codes-grid {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 20px;
-            padding: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        
-        .code-card {
-            background: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        
-        .code-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(15px);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 32px;
-            padding: 35px;
-            max-width: 520px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-            animation: slideUp 0.4s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes fadeInDown {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .qr-container {
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .qr-container img {
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            background: white;
-            padding: 15px;
-        }
-        
-        .secret-box {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            font-family: monospace;
-            font-size: 14px;
-            margin: 15px 0;
-            border: 1px solid #e0e0e0;
-        }
-        
-        .code-input {
-            text-align: center;
-            font-size: 28px;
-            letter-spacing: 10px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 16px;
-            width: 100%;
-            font-family: monospace;
-        }
-        
-        .warning-box {
-            background: linear-gradient(135deg, #fff3cd, #ffe69e);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 20px;
-            border-left: 5px solid #ffc107;
-        }
-        
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .w-100 { width: 100%; }
+        h1 { color: #667eea; margin-bottom: 20px; text-align: center; }
+        .qrcode { text-align: center; margin: 20px 0; }
+        .secret-box { background: #f0f0f0; padding: 10px; border-radius: 8px; text-align: center; margin: 15px 0; }
+        .code-input { text-align: center; font-size: 24px; letter-spacing: 5px; padding: 10px; width: 100%; border: 2px solid #ddd; border-radius: 10px; }
+        .btn-2fa { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 30px; border-radius: 50px; cursor: pointer; width: 100%; margin-top: 15px; }
+        .btn-danger { background: #dc3545; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .status-enabled { background: #4caf50; color: white; }
+        .status-disabled { background: #ff9800; color: white; }
+        .backup-codes { background: #f8f9fa; border-radius: 10px; padding: 15px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 15px; }
+        .code-item { background: white; padding: 8px 12px; border-radius: 8px; font-family: monospace; font-size: 14px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 20px; padding: 30px; max-width: 450px; width: 90%; }
+        .alert-warning { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .text-center { text-align: center; }
         .mt-2 { margin-top: 10px; }
         .mt-3 { margin-top: 15px; }
-        .mb-3 { margin-bottom: 15px; }
-        .text-center { text-align: center; }
-        .text-muted { color: #6c757d; }
-        
-        .footer-note {
-            text-align: center;
-            margin-top: 30px;
-            color: rgba(255,255,255,0.6);
-            font-size: 0.85rem;
-        }
+        .w-100 { width: 100%; }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
+<div class="card">
+    <h1><i class="fas fa-shield-alt"></i> Безопасность</h1>
     
-    <div class="security-container">
-        <div class="security-header">
-            <h1><i class="fas fa-shield-haltered"></i> Security Center</h1>
-            <p>Максимальная защита вашего аккаунта</p>
+    <div class="flex-between">
+        <div>
+            <h3>Двухфакторная аутентификация</h3>
+            <p>Защитите аккаунт дополнительным кодом</p>
         </div>
-
-        <!-- 2FA Карточка -->
-        <div class="security-card">
-            <div class="card-header">
-                <i class="fas fa-mobile-alt"></i>
-                <h2>Двухфакторная аутентификация</h2>
-            </div>
-            <div class="flex-between">
-                <div>
-                    <p><strong>Защитите аккаунт дополнительным кодом</strong></p>
-                    <p class="text-muted">Google Authenticator • Authy • Microsoft Authenticator</p>
-                </div>
-                <div>
-                    <span id="twofaStatusBadge" class="status-badge status-disabled">
-                        <i class="fas fa-times-circle"></i> Не настроена
-                    </span>
-                    <button id="twofaActionBtn" class="btn-primary-custom mt-2" style="display: block; width: 100%;">
-                        <i class="fas fa-qrcode"></i> Настроить 2FA
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Резервные коды Карточка -->
-        <div class="security-card" id="backupCodesSection" style="display: none;">
-            <div class="card-header">
-                <i class="fas fa-key"></i>
-                <h2>Резервные коды доступа</h2>
-            </div>
-            <p><i class="fas fa-exclamation-triangle" style="color: #ffc107;"></i> <strong>Сохраните эти коды в надежном месте!</strong> Каждый код можно использовать только один раз.</p>
-            <div id="backupCodesList"></div>
-            <button class="btn-primary-custom mt-3" onclick="generateBackupCodes()">
-                <i class="fas fa-sync-alt"></i> Создать новые коды
-            </button>
-        </div>
-
-        <!-- Активность Карточка -->
-        <div class="security-card">
-            <div class="card-header">
-                <i class="fas fa-history"></i>
-                <h2>Активность аккаунта</h2>
-            </div>
-            <div id="activityInfo">
-                <p><i class="fas fa-check-circle" style="color: #4caf50;"></i> Защита активна</p>
-                <p><i class="fas fa-shield-alt"></i> 2FA статус: <span id="twofaStatusText">Не настроена</span></p>
-            </div>
-        </div>
-        
-        <div class="footer-note">
-            <i class="fas fa-lock"></i> Ваши данные надежно защищены
-        </div>
-    </div>
-
-    <!-- Модальное окно -->
-    <div id="securityModal" class="modal">
-        <div class="modal-content">
-            <h3 id="modalTitle" style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px;"></h3>
-            <div id="modalBody"></div>
-            <button class="btn-primary-custom w-100 mt-3" onclick="closeModal()">
-                <i class="fas fa-times"></i> Закрыть
+        <div>
+            <span id="statusBadge" class="status-badge status-disabled">❌ Не настроена</span>
+            <button id="actionBtn" class="btn-2fa mt-2" onclick="setup2FA()">
+                <i class="fas fa-qrcode"></i> Настроить 2FA
             </button>
         </div>
     </div>
 
-    <script>
-        // Конфигурация
-        const API_BASE = '/api/2fa';
-        const USER_ID = 'test-user-123';
-        let current2FASecret = '';
-        
-        // Загрузка статуса 2FA
-        async function load2FAStatus() {
-            try {
-                const response = await fetch(`${API_BASE}/status?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                const badge = document.getElementById('twofaStatusBadge');
-                const btn = document.getElementById('twofaActionBtn');
-                const statusText = document.getElementById('twofaStatusText');
-                
-                if (data.enabled === true) {
-                    badge.innerHTML = '<i class="fas fa-check-circle"></i> Включена';
-                    badge.className = 'status-badge status-enabled';
-                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Отключить 2FA';
-                    btn.onclick = disable2FA;
-                    btn.className = 'btn-danger-custom mt-2';
-                    statusText.innerHTML = '<strong style="color: #4caf50;">✅ Включена</strong>';
-                    document.getElementById('backupCodesSection').style.display = 'block';
-                    loadBackupCodes();
-                } else {
-                    badge.innerHTML = '<i class="fas fa-times-circle"></i> Не настроена';
-                    badge.className = 'status-badge status-disabled';
-                    btn.innerHTML = '<i class="fas fa-qrcode"></i> Настроить 2FA';
-                    btn.onclick = setup2FA;
-                    btn.className = 'btn-primary-custom mt-2';
-                    statusText.innerHTML = '<span style="color: #ff9800;">⚠️ Не настроена</span>';
-                    document.getElementById('backupCodesSection').style.display = 'none';
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки статуса:', e);
-            }
-        }
-        
-        // Настройка 2FA - генерация QR
-        async function setup2FA() {
-            showModal('Настройка 2FA', '<div class="text-center"><div class="spinner-border text-primary"></div><p>Загрузка...</p></div>');
+    <div id="backupSection" style="display: none; margin-top: 20px;">
+        <hr>
+        <h3><i class="fas fa-key"></i> Резервные коды</h3>
+        <div id="backupCodesContainer"></div>
+        <button class="btn-2fa mt-2" onclick="generateBackupCodes()">
+            <i class="fas fa-sync-alt"></i> Создать новые коды
+        </button>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">Настройка 2FA</h3>
+        <div id="modalBody"></div>
+        <button class="btn-2fa mt-3" onclick="closeModal()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+    const userId = 'test-user-123';
+    let currentSecret = '';
+
+    async function loadStatus() {
+        try {
+            const res = await fetch(`/api/2fa/status?user_id=${userId}`);
+            const data = await res.json();
+            const badge = document.getElementById('statusBadge');
+            const btn = document.getElementById('actionBtn');
             
-            try {
-                const response = await fetch(`${API_BASE}/generate?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    current2FASecret = data.secret;
-                    
-                    document.getElementById('modalBody').innerHTML = `
-                        <div class="qr-container">
-                            <img src="data:image/png;base64,${data.qr}" style="max-width: 220px;">
-                        </div>
-                        <p class="text-center"><strong>1. Отсканируйте QR-код</strong><br>в приложении-аутентификаторе</p>
-                        <div class="secret-box">
-                            <small>Секретный ключ:</small><br>
-                            <code style="font-size: 13px;">${data.secret}</code>
-                        </div>
-                        <p class="text-center"><strong>2. Введите код подтверждения</strong></p>
-                        <input type="text" id="twofaCode" class="code-input" placeholder="000000" maxlength="6">
-                        <button class="btn-primary-custom w-100 mt-3" id="verifyBtn" onclick="verify2FA()">
-                            <i class="fas fa-check"></i> Подтвердить и включить
-                        </button>
-                    `;
-                    
-                    // Добавляем обработчик Enter
-                    const inputField = document.getElementById('twofaCode');
-                    if (inputField) {
-                        inputField.addEventListener('keypress', function(event) {
-                            if (event.key === 'Enter') {
-                                event.preventDefault();
-                                const btn = document.getElementById('verifyBtn');
-                                if (btn) btn.click();
-                            }
-                        });
-                        inputField.focus();
-                    }
-                }
-            } catch (e) {
-                document.getElementById('modalBody').innerHTML = `<div class="alert alert-danger">Ошибка: ${e.message}</div>`;
+            if (data.enabled === true) {
+                badge.innerHTML = '✅ Включена';
+                badge.className = 'status-badge status-enabled';
+                btn.innerHTML = '<i class="fas fa-trash"></i> Отключить 2FA';
+                btn.onclick = disable2FA;
+                document.getElementById('backupSection').style.display = 'block';
+                loadBackupCodes();
+            } else {
+                badge.innerHTML = '❌ Не настроена';
+                badge.className = 'status-badge status-disabled';
+                btn.innerHTML = '<i class="fas fa-qrcode"></i> Настроить 2FA';
+                btn.onclick = setup2FA;
+                document.getElementById('backupSection').style.display = 'none';
             }
-        }
-        
-        // Проверка 2FA кода
-        async function verify2FA() {
-            const code = document.getElementById('twofaCode').value;
-            if (!code || code.length !== 6) {
-                alert('Пожалуйста, введите 6-значный код из приложения');
-                return;
+        } catch(e) { console.error(e); }
+    }
+
+    async function setup2FA() {
+        showModal('Настройка 2FA', '<div class="text-center">Загрузка...</div>');
+        try {
+            const res = await fetch(`/api/2fa/generate?user_id=${userId}`);
+            const data = await res.json();
+            if (data.success) {
+                currentSecret = data.secret;
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="qrcode"><img src="data:image/png;base64,${data.qr}" style="max-width: 200px;"></div>
+                    <p class="text-center">Отсканируйте QR-код в Google Authenticator</p>
+                    <div class="secret-box"><code>${data.secret}</code></div>
+                    <input type="text" id="codeInput" class="code-input" placeholder="000000" maxlength="6">
+                    <button class="btn-2fa mt-2 w-100" onclick="verify2FA()">Подтвердить</button>
+                `;
+                const input = document.getElementById('codeInput');
+                input.focus();
+                input.addEventListener('keypress', (e) => { if(e.key === 'Enter') verify2FA(); });
             }
-            
-            try {
-                const response = await fetch(`${API_BASE}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID, code: code, secret: current2FASecret })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal();
-                    alert('🎉 Поздравляем! 2FA успешно настроена!');
-                    load2FAStatus();
-                    if (data.backup_codes) {
-                        showBackupCodesModal(data.backup_codes);
-                    }
-                } else {
-                    alert('❌ Неверный код. Попробуйте еще раз.');
-                    document.getElementById('twofaCode').value = '';
-                    document.getElementById('twofaCode').focus();
-                }
-            } catch (e) {
-                alert('Ошибка проверки кода');
-            }
-        }
-        
-        // Отключение 2FA
-        async function disable2FA() {
-            if (!confirm('⚠️ Вы уверены, что хотите отключить двухфакторную аутентификацию? Это снизит безопасность вашего аккаунта.')) {
-                return;
-            }
-            
-            const code = prompt('Для подтверждения введите код из Google Authenticator:');
-            if (!code) return;
-            
-            try {
-                const response = await fetch(`${API_BASE}/disable`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID, code: code })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('2FA отключена');
-                    load2FAStatus();
-                } else {
-                    alert('Неверный код');
-                }
-            } catch (e) {
-                alert('Ошибка отключения 2FA');
-            }
-        }
-        
-        // Загрузка резервных кодов
-        async function loadBackupCodes() {
-            try {
-                const response = await fetch(`${API_BASE}/backup-codes?user_id=${USER_ID}`);
-                const data = await response.json();
-                
-                const container = document.getElementById('backupCodesList');
-                if (data.codes && data.codes.length > 0) {
-                    container.innerHTML = `
-                        <div class="backup-codes-grid">
-                            ${data.codes.map(code => `
-                                <div class="code-card" onclick="copyToClipboard('${code}')" title="Нажмите чтобы скопировать">
-                                    ${code}
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<p class="text-muted">Нет резервных кодов. Нажмите "Создать новые коды"</p>';
-                }
-            } catch (e) {
-                console.error('Ошибка загрузки кодов:', e);
-            }
-        }
-        
-        // Генерация новых резервных кодов
-        async function generateBackupCodes() {
-            try {
-                const response = await fetch(`${API_BASE}/backup-codes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: USER_ID })
-                });
-                const data = await response.json();
-                
-                if (data.codes && data.codes.length > 0) {
-                    showBackupCodesModal(data.codes);
-                    loadBackupCodes();
-                } else {
-                    alert('Ошибка генерации кодов');
-                }
-            } catch (e) {
-                alert('Ошибка: ' + e.message);
-            }
-        }
-        
-        // Показать резервные коды в модалке
-        function showBackupCodesModal(codes) {
-            showModal('🔑 Ваши резервные коды', `
-                <div class="warning-box">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
-                    <strong>ВАЖНО!</strong>
-                    <p style="margin: 10px 0 0 0;">Сохраните эти коды в надежном месте. Каждый код можно использовать только один раз.</p>
-                </div>
-                <div class="backup-codes-grid">
-                    ${codes.map(code => `<div class="code-card" onclick="copyToClipboard('${code}')">${code}</div>`).join('')}
-                </div>
-                <button class="btn-primary-custom w-100 mt-3" onclick="closeModal(); loadBackupCodes();">
-                    <i class="fas fa-check"></i> Я сохранил(а) коды
-                </button>
-            `);
-        }
-        
-        // Копирование в буфер обмена
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            alert('✅ Код скопирован: ' + text);
-        }
-        
-        // Модальное окно
-        function showModal(title, body) {
-            document.getElementById('modalTitle').innerHTML = title;
-            document.getElementById('modalBody').innerHTML = body;
-            document.getElementById('securityModal').style.display = 'flex';
-        }
-        
-        function closeModal() {
-            document.getElementById('securityModal').style.display = 'none';
-        }
-        
-        // Закрытие по клику вне модалки
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
+        } catch(e) { document.getElementById('modalBody').innerHTML = '<div class="alert alert-danger">Ошибка</div>'; }
+    }
+
+    async function verify2FA() {
+        const code = document.getElementById('codeInput').value;
+        if (!code || code.length !== 6) { alert('Введите 6-значный код'); return; }
+        try {
+            const res = await fetch('/api/2fa/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, code: code, secret: currentSecret })
+            });
+            const data = await res.json();
+            if (data.success) {
                 closeModal();
+                alert('✅ 2FA успешно настроена!');
+                loadStatus();
+            } else {
+                alert('❌ Неверный код');
             }
-        }
-        
-        // Инициализация
-        load2FAStatus();
-    </script>
+        } catch(e) { alert('Ошибка'); }
+    }
+
+    async function disable2FA() {
+        if (!confirm('Отключить 2FA?')) return;
+        const code = prompt('Введите код из Google Authenticator:');
+        if (!code) return;
+        try {
+            const res = await fetch('/api/2fa/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, code: code })
+            });
+            const data = await res.json();
+            if (data.success) { alert('2FA отключена'); loadStatus(); }
+            else { alert('Неверный код'); }
+        } catch(e) { alert('Ошибка'); }
+    }
+
+    async function loadBackupCodes() {
+        try {
+            const res = await fetch(`/api/2fa/backup-codes?user_id=${userId}`);
+            const data = await res.json();
+            const container = document.getElementById('backupCodesContainer');
+            if (data.codes && data.codes.length > 0) {
+                container.innerHTML = `<div class="backup-codes">${data.codes.map(c => `<span class="code-item">${c}</span>`).join('')}</div>`;
+            } else {
+                container.innerHTML = '<p>Нет резервных кодов. Нажмите "Создать новые коды"</p>';
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function generateBackupCodes() {
+        try {
+            const res = await fetch('/api/2fa/backup-codes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+            const data = await res.json();
+            if (data.codes) {
+                showModal('Резервные коды', `
+                    <div class="alert-warning"><strong>⚠️ ВАЖНО!</strong> Сохраните эти коды.</div>
+                    <div class="backup-codes">${data.codes.map(c => `<span class="code-item">${c}</span>`).join('')}</div>
+                    <button class="btn-2fa w-100 mt-3" onclick="closeModal(); loadBackupCodes();">Понятно, сохранил</button>
+                `);
+            }
+        } catch(e) { alert('Ошибка генерации кодов'); }
+    }
+
+    function showModal(title, body) {
+        document.getElementById('modalTitle').innerHTML = title;
+        document.getElementById('modalBody').innerHTML = body;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    window.onclick = function(e) { if (e.target.classList.contains('modal')) closeModal(); };
+
+    loadStatus();
+</script>
+
+
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="back-button" title="Назад">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<style>
+.back-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 40px !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    z-index: 9999;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    width: auto;
+    height: auto;
+}
+.back-button:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    text-decoration: none;
+}
+@media (max-width: 768px) {
+    .back-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        bottom: 20px;
+        right: 20px;
+    }
+}
+</style>
 </body>
 </html>
-        
-        // Инициализация
-        load2FAStatus();
-    </script>
-</body>
-</html>
+

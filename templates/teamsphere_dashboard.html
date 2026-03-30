@@ -16,28 +16,6 @@
             min-height: 100vh;
         }
         
-        .animated-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
-        }
-        .animated-bg::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(102,126,234,0.3) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
         .navbar {
             background: rgba(255,255,255,0.95);
             backdrop-filter: blur(20px);
@@ -80,18 +58,11 @@
             font-weight: 800;
             margin-bottom: 10px;
         }
-        .hero h1 i {
-            font-size: 2rem;
-            margin-right: 10px;
-        }
         .hero p {
             font-size: 1.1rem;
             opacity: 0.9;
         }
         
-        .stats-section {
-            padding: 30px 0;
-        }
         .stat-card {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
@@ -106,7 +77,7 @@
             background: rgba(255,255,255,0.2);
         }
         .stat-number {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 800;
             color: #fff;
         }
@@ -135,7 +106,7 @@
         }
         
         .activity-list {
-            max-height: 280px;
+            max-height: 300px;
             overflow-y: auto;
         }
         .activity-item {
@@ -160,7 +131,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
         }
         .activity-content {
             flex: 1;
@@ -174,6 +144,45 @@
             color: rgba(255,255,255,0.6);
             font-size: 0.7rem;
         }
+        
+        .task-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            height: 100%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .task-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        .task-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            border: 2px solid #667eea;
+            background: transparent;
+            cursor: pointer;
+        }
+        .task-text {
+            color: white;
+            flex: 1;
+        }
+        .task-priority {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .priority-high { background: #f5576c; }
+        .priority-medium { background: #fbbf24; }
+        .priority-low { background: #4ade80; }
         
         .btn-back {
             position: fixed;
@@ -197,18 +206,29 @@
             color: white;
         }
         
+        .welcome-card {
+            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
         @media (max-width: 768px) {
             .hero h1 { font-size: 1.8rem; }
-            .stat-number { font-size: 1.5rem; }
+            .stat-number { font-size: 1.8rem; }
+            .nav-btn { padding: 5px 12px; font-size: 12px; }
             .btn-back { padding: 10px 20px; font-size: 12px; }
         }
     </style>
 </head>
 <body>
+
 <nav class="navbar">
     <div class="container">
         <a class="navbar-brand" href="/teamsphere"><i class="fas fa-globe me-2"></i>TeamSphere</a>
-        <div class="d-flex">
+        <div class="d-flex flex-wrap justify-content-center">
             <a href="/teamsphere" class="nav-btn"><i class="fas fa-home"></i> Главная</a>
             <a href="/crm" class="nav-btn"><i class="fas fa-users"></i> CRM</a>
             <a href="/projects" class="nav-btn"><i class="fas fa-tasks"></i> Проекты</a>
@@ -216,63 +236,68 @@
             <a href="/tasks" class="nav-btn"><i class="fas fa-check-square"></i> Задачи</a>
             <a href="/chat" class="nav-btn"><i class="fas fa-comments"></i> Чат</a>
             <a href="/team-calendar" class="nav-btn"><i class="fas fa-calendar-alt"></i> Календарь</a>
-            <a href="/team-analytics" class="nav-btn active"><i class="fas fa-chart-line"></i> Аналитика</a>
-            </div>
+            <a href="/analytics-center" class="nav-btn"><i class="fas fa-chart-line"></i> Аналитика SaaS</a>
+        </div>
     </div>
 </nav>
 
-
-
-
-
-<div class="animated-bg"></div>
-
 <!-- Герой -->
 <div class="hero">
-    <h1><i class="fas fa-chart-line"></i> Дашборд TeamSphere</h1>
-    <p>Аналитика и ключевые показатели вашей команды</p>
+    <h1><i class="fas fa-rocket"></i> Дашборд TeamSphere</h1>
+    <p>Управляйте командой, проектами и задачами в одном месте</p>
 </div>
 
 <div class="container">
+    <!-- Welcome Card -->
+    <div class="welcome-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3 style="color: white;">👋 Добро пожаловать в TeamSphere!</h3>
+                <p style="color: rgba(255,255,255,0.8); margin: 0;">Ваша команда активно работает. Вот сводка текущей активности.</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <i class="fas fa-chart-line" style="font-size: 48px; color: rgba(255,255,255,0.3);"></i>
+            </div>
+        </div>
+    </div>
+
     <!-- Статистика -->
-    <div class="stats-section">
-        <div class="row">
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalProjects">12</div>
-                    <div class="stat-label"><i class="fas fa-tasks me-1"></i> Всего проектов</div>
-                </div>
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-number" id="totalProjects">12</div>
+                <div class="stat-label"><i class="fas fa-tasks me-1"></i> Всего проектов</div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="stat-number" id="activeProjects">8</div>
-                    <div class="stat-label"><i class="fas fa-play me-1"></i> Активных</div>
-                </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-number" id="activeProjects">8</div>
+                <div class="stat-label"><i class="fas fa-play me-1"></i> Активных</div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="stat-number" id="completedProjects">4</div>
-                    <div class="stat-label"><i class="fas fa-check-circle me-1"></i> Завершено</div>
-                </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-number" id="completedProjects">4</div>
+                <div class="stat-label"><i class="fas fa-check-circle me-1"></i> Завершено</div>
             </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="stat-number" id="teamMembers">15</div>
-                    <div class="stat-label"><i class="fas fa-users me-1"></i> Участников</div>
-                </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-number" id="teamMembers">15</div>
+                <div class="stat-label"><i class="fas fa-users me-1"></i> Участников</div>
             </div>
         </div>
     </div>
 
     <!-- Графики -->
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-6 mb-4">
             <div class="chart-card">
                 <div class="chart-title"><i class="fas fa-chart-line me-2"></i>Динамика проектов</div>
                 <canvas id="projectsChart"></canvas>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6 mb-4">
             <div class="chart-card">
                 <div class="chart-title"><i class="fas fa-chart-pie me-2"></i>Статусы проектов</div>
                 <canvas id="statusChart"></canvas>
@@ -280,12 +305,42 @@
         </div>
     </div>
 
-    <!-- Последние активности -->
-    <div class="row mt-3 mb-5">
-        <div class="col-md-12">
+    <!-- Задачи и Активность -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="task-card">
+                <div class="chart-title"><i class="fas fa-list-check me-2"></i>Актуальные задачи</div>
+                <div class="task-item">
+                    <div class="task-check"></div>
+                    <div class="task-text">Завершить отчет по проекту</div>
+                    <span class="task-priority priority-high">Высокий</span>
+                </div>
+                <div class="task-item">
+                    <div class="task-check"></div>
+                    <div class="task-text">Интеграция с новым API</div>
+                    <span class="task-priority priority-medium">Средний</span>
+                </div>
+                <div class="task-item">
+                    <div class="task-check"></div>
+                    <div class="task-text">Обновить документацию</div>
+                    <span class="task-priority priority-low">Низкий</span>
+                </div>
+                <div class="task-item">
+                    <div class="task-check"></div>
+                    <div class="task-text">Провести созвон с клиентом</div>
+                    <span class="task-priority priority-high">Высокий</span>
+                </div>
+                <div class="task-item">
+                    <div class="task-check"></div>
+                    <div class="task-text">Настроить CI/CD</div>
+                    <span class="task-priority priority-medium">Средний</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
             <div class="chart-card">
                 <div class="chart-title"><i class="fas fa-clock me-2"></i>Последние активности</div>
-                <div class="activity-list" id="activityList">
+                <div class="activity-list">
                     <div class="activity-item">
                         <div class="activity-icon"><i class="fas fa-plus text-success"></i></div>
                         <div class="activity-content">
@@ -314,13 +369,20 @@
                             <div class="activity-time">Вчера</div>
                         </div>
                     </div>
+                    <div class="activity-item">
+                        <div class="activity-icon"><i class="fas fa-code text-success"></i></div>
+                        <div class="activity-content">
+                            <div class="activity-title">Релиз версии 2.0 запланирован на下周</div>
+                            <div class="activity-time">2 дня назад</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Овальная кнопка назад -->
+<!-- Кнопка назад -->
 <a href="javascript:history.back()" class="btn-back">
     <i class="fas fa-arrow-left"></i> Назад
 </a>
@@ -380,8 +442,51 @@
         }
     });
 </script>
+
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="back-button" title="Назад">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<style>
+.back-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 12px 28px;
+    border-radius: 40px !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: all 0.3s;
+    z-index: 9999;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    width: auto;
+    height: auto;
+}
+.back-button:hover {
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+    text-decoration: none;
+}
+@media (max-width: 768px) {
+    .back-button {
+        padding: 10px 20px;
+        font-size: 14px;
+        bottom: 20px;
+        right: 20px;
+    }
+}
+</style>
 </body>
 </html>
-
-
 

@@ -254,7 +254,7 @@
                     </a>
                 </li>
                 <li class="nav-item mb-2">
-                    <a class="nav-link text-light d-flex align-items-center active bg-primary bg-opacity-25 rounded" href="/dashboard">
+                    <a class="nav-link text-light d-flex align-items-center active bg-primary bg-opacity-25 rounded" href="/dashboard-improved">
                         <i class="bi bi-speedometer2 me-3"></i>
                         Дашборд
                     </a>
@@ -273,7 +273,7 @@
                     </a>
                 </li>
                 <li class="nav-item mb-2">
-                    <a class="nav-link text-light d-flex align-items-center" href="/analytics">
+                    <a class="nav-link text-light d-flex align-items-center" href="/analytics-center">
                         <i class="bi bi-graph-up-arrow me-3"></i>
                         Аналитика
                     </a>
@@ -285,7 +285,7 @@
                     </a>
                 </li>
                 <li class="nav-item mb-2">
-                    <a class="nav-link text-light d-flex align-items-center" href="/security">
+                    <a class="nav-link text-light d-flex align-items-center" href="/security-center">
                         <i class="bi bi-shield-check me-3"></i>
                         Безопасность
                     </a>
@@ -320,10 +320,11 @@
                         Складской учет
                     </a>
                 </li>
-               <a class="nav-link text-light d-flex align-items-center" href="/teamsphere">
-    <i class="bi bi-globe me-3"></i>
-    TeamSphere
-</a>
+                <li class="nav-item mb-2">
+                    <a class="nav-link text-light d-flex align-items-center" href="/teamsphere">
+                        <i class="bi bi-globe me-3"></i>
+                        TeamSphere
+                    </a>
                 </li>
                 {{ if .IsAdmin }}
                 <li class="nav-item mb-2 mt-3">
@@ -429,16 +430,16 @@
                     <div class="action-desc">Управление товарами и заказами</div>
                 </a>
                 
-     <a href="/teamsphere" class="action-card text-decoration-none" style="background: linear-gradient(135deg, #667eea20, #764ba220); border: 1px solid rgba(102,126,234,0.3);">
-    <div class="action-icon">
-        <i class="bi bi-globe"></i>
-    </div>
-    <div class="action-title">
-        TeamSphere
-        <span class="badge bg-primary ms-2" style="background: linear-gradient(135deg, #667eea, #764ba2); font-size: 10px;">Аналог Bitrix24</span>
-    </div>
-    <div class="action-desc">Управление командой, проектами и задачами</div>
-</a>
+                <a href="/teamsphere" class="action-card text-decoration-none" style="background: linear-gradient(135deg, #667eea20, #764ba220); border: 1px solid rgba(102,126,234,0.3);">
+                    <div class="action-icon">
+                        <i class="bi bi-globe"></i>
+                    </div>
+                    <div class="action-title">
+                        TeamSphere
+                        <span class="badge bg-primary ms-2" style="background: linear-gradient(135deg, #667eea, #764ba2); font-size: 10px;">Аналог Bitrix24</span>
+                    </div>
+                    <div class="action-desc">Управление командой, проектами и задачами</div>
+                </a>
                 
                 <a href="/vpn" class="action-card text-decoration-none">
                     <div class="action-icon">
@@ -446,6 +447,22 @@
                     </div>
                     <div class="action-title">VPN</div>
                     <div class="action-desc">Безопасный доступ из любой точки мира</div>
+                </a>
+                
+                <a href="/security-center" class="action-card text-decoration-none">
+                    <div class="action-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="action-title">Безопасность</div>
+                    <div class="action-desc">2FA, резервные коды, защита</div>
+                </a>
+                
+                <a href="/analytics-center" class="action-card text-decoration-none">
+                    <div class="action-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="action-title">Аналитика</div>
+                    <div class="action-desc">Графики, отчеты, статистика</div>
                 </a>
                 
                 <a href="/identity-hub" class="action-card text-decoration-none">
@@ -815,33 +832,37 @@ setTimeout(() => {
 }, 5000);
 </script>
 <style>
+</style>
+
+<!-- Овальная кнопка назад -->
+<a href="javascript:history.back()" class="back-button" title="Назад">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+
+<style>
 .back-button {
     position: fixed;
     bottom: 30px;
     right: 30px;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
+    padding: 12px 28px;
+    border-radius: 40px !important;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
     text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     transition: all 0.3s;
-    z-index: 1000;
+    z-index: 9999;
     cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    width: auto;
+    min-width: 100px;
 }
 </style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
 </body>
 </html>
 

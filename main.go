@@ -525,7 +525,6 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         admin.GET("/database-admin", handlers.DatabaseAdminHandler)
         admin.GET("/users", handlers.UsersHandler)
         admin.GET("/subscriptions", handlers.SubscriptionsHandler)
-        admin.GET("/analytics", handlers.AnalyticsHandler)
         admin.GET("/crm", handlers.CRMHandler)
         admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
     }
@@ -826,14 +825,7 @@ r.GET("/favicon.ico", func(c *gin.Context) {
     })
 })
 
-r.GET("/analytics-new", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "teamsphere_dashboard.html", gin.H{
-        "title": "Аналитика | TeamSphere",
-    })
-})
-
-    
-        // Tasks page
+  // Tasks page
     r.GET("/tasks", func(c *gin.Context) {
         c.HTML(http.StatusOK, "tasks.html", gin.H{
             "title": "Задачи - TeamSphere",
@@ -853,13 +845,6 @@ r.GET("/team-calendar", func(c *gin.Context) {
     })
 })
     
-   // TeamSphere Analytics page
-r.GET("/team-analytics", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "analytics.html", gin.H{
-        "title": "Аналитика - TeamSphere",
-    })
-})
-
 
 
 r.GET("/security-center", func(c *gin.Context) {
@@ -867,7 +852,14 @@ r.GET("/security-center", func(c *gin.Context) {
         "title": "Security Center | SaaSPro",
     })
 })
-    r.Run(port)
+
+ // Универсальная аналитика - новый путь
+r.GET("/analytics-center", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
+        "title": "Analytics Center | SaaSPro",
+    })
+})
+   r.Run(port)
 }
 
 
