@@ -552,13 +552,28 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         payments.GET("/rub-payment", handlers.RUBPaymentHandler)
     }
 
-    // Логистика
-    logistics := r.Group("/")
-    logistics.Use(middleware.AuthMiddleware(cfg))
+      // ========== ЛОГИСТИКА ==========
+    // Страницы логистики (публичные или с авторизацией)
+    logisticsGroup := r.Group("/logistics")
+    logisticsGroup.Use(middleware.AuthMiddleware(cfg))
     {
-        logistics.GET("/logistics", handlers.LogisticsHandler)
-        logistics.GET("/track", handlers.TrackHandler)
+        logisticsGroup.GET("/", handlers.LogisticsDashboardHandler)
+        logisticsGroup.GET("/orders", handlers.LogisticsOrdersHandler)
+        logisticsGroup.GET("/track", handlers.TrackHandler)
     }
+    
+    // API логистики
+    logisticsAPI := r.Group("/api/logistics")
+    logisticsAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        logisticsAPI.POST("/orders", handlers.APICreateOrder)
+        logisticsAPI.GET("/orders", handlers.APIGetOrders)
+        logisticsAPI.PUT("/orders/:id/status", handlers.APIUpdateOrderStatus)
+        logisticsAPI.GET("/stats", handlers.APIGetStats)
+        logisticsAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
+    }
+    
+    // Доставка (оставляем для обратной совместимости)
     deliveryAPI := r.Group("/api/delivery")
     deliveryAPI.Use(middleware.AuthMiddleware(cfg))
     {
