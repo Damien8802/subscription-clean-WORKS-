@@ -859,6 +859,19 @@ r.GET("/analytics-center", func(c *gin.Context) {
         "title": "Analytics Center | SaaSPro",
     })
 })
+
+if config.App.Features.WebAuthnEnabled {
+    webauthnGroup := router.Group("/api/webauthn")
+    {
+        webauthnGroup.POST("/register/begin", handlers.WebAuthnRegisterBegin)
+        webauthnGroup.POST("/register/complete", handlers.WebAuthnRegisterComplete)
+        webauthnGroup.POST("/login/begin", handlers.WebAuthnLoginBegin)
+        webauthnGroup.POST("/login/complete", handlers.WebAuthnLoginComplete)
+        // можно добавить управление ключами
+        webauthnGroup.GET("/keys", handlers.ListWebAuthnKeys)
+        webauthnGroup.DELETE("/keys/:id", handlers.DeleteWebAuthnKey)
+    }
+}
    r.Run(port)
 }
 

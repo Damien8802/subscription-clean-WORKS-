@@ -150,3 +150,11 @@ func getEnvAsSlice(key string, defaultValue []string) []string {
     }
     return parts
 }
+
+type Config struct {
+    // ... существующие поля
+    Features struct {
+        WebAuthnEnabled bool `env:"FEATURE_WEBAUTHN_ENABLED"`
+        // позже добавим RLS и SCIM
+    } `env:",prefix=FEATURE_"`
+}
