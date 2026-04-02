@@ -1,0 +1,1216 @@
+package handlers
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io"
+    "log"
+    "net/http"
+    "os"
+    "regexp"
+    "strconv"
+    "strings"
+    "sync"
+    "time"
+    "math/rand"
+
+    "github.com/gin-gonic/gin"
+    tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+type AskRequest struct {
+    Question    string `json:"question" binding:"required"`
+    CRMContext  bool   `json:"crm_context"`
+    Recommend   bool   `json:"recommend"`
+    RequestType string `json:"request_type"`
+    SessionID   string `json:"session_id"`
+}
+
+type ServiceRequest struct {
+    ID            string    `json:"id"`
+    Name          string    `json:"name"`
+    Contact       string    `json:"contact"`
+    ContactType   string    `json:"contact_type"`
+    Description   string    `json:"description"`
+    ServiceType   string    `json:"service_type"`
+    Goal          string    `json:"goal"`
+    Timeline      string    `json:"timeline"`
+    Budget        string    `json:"budget"`
+    Status        string    `json:"status"`
+    CreatedAt     time.Time `json:"created_at"`
+    HasWhatsApp   bool      `json:"has_whatsapp"`
+    HasTelegram   bool      `json:"has_telegram"`
+    HasMessenger  bool      `json:"has_messenger"`
+    TotalAmount   float64   `json:"total_amount"`
+    ExtraService  string    `json:"extra_service"`
+    ProjectCost   float64   `json:"project_cost"`
+    AgreedToPrice bool      `json:"agreed_to_price"`
+    AgreedToExtra bool      `json:"agreed_to_extra"`
+    Design        string    `json:"design"`
+    Features      string    `json:"features"`
+    Integration   string    `json:"integration"`
+    TargetAudience string   `json:"target_audience"`
+    TelegramNick  string    `json:"telegram_nick"`
+}
+
+type DialogState struct {
+    Step              int       `json:"step"`
+    DialogType        string    `json:"dialog_type"`
+    UserName          string    `json:"user_name"`
+    ServiceType       string    `json:"service_type"`
+    Description       string    `json:"description"`
+    Goal              string    `json:"goal"`
+    Timeline          string    `json:"timeline"`
+    Contact           string    `json:"contact"`
+    ContactType       string    `json:"contact_type"`
+    TelegramNick      string    `json:"telegram_nick"`
+    Problem           string    `json:"problem"`
+    ProblemDetails    string    `json:"problem_details"`
+    Messages          []string  `json:"messages"`
+    LastUpdated       time.Time `json:"last_updated"`
+    GreetingShown     bool      `json:"greeting_shown"`
+    NameAsked         bool      `json:"name_asked"`
+    EstimatedCost     float64   `json:"estimated_cost"`
+    AgreedToPrice     bool      `json:"agreed_to_price"`
+    AskedExtraService bool      `json:"asked_extra_service"`
+    AgreedToExtra     bool      `json:"agreed_to_extra"`
+    HasWhatsApp       bool      `json:"has_whatsapp"`
+    HasTelegram       bool      `json:"has_telegram"`
+    HasMessenger      bool      `json:"has_messenger"`
+    AskedMessengers   bool      `json:"asked_messengers"`
+    ForceRequestSent  bool      `json:"force_request_sent"`
+    Design            string    `json:"design"`
+    Features          string    `json:"features"`
+    Integration       string    `json:"integration"`
+    TargetAudience    string    `json:"target_audience"`
+    PriceCalculated   bool      `json:"price_calculated"`
+    NotificationSent  bool      `json:"notification_sent"`
+}
+
+var (
+    dialogStates = make(map[string]*DialogState)
+    dialogMutex  = &sync.RWMutex{}
+)
+
+func init() {
+    go startCleanupRoutine()
+}
+
+func startCleanupRoutine() {
+    defer func() {
+        if r := recover(); r != nil {
+            log.Printf("[PANIC] В горутине очистки сессий: %v", r)
+            time.Sleep(1 * time.Minute)
+            go startCleanupRoutine()
+        }
+    }()
+
+    for {
+        time.Sleep(1 * time.Hour)
+        cleanupSessions()
+    }
+}
+
+func cleanupSessions() {
+    dialogMutex.Lock()
+    defer dialogMutex.Unlock()
+
+    now := time.Now()
+    for sessionID, state := range dialogStates {
+        if now.Sub(state.LastUpdated) > 24*time.Hour {
+            delete(dialogStates, sessionID)
+            log.Printf("[INFO] Удалена устаревшая сессия: %s", sessionID)
+        }
+    }
+}
+
+// 🔍 Функция поиска в Яндекс
+func searchWithYandex(query string) (string, error) {
+    apiKey := os.Getenv("YANDEX_SEARCH_API_KEY")
+    folderID := os.Getenv("YANDEX_FOLDER_ID")
+
+    if apiKey == "" || folderID == "" {
+        return "", fmt.Errorf("поиск не настроен: отсутствуют API ключи")
+    }
+
+    log.Printf("[SEARCH] Запрос: %s", query)
+
+    requestBody := map[string]interface{}{
+        "query": map[string]string{
+            "text": query,
+        },
+        "maxResults": 5,
+        "type":       "web",
+    }
+
+    jsonBody, err := json.Marshal(requestBody)
+    if err != nil {
+        return "", fmt.Errorf("ошибка формирования запроса: %v", err)
+    }
+
+    url := fmt.Sprintf("https://searchapi.api.cloud.yandex.net/v2/web/search?folderId=%s", folderID)
+
+    req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+    if err != nil {
+        return "", fmt.Errorf("ошибка создания запроса: %v", err)
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Authorization", "Api-Key "+apiKey)
+
+    client := &http.Client{Timeout: 15 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return "", fmt.Errorf("ошибка выполнения запроса: %v", err)
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return "", fmt.Errorf("ошибка чтения ответа: %v", err)
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        return "", fmt.Errorf("API вернул ошибку %d: %s", resp.StatusCode, string(body))
+    }
+
+    var searchResp struct {
+        Results []struct {
+            Title   string `json:"title"`
+            Url     string `json:"url"`
+            Snippet struct {
+                Text string `json:"text"`
+            } `json:"snippet"`
+        } `json:"results"`
+    }
+
+    if err := json.Unmarshal(body, &searchResp); err != nil {
+        log.Printf("[ERROR] Не удалось распарсить ответ: %s", string(body))
+        return "", fmt.Errorf("ошибка парсинга ответа: %v", err)
+    }
+
+    if len(searchResp.Results) == 0 {
+        return "По вашему запросу ничего не найдено.", nil
+    }
+
+    var sb strings.Builder
+    sb.WriteString("🔍 **Результаты поиска:**\n\n")
+
+    for i, result := range searchResp.Results {
+        if i >= 5 {
+            break
+        }
+        sb.WriteString(fmt.Sprintf("**%d. %s**\n", i+1, result.Title))
+        if result.Snippet.Text != "" {
+            snippet := result.Snippet.Text
+            if len(snippet) > 200 {
+                snippet = snippet[:200] + "..."
+            }
+            sb.WriteString(fmt.Sprintf("   %s\n", snippet))
+        }
+        sb.WriteString(fmt.Sprintf("   [Источник](%s)\n\n", result.Url))
+    }
+
+    log.Printf("[SEARCH] Найдено результатов: %d", len(searchResp.Results))
+    return sb.String(), nil
+}
+
+// 💰 Функция поиска цен с контекстом
+func searchAverageBotPrice(query string, serviceType string) (string, float64, error) {
+    log.Printf("[PRICE] Поиск цен: %s (контекст: %s)", query, serviceType)
+
+    projectType := "Telegram бота"
+    if strings.Contains(strings.ToLower(serviceType), "crm") {
+        projectType = "CRM системы"
+    } else if strings.Contains(strings.ToLower(serviceType), "сайт") || 
+               strings.Contains(strings.ToLower(serviceType), "магазин") {
+        projectType = "интернет магазина"
+    } else if strings.Contains(strings.ToLower(serviceType), "бот") {
+        projectType = "Telegram бота"
+    }
+
+    // Формируем поисковый запрос для Яндекса
+    searchQuery := fmt.Sprintf("сколько стоит разработка %s цена 2026 средний чек", projectType)
+    
+    apiKey := os.Getenv("YANDEX_SEARCH_API_KEY")
+    folderID := os.Getenv("YANDEX_FOLDER_ID")
+
+    if apiKey == "" || folderID == "" {
+        log.Printf("[WARN] Поиск цен не настроен, возвращаем стандартные цены")
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    // Запрос к Yandex Search API
+    requestBody := map[string]interface{}{
+        "query": map[string]string{
+            "text": searchQuery,
+        },
+        "maxResults": 10,
+        "type":       "web",
+    }
+
+    jsonBody, err := json.Marshal(requestBody)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка формирования запроса: %v", err)
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    url := fmt.Sprintf("https://searchapi.api.cloud.yandex.net/v2/web/search?folderId=%s", folderID)
+
+    req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+    if err != nil {
+        log.Printf("[ERROR] Ошибка создания запроса: %v", err)
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Authorization", "Api-Key "+apiKey)
+
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка выполнения запроса: %v", err)
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка чтения ответа: %v", err)
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("[ERROR] API вернул ошибку %d: %s", resp.StatusCode, string(body))
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    var searchResp struct {
+        Results []struct {
+            Title   string `json:"title"`
+            Url     string `json:"url"`
+            Snippet struct {
+                Text string `json:"text"`
+            } `json:"snippet"`
+        } `json:"results"`
+    }
+
+    if err := json.Unmarshal(body, &searchResp); err != nil {
+        log.Printf("[ERROR] Ошибка парсинга ответа: %v", err)
+        return getDefaultPriceInfo(projectType), 45000, nil
+    }
+
+    // Анализируем результаты поиска и извлекаем цены
+    var prices []float64
+    re := regexp.MustCompile(`(\d{1,3}(?:[.\s]?\d{3})*)\s*(?:тыс\.?|тысяч|₽|руб|рублей|р\.)`)
+    
+    for _, result := range searchResp.Results {
+        text := result.Title + " " + result.Snippet.Text
+        text = strings.ToLower(text)
+        
+        matches := re.FindAllStringSubmatch(text, -1)
+        for _, match := range matches {
+            if len(match) > 1 {
+                // Очищаем число от пробелов и точек
+                priceStr := strings.ReplaceAll(match[1], " ", "")
+                priceStr = strings.ReplaceAll(priceStr, ".", "")
+                
+                price, err := strconv.ParseFloat(priceStr, 64)
+                if err != nil {
+                    continue
+                }
+                
+                // Если цена в тысячах
+                if strings.Contains(match[0], "тыс") || strings.Contains(match[0], "тысяч") {
+                    price *= 1000
+                }
+                
+                // Фильтруем реалистичные цены (от 10 000 до 500 000)
+                if price > 10000 && price < 500000 {
+                    prices = append(prices, price)
+                }
+            }
+        }
+    }
+
+    // Если нашли цены в интернете, используем их
+    if len(prices) > 0 {
+        sum := 0.0
+        minPrice := 1000000.0
+        maxPrice := 0.0
+        
+        for _, p := range prices {
+            sum += p
+            if p < minPrice {
+                minPrice = p
+            }
+            if p > maxPrice {
+                maxPrice = p
+            }
+        }
+        
+        avgPrice := sum / float64(len(prices))
+        
+        // Округляем до тысяч
+        avgPrice = float64(int(avgPrice/1000)) * 1000
+        
+        var sb strings.Builder
+        sb.WriteString(fmt.Sprintf("💰 **Анализ цен на %s (данные из интернета):**\n\n", projectType))
+        sb.WriteString(fmt.Sprintf("📊 Средняя цена: **%.0f ₽**\n", avgPrice))
+        sb.WriteString(fmt.Sprintf("📈 Минимальная: **%.0f ₽**\n", minPrice))
+        sb.WriteString(fmt.Sprintf("📉 Максимальная: **%.0f ₽**\n", maxPrice))
+        sb.WriteString(fmt.Sprintf("🔍 На основе %d источников\n\n", len(prices)))
+        sb.WriteString("💡 **Рекомендуемая стоимость вашего проекта:**\n")
+        sb.WriteString(fmt.Sprintf("• Базовая комплектация: **%.0f ₽**\n", avgPrice*0.8))
+        sb.WriteString(fmt.Sprintf("• Оптимальная: **%.0f ₽**\n", avgPrice))
+        sb.WriteString(fmt.Sprintf("• С расширенным функционалом: **%.0f ₽**\n", avgPrice*1.2))
+        
+        log.Printf("[PRICE] Найдено цен: %d, средняя: %.0f", len(prices), avgPrice)
+        return sb.String(), avgPrice, nil
+    }
+
+    // Если ничего не нашли, возвращаем стандартные цены
+    log.Printf("[PRICE] Цены не найдены, возвращаем стандартные")
+    return getDefaultPriceInfo(projectType), 45000, nil
+}
+
+// Вспомогательная функция для стандартных цен
+func getDefaultPriceInfo(projectType string) string {
+    var sb strings.Builder
+    sb.WriteString(fmt.Sprintf("💰 **Средние цены на %s:**\n\n", projectType))
+    
+    switch {
+    case strings.Contains(projectType, "CRM"):
+        sb.WriteString("• Простая CRM: 30 000 - 50 000 ₽\n")
+        sb.WriteString("• CRM с интеграциями: 50 000 - 80 000 ₽\n")
+        sb.WriteString("• Сложная CRM: 80 000 - 150 000 ₽\n")
+    case strings.Contains(projectType, "магазин"):
+        sb.WriteString("• Простой магазин: 40 000 - 70 000 ₽\n")
+        sb.WriteString("• Магазин с платежами: 70 000 - 120 000 ₽\n")
+        sb.WriteString("• Маркетплейс: 120 000 - 200 000 ₽\n")
+    default: // боты
+        sb.WriteString("• Простой бот (уведомления): 20 000 - 35 000 ₽\n")
+        sb.WriteString("• Средний бот (рассылки + админка): 35 000 - 60 000 ₽\n")
+        sb.WriteString("• Сложный бот (платежи + CRM): 60 000 - 100 000 ₽\n")
+    }
+    
+    return sb.String()
+}
+
+func needsSearch(query string) bool {
+    query = strings.ToLower(query)
+
+    searchIndicators := []string{
+        "последние", "новости", "сегодня", "сейчас", "актуальные",
+        "цена", "стоимость", "сколько стоит", "прайс", "рынок",
+        "2025", "2026", "этом году", "текущие", "свежие",
+        "тренды", "тенденции", "обзор", "аналитика",
+    }
+
+    for _, word := range searchIndicators {
+        if strings.Contains(query, word) {
+            return true
+        }
+    }
+
+    return false
+}
+
+type YandexGPTRequest struct {
+    ModelUri          string `json:"modelUri"`
+    CompletionOptions struct {
+        Stream      bool    `json:"stream"`
+        Temperature float64 `json:"temperature"`
+        MaxTokens   int     `json:"maxTokens"`
+    } `json:"completionOptions"`
+    Messages []struct {
+        Role string `json:"role"`
+        Text string `json:"text"`
+    } `json:"messages"`
+}
+
+type YandexGPTResponse struct {
+    Result struct {
+        Alternatives []struct {
+            Message struct {
+                Role string `json:"role"`
+                Text string `json:"text"`
+            } `json:"message"`
+        } `json:"alternatives"`
+        Usage struct {
+            InputTextTokens  string `json:"inputTextTokens"`
+            CompletionTokens string `json:"completionTokens"`
+            TotalTokens      string `json:"totalTokens"`
+        } `json:"usage"`
+        ModelVersion string `json:"modelVersion"`
+    } `json:"result"`
+}
+
+const servicesList = `
+🧩 Индивидуальные решения под ваш бизнес
+
+🤖 Разработка Telegram-ботов – от простых уведомлений до сложных Mini Apps
+🛒 Создание интернет-магазинов – интеграция с криптой, картами, СБП
+🔗 Интеграции – amoCRM, Bitrix24, Google Sheets, WhatsApp API
+🧠 AI-ассистенты для бизнеса – кастомные чат-боты на YandexGPT, OpenRouter
+📱 Telegram Mini Apps – интерактивные приложения внутри бота
+📊 Настройка CRM-систем – внедрение, кастомизация, обучение
+⚙️ Автоматизация процессов – скрипты, вебхуки, интеграции
+🎯 Партнёрские программы и реферальные системы – как в этом проекте
+📈 Индивидуальные дашборды и аналитика – под ключ
+📢 SEO и маркетинг – аудит, настройка рекламы
+
+⚙️ **Дополнительно:**
+• Дизайн - +10 000 ₽
+• Техподдержка - 5 000 ₽/мес
+`
+
+func getGreeting() string {
+    hour := time.Now().Hour()
+    switch {
+    case hour >= 5 && hour < 12:
+        return "Доброе утро"
+    case hour >= 12 && hour < 17:
+        return "Добрый день"
+    case hour >= 17 && hour < 24:
+        return "Добрый вечер"
+    default:
+        return "Доброй ночи"
+    }
+}
+
+func calculateProjectCost(serviceType, goal, features, integration, design, audience string) float64 {
+    serviceType = strings.ToLower(serviceType)
+    goal = strings.ToLower(goal)
+    design = strings.ToLower(design)
+    integration = strings.ToLower(integration)
+    features = strings.ToLower(features)
+
+    log.Printf("[AI] РАСЧЕТ: услуга=%s, цель=%s", serviceType, goal)
+
+    baseCost := 35000.0
+
+    // Определяем тип проекта
+    if strings.Contains(serviceType, "бот") || strings.Contains(serviceType, "telegram") {
+        if strings.Contains(goal, "магазин") || strings.Contains(goal, "каталог") {
+            baseCost = 50000
+        } else if strings.Contains(goal, "рассылк") || strings.Contains(features, "рассылк") {
+            baseCost = 30000
+        } else {
+            baseCost = 25000
+        }
+        log.Printf("[AI] Базовая стоимость бота: %.0f", baseCost)
+    } else if strings.Contains(serviceType, "crm") {
+        baseCost = 40000
+        log.Printf("[AI] Базовая стоимость CRM: %.0f", baseCost)
+    } else if strings.Contains(serviceType, "магазин") || strings.Contains(serviceType, "сайт") {
+        baseCost = 45000
+        log.Printf("[AI] Базовая стоимость магазина: %.0f", baseCost)
+    }
+
+    // Добавляем за дизайн
+    if strings.Contains(design, "да") || strings.Contains(design, "хочу") || strings.Contains(design, "нужен") {
+        baseCost += 10000
+        log.Printf("[AI] +10000 за дизайн")
+    }
+
+    // Добавляем за интеграции
+    if strings.Contains(integration, "да") || strings.Contains(integration, "нужн") || strings.Contains(integration, "интеграция") {
+        baseCost += 15000
+        log.Printf("[AI] +15000 за интеграции")
+    }
+
+    // Добавляем за сложные функции
+    if strings.Contains(features, "платеж") || strings.Contains(features, "оплат") || 
+       strings.Contains(goal, "платеж") || strings.Contains(goal, "оплат") {
+        baseCost += 20000
+        log.Printf("[AI] +20000 за платежи")
+    }
+
+    if strings.Contains(features, "админ") || strings.Contains(features, "панель") ||
+       strings.Contains(goal, "админ") || strings.Contains(goal, "панель") {
+        baseCost += 15000
+        log.Printf("[AI] +15000 за админ панель")
+    }
+
+    if strings.Contains(features, "mini app") || strings.Contains(goal, "mini app") {
+        baseCost += 30000
+        log.Printf("[AI] +30000 за Mini App")
+    }
+
+    log.Printf("[AI] ИТОГО: %.0f ₽", baseCost)
+    return baseCost
+}
+
+func saveServiceRequest(req ServiceRequest) error {
+    log.Printf("[DB] Сохранение заявки: %+v", req)
+    return nil
+}
+
+func sendClientNotification(state *DialogState) {
+    minMinutes := 5
+    maxMinutes := 15
+    
+    rand.Seed(time.Now().UnixNano())
+    minutes := minMinutes + rand.Intn(maxMinutes-minMinutes+1)
+    
+    message := fmt.Sprintf("✅ **Отлично! Ваша заявка принята!**\n\n📋 **Детали заявки:**\n• Услуга: %s\n• Цель: %s\n• Срок: %s\n• Стоимость: %.0f ₽\n\n🕐 Наш специалист свяжется с вами в ближайшие **%d минут**.\n\nСпасибо за обращение! 🙏",
+        state.ServiceType, state.Goal, state.Timeline, state.EstimatedCost, minutes)
+
+    if state.ContactType == "telegram" && state.Contact != "" {
+        botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+        if botToken == "" {
+            return
+        }
+        bot, err := tgbotapi.NewBotAPI(botToken)
+        if err != nil {
+            log.Printf("[ERROR] Ошибка создания бота: %v", err)
+            return
+        }
+        var chatIDInt int64
+        fmt.Sscanf(state.Contact, "%d", &chatIDInt)
+        msg := tgbotapi.NewMessage(chatIDInt, message)
+        msg.ParseMode = "Markdown"
+        _, err = bot.Send(msg)
+        if err != nil {
+            log.Printf("[ERROR] Ошибка отправки уведомления клиенту: %v", err)
+        } else {
+            log.Printf("[INFO] Уведомление клиенту отправлено (связь через %d мин)", minutes)
+        }
+    } else if state.ContactType == "phone" {
+        log.Printf("📱 SMS на %s: %s (связь через %d мин)", state.Contact, message, minutes)
+    }
+}
+
+func boolToYesNo(b bool) string {
+    if b {
+        return "Да"
+    }
+    return "Нет"
+}
+
+func notifyAdminViaTelegram(req ServiceRequest) {
+    botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+    if botToken == "" {
+        log.Printf("[ERROR] TELEGRAM_BOT_TOKEN не настроен")
+        return
+    }
+
+    bot, err := tgbotapi.NewBotAPI(botToken)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка создания бота: %v", err)
+        return
+    }
+
+    adminChatIDStr := os.Getenv("ADMIN_CHAT_ID")
+    if adminChatIDStr == "" {
+        log.Printf("[ERROR] ADMIN_CHAT_ID не настроен")
+        return
+    }
+
+    var adminChatID int64
+    fmt.Sscanf(adminChatIDStr, "%d", &adminChatID)
+
+    messengers := "Нет"
+    messengerList := []string{}
+    if req.HasWhatsApp {
+        messengerList = append(messengerList, "WhatsApp")
+    }
+    if req.HasTelegram {
+        messengerList = append(messengerList, "Telegram")
+    }
+    if req.HasMessenger {
+        messengerList = append(messengerList, "Messenger")
+    }
+    if len(messengerList) > 0 {
+        messengers = strings.Join(messengerList, " + ")
+    }
+
+    description := req.Description
+    if description == "" {
+        description = fmt.Sprintf("Услуга: %s | Цель: %s", req.ServiceType, req.Goal)
+    }
+
+    telegramNick := req.TelegramNick
+    if telegramNick == "" && req.ContactType == "telegram" {
+        telegramNick = strings.TrimPrefix(req.Contact, "@")
+    }
+
+    message := fmt.Sprintf("🔔 **НОВАЯ ЗАЯВКА!**\n\n👤 **Имя:** %s\n📞 **Контакт:** %s (%s)\n📱 **Telegram ник:** @%s\n💬 **Мессенджеры:** %s\n\n📝 **Услуга:** %s\n🎯 **Цель:** %s\n⚙️ **Функции:** %s\n🎨 **Дизайн:** %s\n🔌 **Интеграции:** %s\n👥 **Аудитория:** %s\n⏱️ **Срок:** %s\n💰 **Бюджет:** %s ₽\n\n💵 **Стоимость:** %.0f ₽\n✅ **Цена устроила:** %s\n➕ **Техподдержка:** %s\n💳 **ИТОГО:** %.0f ₽\n⚡️ **Предоплата:** %.0f ₽\n\n🕐 **Время:** %s",
+        req.Name,
+        req.Contact,
+        req.ContactType,
+        telegramNick,
+        messengers,
+        req.ServiceType,
+        req.Goal,
+        req.Features,
+        req.Design,
+        req.Integration,
+        req.TargetAudience,
+        req.Timeline,
+        req.Budget,
+        req.ProjectCost,
+        boolToYesNo(req.AgreedToPrice),
+        boolToYesNo(req.AgreedToExtra),
+        req.TotalAmount,
+        req.TotalAmount/2,
+        req.CreatedAt.Format("15:04 02.01.2006"))
+
+    msg := tgbotapi.NewMessage(adminChatID, message)
+    msg.ParseMode = "Markdown"
+
+    _, err = bot.Send(msg)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка отправки админу (Markdown): %v", err)
+        msg.ParseMode = ""
+        _, err = bot.Send(msg)
+        if err != nil {
+            log.Printf("[ERROR] Ошибка отправки админу (plain): %v", err)
+        }
+    } else {
+        log.Printf("[INFO] Уведомление админу отправлено")
+    }
+}
+
+func forceSendServiceRequest(state *DialogState, sessionID string) {
+    if state.ForceRequestSent {
+        return
+    }
+
+    totalAmount := state.EstimatedCost
+    if state.AgreedToExtra {
+        totalAmount += 5000
+    }
+
+    extraService := "нет"
+    if state.AgreedToExtra {
+        extraService = "Да (+5000 ₽/мес)"
+    }
+
+    description := fmt.Sprintf("Услуга: %s | Цель: %s | Функции: %s | Дизайн: %s | Интеграции: %s | Аудитория: %s",
+        state.ServiceType, state.Goal, state.Features, state.Design, state.Integration, state.TargetAudience)
+
+    telegramNick := state.TelegramNick
+    if telegramNick == "" && state.ContactType == "telegram" {
+        telegramNick = strings.TrimPrefix(state.Contact, "@")
+    }
+
+    serviceReq := ServiceRequest{
+        Name:           state.UserName,
+        Contact:        state.Contact,
+        ContactType:    state.ContactType,
+        Description:    description,
+        ServiceType:    state.ServiceType,
+        Goal:           state.Goal,
+        Features:       state.Features,
+        Design:         state.Design,
+        Integration:    state.Integration,
+        TargetAudience: state.TargetAudience,
+        Timeline:       state.Timeline,
+        Budget:         fmt.Sprintf("%.0f", totalAmount),
+        Status:         "new",
+        CreatedAt:      time.Now(),
+        HasWhatsApp:    state.HasWhatsApp,
+        HasTelegram:    state.HasTelegram,
+        HasMessenger:   state.HasMessenger,
+        TotalAmount:    totalAmount,
+        ExtraService:   extraService,
+        ProjectCost:    state.EstimatedCost,
+        AgreedToPrice:  state.AgreedToPrice,
+        AgreedToExtra:  state.AgreedToExtra,
+        TelegramNick:   telegramNick,
+    }
+
+    err := saveServiceRequest(serviceReq)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка сохранения заявки: %v", err)
+    }
+
+    notifyAdminViaTelegram(serviceReq)
+
+    // Отправляем уведомление клиенту и добавляем финальное сообщение
+    if !state.NotificationSent {
+        sendClientNotification(state)
+        state.NotificationSent = true
+        
+        // Добавляем финальное пожелание в историю
+        state.Messages = append(state.Messages, "assistant: ✅ Спасибо за обращение! Всего хорошего! 👋")
+    }
+
+    state.ForceRequestSent = true
+    
+    dialogMutex.Lock()
+    delete(dialogStates, sessionID)
+    dialogMutex.Unlock()
+    
+    log.Printf("[INFO] Заявка отправлена для сессии %s", sessionID)
+}
+
+func extractDataFromMessage(message string, state *DialogState) {
+    originalMessage := message
+    message = strings.ToLower(strings.TrimSpace(message))
+    if message == "" {
+        return
+    }
+
+    log.Printf("Шаг %d: %s", state.Step, originalMessage)
+
+    // Проверка на просьбу связаться с разработчиком
+    if strings.Contains(message, "свяжи") || strings.Contains(message, "разработчик") || 
+       strings.Contains(message, "специалист") || strings.Contains(message, "помощь специалиста") {
+        
+        log.Printf("👨‍💻 Запрос на связь с разработчиком")
+        if state.ServiceType == "" {
+            state.ServiceType = "Консультация с разработчиком"
+        }
+        if state.Goal == "" {
+            state.Goal = "Требуется помощь специалиста"
+        }
+        state.Step = 10
+        return
+    }
+
+   if state.Step == 0 && state.UserName == "" {
+    // Сбор информации по шагам
+    if state.Step >= 1 {
+        switch state.Step {
+  case 1:
+    // Проверка на телефон
+    phoneDigits := 0
+    for _, ch := range originalMessage {
+        if ch >= '0' && ch <= '9' {
+            phoneDigits++
+        }
+    }
+    isPhone := phoneDigits >= 10
+    
+    if isPhone {
+        state.ContactType = "phone"
+        state.Contact = strings.ReplaceAll(originalMessage, " ", "")
+        state.Step = 10
+        log.Printf("📞 Телефон: %s", state.Contact)
+        return
+    }
+    // остальной код case 1
+    // остальной код case 1
+              case 2:
+            if state.Goal == "" && !isCommonWord(message) && len(originalMessage) > 2 {
+                // Проверяем, не является ли ответ телефоном
+                phoneDigits := 0
+                for _, ch := range originalMessage {
+                    if ch >= '0' && ch <= '9' {
+                        phoneDigits++
+                    }
+                }
+                isPhone := phoneDigits >= 10
+                
+                if isPhone {
+                    // Если это телефон - сохраняем как контакт, а не как цель
+                    state.ContactType = "phone"
+                    state.Contact = strings.ReplaceAll(originalMessage, " ", "")
+                    state.Step = 8
+                    log.Printf("📞 Телефон: %s", state.Contact)
+                    return
+                }
+                
+                state.Goal = originalMessage
+                state.Step = 3
+                log.Printf("🎯 Цель: %s", state.Goal)
+                return
+            }
+        case 3:
+            if state.Features == "" && !isCommonWord(message) && len(originalMessage) > 2 {
+                state.Features = originalMessage
+                state.Step = 4
+                log.Printf("⚙️ Функции: %s", state.Features)
+                return
+            }
+        case 4:
+            if state.Design == "" {
+                phoneDigits := 0
+                for _, ch := range originalMessage {
+                    if ch >= '0' && ch <= '9' {
+                        phoneDigits++
+                    }
+                }
+                isPhone := phoneDigits >= 10
+                
+                if isPhone {
+                    state.ContactType = "phone"
+                    state.Contact = strings.ReplaceAll(originalMessage, " ", "")
+                    state.Step = 8
+                    log.Printf("📞 Телефон: %s", state.Contact)
+                    return
+                }
+                
+                if strings.Contains(message, "да") || strings.Contains(message, "хочу") || 
+                   strings.Contains(message, "нужен") {
+                    state.Design = "Да, нужен дизайн"
+                    state.Step = 5
+                    log.Printf("🎨 Нужен дизайн")
+                } else if strings.Contains(message, "нет") || strings.Contains(message, "не") {
+                    state.Design = "Дизайн не требуется"
+                    state.Step = 5
+                    log.Printf("➡️ Дизайн не нужен")
+                } else {
+                    state.Design = originalMessage
+                    state.Step = 5
+                    log.Printf("🎨 Пожелания: %s", state.Design)
+                }
+                return
+            }
+        case 5:
+            if state.Integration == "" && !isCommonWord(message) && len(originalMessage) > 2 {
+                state.Integration = originalMessage
+                state.Step = 6
+                log.Printf("🔌 Интеграции: %s", state.Integration)
+                return
+            }
+        case 6:
+            if state.TargetAudience == "" && !isCommonWord(message) && len(originalMessage) > 2 {
+                state.TargetAudience = originalMessage
+                state.Step = 7
+                log.Printf("👥 Аудитория: %s", state.TargetAudience)
+                return
+            }
+        case 7:
+            if state.Timeline == "" && !isCommonWord(message) && len(originalMessage) > 2 {
+                state.Timeline = originalMessage
+                state.EstimatedCost = calculateProjectCost(
+                    state.ServiceType,
+                    state.Goal,
+                    state.Features,
+                    state.Integration,
+                    state.Design,
+                    state.TargetAudience,
+                )
+                state.Step = 8
+                state.PriceCalculated = true
+                log.Printf("💰 Стоимость: %.0f ₽", state.EstimatedCost)
+                return
+            }
+        case 8:
+            if strings.Contains(message, "да") || strings.Contains(message, "согласен") || 
+               strings.Contains(message, "ок") || strings.Contains(message, "хорошо") {
+                state.AgreedToPrice = true
+                state.Step = 9
+                log.Printf("✅ Согласие на цену")
+                return
+            } else if strings.Contains(message, "нет") || strings.Contains(message, "дорого") {
+                state.AgreedToPrice = false
+                state.Step = 9
+                log.Printf("⚠️ Отказ от цены")
+                return
+            }
+        case 9:
+            if strings.Contains(message, "да") || strings.Contains(message, "хочу") || 
+               strings.Contains(message, "добавь") {
+                state.AgreedToExtra = true
+                state.AskedExtraService = true
+                state.Step = 10
+                log.Printf("✅ Согласие на техподдержку")
+                return
+            } else if strings.Contains(message, "нет") || strings.Contains(message, "не") {
+                state.AgreedToExtra = false
+                state.AskedExtraService = true
+                state.Step = 10
+                log.Printf("⚠️ Отказ от техподдержки")
+                return
+            }
+        case 10:
+            phoneDigits := 0
+            phoneNumber := ""
+            for _, ch := range originalMessage {
+                if ch >= '0' && ch <= '9' {
+                    phoneDigits++
+                    phoneNumber += string(ch)
+                }
+            }
+            isPhone := phoneDigits >= 10
+            
+            if isPhone {
+                state.ContactType = "phone"
+                state.Contact = phoneNumber
+                state.Step = 11
+                log.Printf("📞 Телефон: %s", state.Contact)
+                return
+            }
+            if strings.HasPrefix(originalMessage, "@") {
+                state.ContactType = "telegram"
+                state.Contact = originalMessage
+                state.TelegramNick = strings.TrimPrefix(originalMessage, "@")
+                state.HasTelegram = true
+                state.Step = 11
+                log.Printf("📱 Telegram: %s", state.Contact)
+                return
+            }
+        case 11:
+            if strings.Contains(message, "whatsapp") || strings.Contains(message, "ватсап") {
+                state.HasWhatsApp = true
+            }
+            if strings.Contains(message, "telegram") || strings.Contains(message, "телеграм") {
+                state.HasTelegram = true
+            }
+            state.AskedMessengers = true
+            state.Step = 12
+            log.Printf("📱 Мессенджеры: WhatsApp=%v, Telegram=%v", state.HasWhatsApp, state.HasTelegram)
+            return
+        }
+    }
+}
+
+func isCommonWord(word string) bool {
+    commonWords := map[string]bool{
+        "привет": true, "здравствуйте": true, "здравствуй": true, 
+        "добрый": true, "добрай": true, "доброе": true, "доброй": true,
+        "день": true, "вечер": true, "утро": true, "ночь": true, 
+        "помогите": true, "помощь": true, "вопрос": true, 
+        "есть": true, "можно": true, "спросить": true,
+        "хочу": true, "надо": true, "нужно": true, "нада": true,
+        "спасибо": true, "пожалуйста": true, "пож": true,
+        "услуг": true, "услуга": true, "услуги": true, "заказать": true,
+        "сделать": true, "создать": true, "разработать": true,
+        "да": true, "нет": true, "ок": true, "окей": true, "хорошо": true,
+        "нужна": true, "нужен": true, "нужно": true,
+    }
+    return commonWords[word]
+}
+
+// ДОБАВЛЯЕМ ЭТУ ФУНКЦИЮ ЗДЕСЬ!
+func isGreeting(word string) bool {
+    greetings := map[string]bool{
+        "привет": true, "здравствуйте": true, "здравствуй": true,
+        "доброе": true, "добрый": true, "добрай": true, "доброй": true,
+        "утро": true, "день": true, "вечер": true, "ночь": true,
+        "хай": true, "хелло": true, "hello": true, "hi": true,
+    }
+    return greetings[word]
+}
+
+func AIAskHandler(c *gin.Context) {
+    var req AskRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    // ... остальной код AIAskHandler
+    if req.SessionID == "" {
+        req.SessionID = fmt.Sprintf("session_%d", time.Now().UnixNano())
+    }
+
+    dialogMutex.Lock()
+    state, exists := dialogStates[req.SessionID]
+    if !exists {
+        state = &DialogState{
+            Step:           0,
+            DialogType:     "service",
+            Messages:       []string{},
+            LastUpdated:    time.Now(),
+            GreetingShown:  false,
+        }
+        dialogStates[req.SessionID] = state
+    }
+    state.LastUpdated = time.Now()
+    dialogMutex.Unlock()
+
+    // Обрабатываем сообщение
+    if req.Question != "" {
+        extractDataFromMessage(req.Question, state)
+        state.Messages = append(state.Messages, "user: "+req.Question)
+    }
+
+    conversationHistory := ""
+    for i, msg := range state.Messages {
+        conversationHistory += fmt.Sprintf("%d. %s\n", i+1, msg)
+    }
+
+      greeting := getGreeting()
+
+    firstMessage := ""
+    if !state.GreetingShown {
+        if state.UserName == "" {
+            firstMessage = fmt.Sprintf("%s! Как к вам обращаться?", greeting)
+        } else {
+            firstMessage = fmt.Sprintf("%s, %s! Чем могу помочь?", greeting, state.UserName)
+        }
+        state.GreetingShown = true
+    }
+    // Краткий опрос структуры
+    if state.Step == 1 && state.ServiceType == "" {
+        // Уже спросили имя, теперь спрашиваем услугу
+        // Это обработается в системном промпте
+    }
+    // Поиск в интернете
+    searchResults := ""
+
+    if strings.Contains(req.Question, "сколько стоит") ||
+        strings.Contains(req.Question, "цена") ||
+        strings.Contains(req.Question, "стоимость") ||
+        strings.Contains(req.Question, "прайс") {
+
+        log.Println("[AI] Поиск цен...")
+        priceInfo, _, err := searchAverageBotPrice(req.Question, state.ServiceType)
+        if err != nil {
+            log.Printf("[ERROR] Ошибка поиска цен: %v", err)
+        }
+        if priceInfo != "" {
+            searchResults = "\n\n" + priceInfo
+        }
+    } else if needsSearch(req.Question) {
+        log.Println("[AI] Поиск в интернете...")
+        results, err := searchWithYandex(req.Question)
+        if err != nil {
+            log.Printf("[ERROR] Ошибка поиска: %v", err)
+        }
+        if results != "" {
+            searchResults = "\n\n" + results
+        }
+    }
+
+    // ПОЛУЧАЕМ API КЛЮЧИ ЯНДЕКСА
+    apiKey := os.Getenv("YANDEX_API_KEY")
+    folderID := os.Getenv("YANDEX_FOLDER_ID")
+    if apiKey == "" || folderID == "" {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "API ключи не настроены"})
+        return
+    }
+
+       // Системный промпт
+    systemPrompt := fmt.Sprintf(`%s
+
+%s
+%s
+
+ТЕКУЩИЙ ДИАЛОГ:
+Имя: %s
+Шаг сбора заявки: %d
+
+ТЫ - УМНЫЙ AI-АССИСТЕНТ, КОТОРЫЙ ОТВЕЧАЕТ КАК ЭКСПЕРТ:
+
+📌 **ОСНОВНЫЕ ПРАВИЛА:**
+1. Здороваешься ТОЛЬКО ПЕРВЫЙ РАЗ по времени суток. Больше НИКОГДА не здороваешься.
+2. Отвечаешь КРАТКО и ПО ДЕЛУ, без воды.
+3. Задаешь ТОЛЬКО ОДИН вопрос за раз.
+
+🤖 **ПОСЛЕДОВАТЕЛЬНОСТЬ ОПРОСА:**
+1. Спросить имя (если не знаешь)
+2. Спросить: "Какая услуга нужна?"
+3. Спросить: "Какие функции должны быть?"
+4. Спросить: "Есть пожелания по дизайну?"
+5. Спросить: "Сроки?"
+6. Назвать цену (из интернета)
+7. Спросить: "Вас устраивает цена?"
+8. Спросить про техподдержку
+9. Попросить контакт
+10. Отправить заявку
+
+💡 **ПРИМЕРЫ КРАТКИХ ОТВЕТОВ:**
+- "Какая услуга нужна?"
+- "Какие функции?"
+- "Дизайн нужен?"
+- "Сроки?"
+- "Цена: 35000 ₽. Устраивает?"
+- "Техподдержка за 5000/мес?"
+- "Ваш телефон или Telegram?"
+
+ТЕКУЩИЙ ВОПРОС: %s
+
+История диалога:
+%s`,
+        firstMessage, servicesList, searchResults,
+        state.UserName, state.Step,
+        req.Question, conversationHistory)
+    requestBody := YandexGPTRequest{
+        ModelUri: fmt.Sprintf("gpt://%s/yandexgpt-lite", folderID),
+        CompletionOptions: struct {
+            Stream      bool    `json:"stream"`
+            Temperature float64 `json:"temperature"`
+            MaxTokens   int     `json:"maxTokens"`
+        }{
+            Stream:      false,
+            Temperature: 0.8,
+            MaxTokens:   1500,
+        },
+        Messages: []struct {
+            Role string `json:"role"`
+            Text string `json:"text"`
+        }{
+            {Role: "system", Text: systemPrompt},
+            {Role: "user", Text: req.Question},
+        },
+    }
+
+    jsonBody, err := json.Marshal(requestBody)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка маршалинга запроса: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка формирования запроса"})
+        return
+    }
+
+    client := &http.Client{Timeout: 30 * time.Second}
+    yandexReq, err := http.NewRequest("POST", "https://llm.api.cloud.yandex.net/foundationModels/v1/completion", bytes.NewBuffer(jsonBody))
+    if err != nil {
+        log.Printf("[ERROR] Ошибка создания запроса: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка создания запроса"})
+        return
+    }
+
+    yandexReq.Header.Set("Content-Type", "application/json")
+    yandexReq.Header.Set("Authorization", "Api-Key "+apiKey)
+
+    resp, err := client.Do(yandexReq)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка YandexGPT: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка YandexGPT"})
+        return
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        log.Printf("[ERROR] Ошибка чтения ответа: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка чтения ответа"})
+        return
+    }
+
+    var gptResp YandexGPTResponse
+    if err := json.Unmarshal(body, &gptResp); err != nil {
+        log.Printf("[ERROR] Ошибка парсинга ответа: %v, тело: %s", err, string(body))
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка парсинга ответа"})
+        return
+    }
+
+      finalAnswer := ""
+    if len(gptResp.Result.Alternatives) > 0 {
+        finalAnswer = gptResp.Result.Alternatives[0].Message.Text
+        state.Messages = append(state.Messages, "assistant: "+finalAnswer)
+    }
+
+    // Проверяем, нужно ли отправить заявку (для разработчика или обычной заявки)
+    if state.Contact != "" && !state.ForceRequestSent {
+        if state.UserName == "" {
+            state.UserName = "Клиент"
+        }
+        if state.ServiceType == "" {
+            state.ServiceType = "Консультация"
+        }
+        if state.Goal == "" {
+            state.Goal = "Связь с разработчиком"
+        }
+        if state.Timeline == "" {
+            state.Timeline = "срочно"
+        }
+        
+        log.Printf("📨 Отправляем заявку в Telegram: %s %s", state.ServiceType, state.Contact)
+        forceSendServiceRequest(state, req.SessionID)
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "answer":     finalAnswer,
+        "type":       "service",
+        "session_id": req.SessionID,
+        "delay":      2,
+    })
+}

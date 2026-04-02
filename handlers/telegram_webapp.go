@@ -127,7 +127,7 @@ func WebAppAuthHandler(c *gin.Context) {
             c.JSON(500, gin.H{"error": "failed to create user"})
             return
         }
-        userID = newUser.ID
+        userID = newUser.ID.String()
 
         // Обновляем telegram_id
         _, err = database.Pool.Exec(c.Request.Context(),

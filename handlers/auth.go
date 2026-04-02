@@ -39,25 +39,23 @@ func SendPhoneCode(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-    
-    // Генерируем 6-значный код
+
     code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
-    
-    // Сохраняем код в БД
     expiresAt := time.Now().Add(5 * time.Minute)
+
     _, err := database.Pool.Exec(c.Request.Context(), `
         INSERT INTO phone_auth_codes (phone, code, expires_at)
         VALUES ($1, $2, $3)
         ON CONFLICT (phone) DO UPDATE SET code = $2, expires_at = $3
     `, req.Phone, code, expiresAt)
-    
+
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save code"})
         return
     }
-    
+
     log.Printf("📱 Код для %s: %s", req.Phone, code)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "message":    "Код отправлен",
         "expires_in": 300,
@@ -75,53 +73,50 @@ func VerifyPhoneCode(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
-    
-    // Проверяем код
+
     var storedCode string
     var expiresAt time.Time
     err := database.Pool.QueryRow(c.Request.Context(), `
         SELECT code, expires_at FROM phone_auth_codes
         WHERE phone = $1 AND expires_at > NOW()
     `, req.Phone).Scan(&storedCode, &expiresAt)
-    
+
     if err != nil || storedCode != req.Code {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired code"})
         return
     }
-    
-    // Находим или создаем пользователя
+
     var userID uuid.UUID
     err = database.Pool.QueryRow(c.Request.Context(), `
         SELECT id FROM users WHERE phone = $1
     `, req.Phone).Scan(&userID)
-    
+
     userName := req.Name
     if userName == "" {
         userName = "User_" + req.Phone[len(req.Phone)-4:]
     }
-    
+
     if err != nil {
-        // Создаем нового пользователя
         email := fmt.Sprintf("%s@phone.saaspro.ru", generateRandomStringAuth(8))
         err = database.Pool.QueryRow(c.Request.Context(), `
-            INSERT INTO users (phone, name, email, role) VALUES ($1, $2, $3, 'user') RETURNING id
+            INSERT INTO users (phone, name, email, role, tenant_id, password_changed_at, email_verified) 
+            VALUES ($1, $2, $3, 'user', '11111111-1111-1111-1111-111111111111', NOW(), true) 
+            RETURNING id
         `, req.Phone, userName, email).Scan(&userID)
         if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
             return
         }
     }
-    
-    // Генерируем JWT токен
+
     token, err := GenerateJWTForUser(userID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
         return
     }
-    
-    // Удаляем использованный код
+
     database.Pool.Exec(c.Request.Context(), "DELETE FROM phone_auth_codes WHERE phone = $1", req.Phone)
-    
+
     c.JSON(http.StatusOK, gin.H{
         "token": token,
         "user": gin.H{
@@ -145,27 +140,20 @@ func LoginHandler(c *gin.Context) {
     }
 
     var user models.User
-    var passwordHash string
-    var emailVerified bool
+    var tenantID string
     err := database.Pool.QueryRow(c.Request.Context(),
-        "SELECT id, email, password_hash, name, role, email_verified FROM users WHERE email = $1",
-        req.Email).Scan(&user.ID, &user.Email, &passwordHash, &user.Name, &user.Role, &emailVerified)
-    
+        `SELECT id, email, password_hash, name, role, COALESCE(tenant_id, '11111111-1111-1111-1111-111111111111') as tenant_id 
+         FROM users WHERE email = $1`,
+        req.Email).Scan(
+        &user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Role, &tenantID)
+
     if err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
+    user.TenantID = tenantID
 
-    if !emailVerified {
-        c.JSON(http.StatusUnauthorized, gin.H{
-            "error":                  "Email not verified. Please check your email for verification code.",
-            "requires_verification": true,
-            "user_id":               user.ID,
-        })
-        return
-    }
-
-    if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
+    if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
         c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
@@ -179,41 +167,26 @@ func LoginHandler(c *gin.Context) {
         refreshExpiry = 24 * time.Hour
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID, user.Role, accessExpiry, refreshExpiry)
+    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID.String(), user.Role, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
     }
 
+    // Сохраняем refresh token
     _, err = database.Pool.Exec(c.Request.Context(),
-        `INSERT INTO user_tokens (user_id, token, expires_at, created_at) 
-         VALUES ($1, $2, NOW() + $3 * interval '1 second', NOW())`,
-        user.ID, refreshToken, int(refreshExpiry.Seconds()))
+        `INSERT INTO user_tokens (user_id, token, expires_at, created_at, tenant_id) 
+         VALUES ($1, $2, NOW() + $3 * interval '1 second', NOW(), $4)`,
+        user.ID.String(), refreshToken, int(refreshExpiry.Seconds()), user.TenantID)
     if err != nil {
         log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
-    userID := user.ID
-    
-    var lastLoginIP string
-    database.Pool.QueryRow(context.Background(),
-        "SELECT ip_address FROM login_history WHERE user_id = $1 ORDER BY login_time DESC LIMIT 1",
-        userID).Scan(&lastLoginIP)
-
-    if lastLoginIP != "" && lastLoginIP != c.ClientIP() {
-        details := map[string]interface{}{
-            "ip":       c.ClientIP(),
-            "location": "Неизвестно",
-            "device":   c.GetHeader("User-Agent"),
-            "time":     time.Now().Format("02.01.2006 15:04"),
-        }
-       userUUID, _ := uuid.Parse(user.ID)
-      LogAndNotify(c, userUUID, NotifLoginNewDevice, details)
-    }
-
+    // Записываем историю входа
     database.Pool.Exec(context.Background(),
-        "INSERT INTO login_history (user_id, ip_address, user_agent, login_time) VALUES ($1, $2, $3, $4)",
-        userID, c.ClientIP(), c.GetHeader("User-Agent"), time.Now())
+        `INSERT INTO login_history (user_id, ip_address, user_agent, login_time, tenant_id) 
+         VALUES ($1, $2, $3, NOW(), $4)`,
+        user.ID.String(), c.ClientIP(), c.GetHeader("User-Agent"), user.TenantID)
 
     c.JSON(http.StatusOK, gin.H{
         "success":       true,
@@ -222,7 +195,7 @@ func LoginHandler(c *gin.Context) {
         "remember":      req.Remember,
         "expires_in":    accessExpiry.Seconds(),
         "user": gin.H{
-            "id":    user.ID,
+            "id":    user.ID.String(),
             "email": user.Email,
             "name":  user.Name,
             "role":  user.Role,
@@ -289,18 +262,20 @@ func RegisterHandler(c *gin.Context) {
 
     var user models.User
     err = database.Pool.QueryRow(c.Request.Context(),
-        `INSERT INTO users (email, password_hash, name, role, email_verified) 
-         VALUES ($1, $2, $3, 'user', false) 
+        `INSERT INTO users (email, password_hash, name, role, email_verified, tenant_id, password_changed_at)
+         VALUES ($1, $2, $3, 'user', false, '11111111-1111-1111-1111-111111111111', NOW())
          RETURNING id, email, name, role`,
         req.Email, string(hashedPassword), req.Name).Scan(
         &user.ID, &user.Email, &user.Name, &user.Role)
-    
+
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
         return
     }
+    user.TenantID = "11111111-1111-1111-1111-111111111111"
 
-    verificationCode, err := GenerateVerificationCode(user.ID, "email")
+    // Генерируем и отправляем код подтверждения email
+    verificationCode, err := GenerateVerificationCode(user.ID.String(), "email")
     if err != nil {
         log.Printf("❌ Failed to generate verification code: %v", err)
     } else {
@@ -315,10 +290,19 @@ func RegisterHandler(c *gin.Context) {
         }()
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokens(user.ID, user.Role)
+    accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Role)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
+    }
+
+    // Сохраняем refresh token
+    _, err = database.Pool.Exec(c.Request.Context(),
+        `INSERT INTO user_tokens (user_id, token, expires_at, created_at, tenant_id) 
+         VALUES ($1, $2, NOW() + INTERVAL '24 hours', NOW(), $3)`,
+        user.ID.String(), refreshToken, user.TenantID)
+    if err != nil {
+        log.Printf("⚠️ Failed to save refresh token: %v", err)
     }
 
     c.JSON(http.StatusOK, gin.H{
@@ -326,7 +310,7 @@ func RegisterHandler(c *gin.Context) {
         "access_token":  accessToken,
         "refresh_token": refreshToken,
         "user": gin.H{
-            "id":             user.ID,
+            "id":             user.ID.String(),
             "email":          user.Email,
             "name":           user.Name,
             "role":           user.Role,
@@ -365,5 +349,99 @@ func RefreshHandler(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{
         "success":      true,
         "access_token": newAccessToken,
+    })
+}
+
+// VerifyEmailHandler подтверждает email пользователя
+func VerifyEmailHandler(c *gin.Context) {
+    var req struct {
+        Email string `json:"email" binding:"required,email"`
+        Code  string `json:"code" binding:"required"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    var userID string
+    var expiresAt time.Time
+    err := database.Pool.QueryRow(c.Request.Context(),
+        `SELECT user_id, expires_at FROM verification_codes 
+         WHERE code = $1 AND type = 'email' AND used_at IS NULL`,
+        req.Code).Scan(&userID, &expiresAt)
+
+    if err != nil || time.Now().After(expiresAt) {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired verification code"})
+        return
+    }
+
+    // Обновляем статус верификации email
+    _, err = database.Pool.Exec(c.Request.Context(),
+        `UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 AND email = $2`,
+        userID, req.Email)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify email"})
+        return
+    }
+
+    // Отмечаем код как использованный
+    _, err = database.Pool.Exec(c.Request.Context(),
+        `UPDATE verification_codes SET used_at = NOW() WHERE code = $1`,
+        req.Code)
+    if err != nil {
+        log.Printf("⚠️ Failed to mark code as used: %v", err)
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Email verified successfully",
+    })
+}
+
+// ResendVerificationHandler отправляет код подтверждения повторно
+func ResendVerificationHandler(c *gin.Context) {
+    var req struct {
+        Email string `json:"email" binding:"required,email"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    var user models.User
+    err := database.Pool.QueryRow(c.Request.Context(),
+        `SELECT id, name, email_verified FROM users WHERE email = $1`,
+        req.Email).Scan(&user.ID, &user.Name, &user.EmailVerified)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+        return
+    }
+
+    if user.EmailVerified {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Email already verified"})
+        return
+    }
+
+    verificationCode, err := GenerateVerificationCode(user.ID.String(), "email")
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate code"})
+        return
+    }
+
+    go func() {
+        emailService := utils.NewEmailService(config.Load())
+        err := emailService.SendVerificationEmail(req.Email, user.Name, verificationCode)
+        if err != nil {
+            log.Printf("❌ Failed to send verification email: %v", err)
+        } else {
+            log.Printf("✅ Verification email resent to %s", req.Email)
+        }
+    }()
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Verification code sent",
     })
 }

@@ -135,6 +135,20 @@ func main() {
     }
 
     r := gin.New()
+
+// ========== МЕГА-БЕЗОПАСНОСТЬ ==========
+r.Use(middleware.MegaSecurityMiddleware())
+// ========================================
+
+r.Use(middleware.AuditMiddleware())          // Аудит действий
+r.Use(middleware.Fail2BanMiddleware())       // Блокировка IP
+r.Use(middleware.ForcePasswordChangeMiddleware()) // Принудительная смена пароля
+
+// Для админских маршрутов добавляем 2FA
+admin := r.Group("/admin")
+admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.AdminRequire2FA())
+{
+    admin.GET("/", handlers.AdminDashboardHandler)
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
     r.Use(middleware.Logger())
@@ -527,6 +541,14 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
         admin.GET("/subscriptions", handlers.SubscriptionsHandler)
         admin.GET("/crm", handlers.CRMHandler)
         admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
+
+
+admin2FA := r.Group("/api/admin/2fa")
+admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    admin2FA.POST("/enable", handlers.EnableAdmin2FA)
+    admin2FA.POST("/verify", handlers.VerifyAdmin2FA)
+}
     }
 
     // Дашборды
@@ -880,3 +902,4 @@ r.GET("/analytics-center", func(c *gin.Context) {
 
 
 
+}

@@ -66,9 +66,7 @@
                         <li><a class="dropdown-item" href="/profile">Мой профиль</a></li>
                         <li><a class="dropdown-item" href="/security">Безопасность</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><button onclick="logout()" class="dropdown-item text-danger" style="border: none; background: none; width: 100%; text-align: left; cursor: pointer;">
-    <i class="bi bi-box-arrow-right"></i> Выйти
-</button></li>
+                        <li><a class="dropdown-item text-danger" href="/logout">Выйти</a></li>
                     </ul>
                 </li>
             </ul>
@@ -115,31 +113,3 @@
         width: 1.2rem;
     }
 </style>
-
-
-<script>
-function logout() {
-    const refreshToken = localStorage.getItem('refresh_token') || 
-                         document.cookie.split('; ').find(row => row.startsWith('refresh_token='))?.split('=')[1];
-    
-    if (refreshToken) {
-        fetch('/api/auth/logout', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refresh_token: refreshToken })
-        }).then(() => {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            document.cookie = 'refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            window.location.href = '/login';
-        }).catch(() => {
-            window.location.href = '/login';
-        });
-    } else {
-        window.location.href = '/login';
-    }
-}
-</script>

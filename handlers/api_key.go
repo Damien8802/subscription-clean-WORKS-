@@ -226,7 +226,7 @@ func EnsureAPIKeyForTelegram(c *gin.Context) {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
             return
         }
-        userID = newUser.ID
+        userID = newUser.ID.String()
 
         _, err = database.Pool.Exec(c.Request.Context(),
             `UPDATE users SET telegram_id = $1, telegram_username = $2 WHERE id = $3`,

@@ -1,0 +1,87 @@
+﻿package config
+
+import (
+	"log"
+	"os"
+	"strconv"
+	"strings"
+)
+
+type 
+ struct {
+	Port           string
+	Env            string
+	LogLevel       string
+	StaticPath     string
+	FrontendPath   string
+	TemplatesPath  string
+	SessionSecret  string
+	Debug          bool
+	TrustedProxies []string
+	AllowedOrigins []string
+        DBHost     string
+        DBPort     string
+        DBUser     string
+        DBPassword string
+        DBName     string
+        DBSSLMode  string
+}
+
+func Load() *Config {
+	cfg := &Config{
+		Port:           getEnv("PORT", "8080"),
+		Env:            getEnv("GIN_MODE", "debug"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
+		StaticPath:     getEnv("STATIC_PATH", "./static"),
+		FrontendPath:   getEnv("FRONTEND_PATH", "./frontend"),
+		TemplatesPath:  getEnv("TEMPLATES_PATH", "./templates/*.html"),
+		SessionSecret:  getEnv("SESSION_SECRET", "your-secret-key-change-in-production"),
+		Debug:          getEnvAsBool("DEBUG", true),
+		TrustedProxies: []string{},
+		AllowedOrigins: getEnvAsSlice("ALLOWED_ORIGINS", []string{"*"}),
+                DBHost:     getEnv("DB_HOST", "localhost"),
+                DBPort:     getEnv("DB_PORT", "5432"),
+                DBUser:     getEnv("DB_USER", "postgres"),
+                DBPassword: getEnv("DB_PASSWORD", ""),
+                DBName:     getEnv("DB_NAME", "go"),
+                DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+	}
+
+	// Если в конфиге есть TRUSTED_PROXIES, парсим их
+	if proxies := getEnv("TRUSTED_PROXIES", ""); proxies != "" {
+		cfg.TrustedProxies = strings.Split(proxies, ",")
+	}
+
+	log.Printf("📋 Загружена конфигурация: порт=%s, режим=%s", cfg.Port, cfg.Env)
+	return cfg
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	strVal := getEnv(key, "")
+	if val, err := strconv.ParseBool(strVal); err == nil {
+		return val
+	}
+	return defaultValue
+}
+
+// getEnvAsSlice возвращает список строк из переменной окружения,
+// разделённых запятыми. Если переменная не задана, возвращает defaultValue.
+func getEnvAsSlice(key string, defaultValue []string) []string {
+	val := getEnv(key, "")
+	if val == "" {
+		return defaultValue
+	}
+	// Разделяем по запятой и удаляем пробелы
+	parts := strings.Split(val, ",")
+	for i, part := range parts {
+		parts[i] = strings.TrimSpace(part)
+	}
+	return parts
+}

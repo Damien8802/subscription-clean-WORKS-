@@ -4,16 +4,14 @@
 *.dll
 *.so
 *.dylib
-
-# Test binary
 *.test
-
-# Output of the go coverage tool
 *.out
+main.exe
+subscription-system.exe
 
-# Dependency directories
-vendor/
-node_modules/
+# Go workspace
+go.work
+go.work.sum
 
 # IDE
 .vscode/
@@ -21,26 +19,57 @@ node_modules/
 *.swp
 *.swo
 *~
+.DS_Store
 
 # Environment files
 .env
-.env.*
-env
-telegram-bot/env
-telegram-mini-app/env
+.env.local
+.env.*.local
 
-# Sensitive files
-*.key
+# Logs
+*.log
+logs/
+*.log
+
+# Backups
+*.backup
+*.bak
+backups/
+
+# Exports
+exports/
+*.csv
+*.xlsx
+*.xml
+*.json
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# SSL certificates
+certs/
 *.pem
+*.crt
+*.key
 
-# Local temporary files
-file_list.txt
-_archive/handlers/*.backup
-handlers/*.CORRUPTED
-handlers/*.TEMP
-orders/
-test_search.go
-templates/payment_unified.html
-handlers/*.backup
-handlers/*.FINAL_BACKUP
-_archive/
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+static/dist/
+
+# Coverage
+*.cover
+*.coverprofile
+coverage.html
