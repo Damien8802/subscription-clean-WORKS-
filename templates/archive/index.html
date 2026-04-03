@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архив | SaaSPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
+        .gradient-text { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .back-button-oval { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 28px; border-radius: 60px; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 1000; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.3s; }
+        .back-button-oval:hover { transform: scale(1.05); background: linear-gradient(135deg, #764ba2, #667eea); }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #667eea; }
+        .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .archive-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 16px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .archive-card:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .entity-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .entity-customer { background: #dbeafe; color: #1e40af; }
+        .entity-deal { background: #dcfce7; color: #166534; }
+        .entity-entry { background: #fef3c7; color: #92400e; }
+        .restore-btn { background: none; border: 1px solid #10b981; color: #10b981; padding: 6px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .restore-btn:hover { background: #10b981; color: white; }
+        .usage-bar-container { background: rgba(102,126,234,0.2); border-radius: 20px; height: 12px; overflow: hidden; }
+        .usage-bar { background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 20px; height: 100%; transition: width 0.5s; }
+        .tabs { display: flex; gap: 12px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
+        .tab-btn { padding: 12px 24px; background: none; border: none; cursor: pointer; font-size: 15px; font-weight: 500; color: #64748b; transition: all 0.2s; }
+        .tab-btn.active { color: #667eea; border-bottom: 2px solid #667eea; margin-bottom: -2px; }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 32px; }
+        .page-btn { padding: 8px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .page-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .page-btn:hover:not(.active) { background: #f1f5f9; }
+        .upgrade-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px; padding: 20px; margin-top: 20px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1001; }
+        .modal-content { background: white; border-radius: 24px; max-width: 600px; width: 90%; padding: 32px; }
+        .plan-card { background: white; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; transition: all 0.2s; cursor: pointer; }
+        .plan-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .plan-card.popular { border: 2px solid #f59e0b; position: relative; }
+        .popular-badge { position: absolute; top: -12px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container mx-auto px-6 py-8 max-w-7xl">
+    <!-- Шапка -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-4xl font-bold gradient-text mb-2">🗄️ Архив</h1>
+            <p class="text-gray-600">Старые данные хранятся здесь. Вы можете восстановить их в любой момент.</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="location.href='/dashboard-improved'" class="btn-gradient flex items-center gap-2">
+                <i class="fas fa-chart-line"></i> Главный дашборд
+            </button>
+        </div>
+    </div>
+
+    <!-- Статистика хранилища -->
+    <div class="glass-card p-6 mb-8" id="statsContainer">
+        <div class="flex flex-wrap justify-between items-center">
+            <div>
+                <h3 class="text-xl font-semibold mb-2">📦 Хранилище архива</h3>
+                <p class="text-gray-600" id="usageText">Загрузка...</p>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold gradient-text" id="usedPercent">0%</div>
+                <div class="text-sm text-gray-500">использовано</div>
+            </div>
+        </div>
+        <div class="usage-bar-container mt-4">
+            <div class="usage-bar" id="usageBar" style="width: 0%"></div>
+        </div>
+        <div class="upgrade-card mt-4" id="upgradeCard" style="display: none;">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <div class="font-semibold">⚠️ Место заканчивается!</div>
+                    <div class="text-sm text-gray-600">Расширьте архив до 10 ГБ всего за 490 ₽/мес</div>
+                </div>
+                <button onclick="openUpgradeModal()" class="btn-gradient">Расширить →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="all">📋 Все записи</button>
+        <button class="tab-btn" data-tab="customers">👥 Клиенты</button>
+        <button class="tab-btn" data-tab="deals">💰 Сделки</button>
+        <button class="tab-btn" data-tab="entries">📊 Проводки</button>
+    </div>
+
+    <!-- Список архивных записей -->
+    <div id="archiveList" class="space-y-4">
+        <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+            <p>Загрузка архивных записей...</p>
+        </div>
+    </div>
+
+    <!-- Пагинация -->
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- Овальная кнопка назад -->
+<button onclick="location.href='/dashboard-improved'" class="back-button-oval">
+    <i class="fas fa-arrow-left"></i>
+    <span>На главный дашборд</span>
+</button>
+
+<!-- Модальное окно апгрейда -->
+<div id="upgradeModal" class="modal">
+    <div class="modal-content">
+        <h2 class="text-2xl font-bold mb-4">🚀 Расширить архивное хранилище</h2>
+        <p class="text-gray-600 mb-6">Выберите подходящий тариф для вашего бизнеса</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="plan-card" onclick="selectPlan('10gb')">
+                <h3 class="text-lg font-semibold">10 ГБ</h3>
+                <div class="text-3xl font-bold gradient-text my-3">490 ₽</div>
+                <div class="text-sm text-gray-500">в месяц</div>
+                <div class="mt-3 text-sm">✅ Для малого бизнеса</div>
+            </div>
+            <div class="plan-card popular" onclick="selectPlan('50gb')">
+                <div class="popular-badge">🔥 Популярный</div>
+                <h3 class="text-lg font-semibold">50 ГБ</h3>
+                <div class="text-3xl font-bold gradient-text my-3">1 490 ₽</div>
+                <div class="text-sm text-gray-500">в месяц</div>
+                <div class="mt-3 text-sm">✅ Для среднего бизнеса</div>
+            </div>
+            <div class="plan-card" onclick="selectPlan('100gb')">
+                <h3 class="text-lg font-semibold">100 ГБ</h3>
+                <div class="text-3xl font-bold gradient-text my-3">2 490 ₽</div>
+                <div class="text-sm text-gray-500">в месяц</div>
+                <div class="mt-3 text-sm">✅ Для крупного бизнеса</div>
+            </div>
+        </div>
+        
+        <button onclick="closeUpgradeModal()" class="w-full py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition">Отмена</button>
+    </div>
+</div>
+
+<script>
+let currentTab = 'all';
+let currentPage = 1;
+let selectedPlan = null;
+
+async function loadStats() {
+    try {
+        const res = await fetch('/archive/api/stats');
+        const data = await res.json();
+        
+        const usedGB = data.used_gb.toFixed(1);
+        const totalGB = data.total_gb.toFixed(1);
+        const percent = data.used_percent;
+        
+        document.getElementById('usageText').innerHTML = `📊 Использовано ${usedGB} ГБ из ${totalGB} ГБ`;
+        document.getElementById('usedPercent').innerText = `${percent}%`;
+        document.getElementById('usageBar').style.width = `${percent}%`;
+        
+        if (percent >= 85) {
+            document.getElementById('upgradeCard').style.display = 'block';
+        }
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+async function loadArchiveItems() {
+    const container = document.getElementById('archiveList');
+    container.innerHTML = '<div class="text-center py-12"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>';
+    
+    try {
+        let url = `/archive/api/items?page=${currentPage}&limit=10`;
+        if (currentTab !== 'all') {
+            url += `&type=${currentTab}`;
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.items && data.items.length > 0) {
+            let html = '';
+            data.items.forEach(item => {
+                html += `
+                    <div class="archive-card">
+                        <div class="flex justify-between items-start flex-wrap gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="entity-badge entity-${item.type}">${item.type_icon} ${item.type_label}</span>
+                                    <span class="text-sm text-gray-400">Архивирован: ${item.archived_at}</span>
+                                </div>
+                                <h3 class="text-lg font-semibold mb-1">${item.title}</h3>
+                                <p class="text-gray-600 text-sm">${item.subtitle || ''}</p>
+                                <p class="text-gray-500 text-sm mt-2">${item.details || ''}</p>
+                            </div>
+                            <div>
+                                <button onclick="restoreItem('${item.type}', '${item.id}')" class="restore-btn">
+                                    <i class="fas fa-undo-alt mr-1"></i> Восстановить
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            renderPagination(data.total, data.page);
+        } else {
+            container.innerHTML = '<div class="text-center py-12 text-gray-500"><i class="fas fa-archive text-4xl mb-3 opacity-50"></i><p>Архив пуст</p><p class="text-sm">Перемещайте неактивных клиентов в архив, чтобы не загромождать список</p></div>';
+        }
+    } catch(e) {
+        console.error(e);
+        container.innerHTML = '<div class="text-center py-12 text-red-500"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><p>Ошибка загрузки архива</p></div>';
+    }
+}
+
+function renderPagination(total, current) {
+    const totalPages = Math.ceil(total / 10);
+    if (totalPages <= 1) return;
+    
+    let html = '';
+    for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+        html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    document.getElementById('pagination').innerHTML = html;
+}
+
+function goToPage(page) {
+    currentPage = page;
+    loadArchiveItems();
+}
+
+async function restoreItem(type, id) {
+    if (confirm('Восстановить запись? Она вернётся в активные данные.')) {
+        try {
+            const res = await fetch(`/archive/api/restore/${type}/${id}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert('Запись восстановлена!');
+                loadArchiveItems();
+                loadStats();
+            }
+        } catch(e) {
+            alert('Ошибка восстановления');
+        }
+    }
+}
+
+function openUpgradeModal() {
+    document.getElementById('upgradeModal').style.display = 'flex';
+}
+
+function closeUpgradeModal() {
+    document.getElementById('upgradeModal').style.display = 'none';
+    selectedPlan = null;
+}
+
+async function selectPlan(plan) {
+    selectedPlan = plan;
+    const planNames = { '10gb': '10 ГБ', '50gb': '50 ГБ', '100gb': '100 ГБ' };
+    
+    if (confirm(`Расширить архив до ${planNames[plan]} за ${plan === '10gb' ? '490' : plan === '50gb' ? '1490' : '2490'} ₽/мес?`)) {
+        try {
+            const res = await fetch('/archive/api/upgrade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan: plan })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`✅ Архив расширен до ${data.total_gb} ГБ!`);
+                closeUpgradeModal();
+                loadStats();
+            }
+        } catch(e) {
+            alert('Ошибка при расширении архива');
+        }
+    }
+}
+
+// Переключение вкладок
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        currentPage = 1;
+        loadArchiveItems();
+    });
+});
+
+// Загрузка
+loadStats();
+loadArchiveItems();
+</script>
+</body>
+</html>

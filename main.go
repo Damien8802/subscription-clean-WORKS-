@@ -444,6 +444,24 @@ hr := r.Group("/hr")
     hr.POST("/api/orders/generate", handlers.GenerateOrderHandler)
     hr.GET("/api/departments", handlers.GetDepartmentsHandler)
 }
+
+// ========== АРХИВ ==========
+archive := r.Group("/archive")
+archive.Use(middleware.AuthMiddleware(cfg))
+{
+    archive.GET("/", handlers.ArchivePageHandler)
+    archive.GET("/api/stats", handlers.GetArchiveStats)
+    archive.GET("/api/items", handlers.GetArchiveItems)
+    archive.POST("/api/restore/:type/:id", handlers.RestoreFromArchive)
+    archive.POST("/api/upgrade", handlers.UpgradeArchiveQuota)
+}
+
+// API для архивации из CRM
+crmArchive := r.Group("/api/crm")
+crmArchive.Use(middleware.AuthMiddleware(cfg))
+{
+    crmArchive.POST("/customers/:id/archive", handlers.ArchiveCustomer)
+}
     // ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
     r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
     r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
