@@ -3,544 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Дашборд | SaaSPro</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/static/css/main.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-    
+    <title>HR-модуль | SaaSPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --sidebar-width: 250px;
-            --primary: #4361ee;
-            --secondary: #3a0ca3;
-            --success: #4cc9f0;
-        }
-        
-        body {
-            background-color: #f8fafc;
-        }
-        
-        .sidebar {
-            width: var(--sidebar-width);
-            background: white;
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.05);
-            z-index: 1000;
-            overflow-y: auto;
-        }
-        
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .sidebar-brand {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .sidebar-menu {
-            padding: 20px 0;
-        }
-        
-        .sidebar-menu .nav-link {
-            color: #64748b;
-            padding: 12px 25px;
-            margin: 5px 0;
-            border-radius: 0 50px 50px 0;
-            transition: all 0.3s;
-        }
-        
-        .sidebar-menu .nav-link:hover,
-        .sidebar-menu .nav-link.active {
-            background: linear-gradient(90deg, rgba(67, 97, 238, 0.1) 0%, rgba(67, 97, 238, 0) 100%);
-            color: var(--primary);
-            border-left: 3px solid var(--primary);
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border: none;
-            transition: transform 0.3s;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stats-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        
-        .recent-activity {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        
-        .activity-item {
-            padding: 15px;
-            border-left: 3px solid var(--primary);
-            background: #f8fafc;
-            margin-bottom: 10px;
-            border-radius: 0 10px 10px 0;
-        }
-        
-        .quick-actions .btn {
-            border-radius: 10px;
-            padding: 12px 20px;
-            font-weight: 500;
-        }
-        
-        .navbar-top {
-            background: white;
-            border-radius: 15px;
-            padding: 15px 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--success));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
+        .gradient-text { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .nav-item { padding: 12px 20px; border-radius: 12px; cursor: pointer; color: #4a5568; font-weight: 500; transition: all 0.2s; }
+        .nav-item:hover { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .back-button-oval { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 28px; border-radius: 60px; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 1000; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.3s; }
+        .back-button-oval:hover { transform: scale(1.05); background: linear-gradient(135deg, #764ba2, #667eea); }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #667eea; }
+        .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .data-table { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .data-table th { background: #f8f9fa; color: #4a5568; padding: 16px; font-weight: 600; }
+        .data-table td { padding: 16px; border-bottom: 1px solid #e2e8f0; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .status-active { background: #d1fae5; color: #10b981; }
+        .status-vacation { background: #fed7aa; color: #f59e0b; }
+        .status-sick { background: #fee2e2; color: #ef4444; }
+        .modal-box { background: white; border-radius: 24px; max-width: 500px; }
+        input, select { background: white !important; border: 1px solid #e2e8f0 !important; border-radius: 12px !important; padding: 10px 16px !important; outline: none !important; }
+        input:focus, select:focus { border-color: #667eea !important; box-shadow: 0 0 0 2px rgba(102,126,234,0.2) !important; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in-up { animation: fadeInUp 0.5s ease forwards; }
+        .kanban-col { background: #f8f9fa; border-radius: 16px; padding: 16px; min-width: 300px; }
+        .candidate-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .candidate-card:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
-    <!-- Боковая панель -->
-    <div class="sidebar">
-        <div class="sidebar-brand">
-            <h4 class="fw-bold mb-0">
-                <i class="fas fa-rocket text-primary me-2"></i>SaaSPro
-            </h4>
-            <small class="text-muted">Панель управления</small>
+<div class="flex h-screen">
+    <aside class="w-80 glass-card m-4 flex flex-col">
+        <div class="p-6 border-b border-gray-200"><div class="flex items-center gap-3"><div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center"><i class="fas fa-crown text-white text-lg"></i></div><div><span class="text-xl font-bold gradient-text">SaaSPro</span><span class="text-xs text-gray-500 block">HR Management</span></div></div></div>
+        <div class="p-4 mx-4 my-4 glass-card"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center"><span class="text-lg font-bold text-white">A</span></div><div><h4 class="font-semibold">Admin</h4><p class="text-xs text-gray-500">admin@example.com</p></div></div></div>
+        <nav class="flex-1 px-4 space-y-1">
+            <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-pie w-5 mr-3"></i>HR Дашборд</div>
+            <div class="nav-item" data-page="employees"><i class="fas fa-users w-5 mr-3"></i>Сотрудники</div>
+            <div class="nav-item" data-page="vacations"><i class="fas fa-calendar-alt w-5 mr-3"></i>Отпуска</div>
+            <div class="nav-item" data-page="recruitment"><i class="fas fa-search w-5 mr-3"></i>Рекрутинг</div>
+            <div class="nav-item" data-page="documents"><i class="fas fa-file-alt w-5 mr-3"></i>Документы</div>
+            <div class="nav-item" data-page="analytics"><i class="fas fa-chart-line w-5 mr-3"></i>Аналитика</div>
+            <div class="nav-item" data-page="salary"><i class="fas fa-ruble-sign w-5 mr-3"></i>Зарплаты</div>
+            <div class="nav-item" data-page="training"><i class="fas fa-graduation-cap w-5 mr-3"></i>Обучение</div>
+            <div class="nav-item" data-page="settings"><i class="fas fa-cog w-5 mr-3"></i>Настройки</div>
+        </nav>
+        <div class="p-4 m-4 glass-card text-center"><i class="fas fa-rocket text-2xl gradient-text mb-2"></i><h4 class="font-semibold">Тариф: Enterprise</h4><button class="btn-gradient w-full mt-3 text-sm" onclick="location.href='/pricing'">Апгрейд</button></div>
+    </aside>
+    <main class="flex-1 overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-6"><div><h1 class="text-3xl font-bold gradient-text" id="pageTitle">HR Дашборд</h1><p class="text-gray-600 text-sm mt-1" id="pageDesc">Обзор персонала и ключевые метрики</p></div><button class="btn-gradient" onclick="openAddEmployee()"><i class="fas fa-plus mr-2"></i>Принять сотрудника</button></div>
+        <div id="dashboardPage" class="page-content fade-in-up">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Сотрудников</p><div class="stat-number" id="totalEmployees">24</div><p class="text-green-600 text-xs mt-1">+3 за месяц</p></div><div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center"><i class="fas fa-users text-purple-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">В отпуске</p><div class="stat-number" id="vacationCount">3</div></div><div class="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center"><i class="fas fa-umbrella-beach text-yellow-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">На больничном</p><div class="stat-number" id="sickCount">1</div></div><div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center"><i class="fas fa-thermometer-high text-red-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Заявок</p><div class="stat-number" id="pendingCount">5</div></div><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center"><i class="fas fa-clipboard-list text-blue-500 text-xl"></i></div></div></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="glass-card p-6"><h3 class="font-semibold mb-4">Динамика численности</h3><canvas id="employeesChart" height="200"></canvas></div>
+                <div class="glass-card p-6"><h3 class="font-semibold mb-4">Структура отделов</h3><canvas id="departmentsChart" height="200"></canvas></div>
+            </div>
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">Последние действия</h3><div id="activitiesList" class="space-y-3"></div></div>
         </div>
-        
-        <div class="sidebar-menu">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link active" href="/dashboard">
-                        <i class="fas fa-tachometer-alt me-3"></i>Дашборд
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/subscriptions">
-                        <i class="fas fa-calendar-check me-3"></i>Подписки
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/analytics">
-                        <i class="fas fa-chart-line me-3"></i>Аналитика
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/crm">
-                        <i class="fas fa-users me-3"></i>CRM
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/payments">
-                        <i class="fas fa-credit-card me-3"></i>Платежи
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/users">
-                        <i class="fas fa-user-friends me-3"></i>Пользователи
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/reports">
-                        <i class="fas fa-file-alt me-3"></i>Отчеты
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/integrations">
-                        <i class="fas fa-plug me-3"></i>Интеграции
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/settings">
-                        <i class="fas fa-cog me-3"></i>Настройки
-                    </a>
-                </li>
-            </ul>
-            
-            <div class="mt-5 px-3">
-                <div class="card border-0 bg-light">
-                    <div class="card-body text-center">
-                        <h6 class="fw-bold">Про версия</h6>
-                        <p class="small text-muted">Используется 65% лимита</p>
-                        <div class="progress mb-3" style="height: 6px;">
-                            <div class="progress-bar bg-primary" style="width: 65%"></div>
-                        </div>
-                        <a href="/pricing" class="btn btn-sm btn-primary w-100">Улучшить</a>
-                    </div>
-                </div>
-            </div>
+        <div id="employeesPage" class="page-content hidden fade-in-up">
+            <div class="flex justify-between gap-4 mb-4"><div class="flex gap-2"><input type="text" id="searchInput" placeholder="Поиск..." class="w-64"><select id="deptFilter"><option value="all">Все отделы</option><option>Руководство</option><option>HR</option><option>IT</option><option>Продажи</option><option>Бухгалтерия</option></select></div><button class="btn-gradient btn-sm" onclick="exportEmployees()">Экспорт</button></div>
+            <div class="data-table overflow-x-auto"><table class="w-full"><thead><tr><th class="text-left">Сотрудник</th><th class="text-left">Должность</th><th class="text-left">Отдел</th><th class="text-left">Дата найма</th><th class="text-left">Зарплата</th><th class="text-left">Статус</th><th class="text-left"></th></tr></thead><tbody id="employeesTableBody"></tbody></table></div>
         </div>
-    </div>
-
-    <!-- Основной контент -->
-    <div class="main-content">
-        <!-- Верхняя навигация -->
-        <div class="navbar-top d-flex justify-content-between align-items-center">
-            <div>
-                <h3 class="fw-bold mb-0">Дашборд</h3>
-                <p class="text-muted mb-0">Добро пожаловать, Александр!</p>
-            </div>
-            
-            <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-outline-secondary">
-                    <i class="fas fa-bell"></i>
-                    <span class="badge bg-danger">3</span>
-                </button>
-                <div class="dropdown">
-                    <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown">
-                        АИ
-                    </div>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>Профиль</a></li>
-                        <li><a class="dropdown-item" href="/settings"><i class="fas fa-cog me-2"></i>Настройки</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt me-2"></i>Выйти</a></li>
-                    </ul>
-                </div>
-            </div>
+        <div id="vacationsPage" class="page-content hidden fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="glass-card p-6"><h3 class="font-semibold mb-4">Календарь отпусков</h3><div id="vacationCalendar" class="text-center py-20 text-gray-400">Календарь отпусков</div></div><div class="glass-card p-6"><h3 class="font-semibold mb-4">Заявки на рассмотрении</h3><div id="requestsList" class="space-y-3"></div></div></div>
         </div>
-
-        <!-- Быстрые действия -->
-        <div class="row mb-4">
-            <div class="col">
-                <div class="quick-actions d-flex gap-3">
-                    <button class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Новая подписка
-                    </button>
-                    <button class="btn btn-outline-primary">
-                        <i class="fas fa-download me-2"></i>Экспорт отчета
-                    </button>
-                    <button class="btn btn-outline-primary">
-                        <i class="fas fa-sync-alt me-2"></i>Обновить данные
-                    </button>
-                    <button class="btn btn-outline-primary">
-                        <i class="fas fa-filter me-2"></i>Фильтры
-                    </button>
-                </div>
-            </div>
+        <div id="recruitmentPage" class="page-content hidden fade-in-up">
+            <div class="flex gap-4 overflow-x-auto pb-4"><div class="kanban-col"><h3 class="font-semibold mb-3">Новые</h3><div id="newCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Собеседование</h3><div id="interviewCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Оффер</h3><div id="offerCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Наняты</h3><div id="hiredCandidates"></div></div></div>
+            <div class="flex justify-end mt-4 gap-2"><button class="btn-gradient" onclick="openVacancy()">Создать вакансию</button><button class="btn-gradient" onclick="importFromHH()">Импорт с hh.ru</button></div>
         </div>
-
-        <!-- Статистика -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="text-muted">Выручка</h5>
-                            <h2 class="fw-bold">₽245,820</h2>
-                            <span class="text-success"><i class="fas fa-arrow-up"></i> 12.5%</span>
-                        </div>
-                        <div class="stats-icon bg-primary bg-opacity-10 text-primary">
-                            <i class="fas fa-ruble-sign"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="text-muted">Подписчики</h5>
-                            <h2 class="fw-bold">1,248</h2>
-                            <span class="text-success"><i class="fas fa-arrow-up"></i> 8.2%</span>
-                        </div>
-                        <div class="stats-icon bg-success bg-opacity-10 text-success">
-                            <i class="fas fa-users"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="text-muted">Конверсия</h5>
-                            <h2 class="fw-bold">4.8%</h2>
-                            <span class="text-warning"><i class="fas fa-minus"></i> 0.5%</span>
-                        </div>
-                        <div class="stats-icon bg-warning bg-opacity-10 text-warning">
-                            <i class="fas fa-chart-pie"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="text-muted">ARPU</h5>
-                            <h2 class="fw-bold">₽3,850</h2>
-                            <span class="text-success"><i class="fas fa-arrow-up"></i> 15.3%</span>
-                        </div>
-                        <div class="stats-icon bg-info bg-opacity-10 text-info">
-                            <i class="fas fa-chart-bar"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="documentsPage" class="page-content hidden fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="glass-card p-6"><h3 class="font-semibold mb-4">Трудовые договоры</h3><div id="contractsList"></div><button class="btn-gradient w-full mt-3" onclick="uploadDoc()">Загрузить</button></div><div class="glass-card p-6"><h3 class="font-semibold mb-4">Приказы</h3><div id="ordersList"></div><button class="btn-gradient w-full mt-3" onclick="createOrder()">Создать приказ</button></div><div class="glass-card p-6"><h3 class="font-semibold mb-4">Шаблоны</h3><button class="btn-gradient w-full mb-2" onclick="useTemplate('contract')">Трудовой договор</button><button class="btn-gradient w-full" onclick="useTemplate('hire')">Приказ о приеме</button></div></div>
         </div>
-
-        <!-- Графики и активность -->
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="chart-container mb-4">
-                    <h5 class="fw-bold mb-4">Выручка за месяц</h5>
-                    <canvas id="revenueChart" height="250"></canvas>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="chart-container">
-                            <h5 class="fw-bold mb-4">Распределение тарифов</h5>
-                            <canvas id="planChart" height="200"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="chart-container">
-                            <h5 class="fw-bold mb-4">Источники трафика</h5>
-                            <canvas id="trafficChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4">
-                <div class="recent-activity mb-4">
-                    <h5 class="fw-bold mb-4">Последняя активность</h5>
-                    <div class="activity-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>Новый пользователь</strong>
-                            <small class="text-muted">10 мин назад</small>
-                        </div>
-                        <p class="mb-0">Иван Петров оформил подписку Pro</p>
-                    </div>
-                    <div class="activity-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>Платеж получен</strong>
-                            <small class="text-muted">45 мин назад</small>
-                        </div>
-                        <p class="mb-0">ООО "ТехноПро" оплатил ₽9,990</p>
-                    </div>
-                    <div class="activity-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>Отмена подписки</strong>
-                            <small class="text-muted">2 часа назад</small>
-                        </div>
-                        <p class="mb-0">Мария Сидорова отменила Basic</p>
-                    </div>
-                    <div class="activity-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>Обновление тарифа</strong>
-                            <small class="text-muted">5 часов назад</small>
-                        </div>
-                        <p class="mb-0">Сергей Иванов перешел на Enterprise</p>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <h5 class="fw-bold mb-4">Цели на месяц</h5>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Выручка</span>
-                            <span>₽245K / ₽300K</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar bg-primary" style="width: 82%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Новые клиенты</span>
-                            <span>42 / 50</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar bg-success" style="width: 84%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Удержание</span>
-                            <span>92% / 95%</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar bg-warning" style="width: 97%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="analyticsPage" class="page-content hidden fade-in-up">
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">AI Прогноз текучести</h3><div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex justify-between items-center"><span>AI анализирует: риск увольнения высок у 3 сотрудников</span><button class="btn-gradient btn-sm" onclick="showAI()">Подробнее</button></div></div>
+            <div class="glass-card p-6 mt-4"><h3 class="font-semibold mb-4">Текучесть кадров</h3><canvas id="turnoverChart" height="200"></canvas></div>
         </div>
-    </div>
-
-    <!-- Скрипты -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/js/main.js"></script>
-    
-    <script>
-        // Инициализация графиков
-        document.addEventListener('DOMContentLoaded', function() {
-            // График выручки
-            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-            new Chart(revenueCtx, {
-                type: 'line',
-                data: {
-                    labels: ['1', '5', '10', '15', '20', '25', '30'],
-                    datasets: [{
-                        label: 'Выручка (₽)',
-                        data: [45000, 52000, 48000, 62000, 71000, 82000, 78000],
-                        borderColor: '#4361ee',
-                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₽' + value/1000 + 'K';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // График тарифов
-            const planCtx = document.getElementById('planChart').getContext('2d');
-            new Chart(planCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Базовый', 'Про', 'Предприятие'],
-                    datasets: [{
-                        data: [35, 50, 15],
-                        backgroundColor: [
-                            '#4cc9f0',
-                            '#4361ee',
-                            '#3a0ca3'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-
-            // График трафика
-            const trafficCtx = document.getElementById('trafficChart').getContext('2d');
-            new Chart(trafficCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Поиск', 'Соцсети', 'Прямой', 'Рефералы', 'Email'],
-                    datasets: [{
-                        label: 'Посетители',
-                        data: [1200, 800, 600, 400, 300],
-                        backgroundColor: [
-                            'rgba(67, 97, 238, 0.7)',
-                            'rgba(76, 201, 240, 0.7)',
-                            'rgba(58, 12, 163, 0.7)',
-                            'rgba(111, 66, 193, 0.7)',
-                            'rgba(186, 85, 211, 0.7)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        });
-    </script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
+        <div id="salaryPage" class="page-content hidden fade-in-up">
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">Фонд оплаты труда</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"><div class="stat-card text-center"><div class="text-gray-500">ФОТ за месяц</div><div class="text-2xl font-bold gradient-text">2 450 000 руб</div></div><div class="stat-card text-center"><div class="text-gray-500">Средняя зарплата</div><div class="text-2xl font-bold gradient-text">102 083 руб</div></div><div class="stat-card text-center"><div class="text-gray-500">Налоги (30%)</div><div class="text-2xl font-bold gradient-text">735 000 руб</div></div></div><div class="overflow-x-auto"><table class="w-full"><thead><tr><th class="p-3 text-left">Сотрудник</th><th class="p-3 text-left">Оклад</th><th class="p-3 text-left">Премия</th><th class="p-3 text-left">К выдаче</th></tr></thead><tbody id="salaryTableBody"></tbody></table></div></div>
+        </div>
+        <div id="trainingPage" class="page-content hidden fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="glass-card p-6"><h3 class="font-semibold mb-4">Рекомендуемые курсы</h3><div id="coursesList" class="space-y-3"></div></div><div class="glass-card p-6"><h3 class="font-semibold mb-4">Прогресс обучения</h3><div id="trainingProgress" class="space-y-3"></div></div></div>
+        </div>
+        <div id="settingsPage" class="page-content hidden fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="glass-card p-6"><h3 class="font-semibold mb-4">Telegram бот</h3><button class="btn-gradient w-full" onclick="connectTelegram()">Подключить</button><div class="mt-4"><label class="flex justify-between"><span>Уведомления о заявках</span><input type="checkbox" class="toggle toggle-primary" checked></label><label class="flex justify-between mt-2"><span>Уведомления о днях рождения</span><input type="checkbox" class="toggle toggle-primary" checked></label></div></div><div class="glass-card p-6"><h3 class="font-semibold mb-4">Экспорт данных</h3><button class="btn-gradient w-full mb-2" onclick="exportData('employees')">Сотрудники Excel</button><button class="btn-gradient w-full mb-2" onclick="exportData('vacations')">Отпуска Excel</button><button class="btn-gradient w-full" onclick="exportData('salary')">Зарплаты Excel</button></div></div>
+        </div>
+    </main>
+</div>
+<button onclick="location.href='/dashboard-improved'" class="back-button-oval"><i class="fas fa-arrow-left"></i><span>Назад</span></button>
+<dialog id="employeeModal" class="modal"><div class="modal-box glass-card p-6"><h3 class="font-bold text-lg mb-4">Принять сотрудника</h3><form id="employeeForm" onsubmit="saveEmployee(event)"><div><input type="text" id="empFirstName" placeholder="Имя *" class="w-full mb-3" required></div><div><input type="text" id="empLastName" placeholder="Фамилия *" class="w-full mb-3" required></div><div><input type="email" id="empEmail" placeholder="Email *" class="w-full mb-3" required></div><div><input type="text" id="empPosition" placeholder="Должность *" class="w-full mb-3" required></div><div><select id="empDepartment" class="w-full mb-3"><option>Руководство</option><option>HR</option><option>IT</option><option>Продажи</option><option>Бухгалтерия</option></select></div><div><input type="number" id="empSalary" placeholder="Зарплата *" class="w-full mb-3" required></div><div><input type="date" id="empHireDate" class="w-full mb-3"></div><div class="flex justify-end gap-3"><button type="button" class="btn" onclick="closeModal()">Отмена</button><button type="submit" class="btn-gradient">Сохранить</button></div></form></div></dialog>
+<script>
+let employees = [
+    {id:1, firstName:'Иван', lastName:'Иванов', email:'ivanov@company.ru', position:'Генеральный директор', department:'Руководство', hireDate:'01.01.2020', salary:150000, status:'active'},
+    {id:2, firstName:'Мария', lastName:'Петрова', email:'petrova@company.ru', position:'HR-директор', department:'HR', hireDate:'15.06.2021', salary:80000, status:'vacation'},
+    {id:3, firstName:'Алексей', lastName:'Сидоров', email:'sidorov@company.ru', position:'Менеджер по продажам', department:'Продажи', hireDate:'10.03.2022', salary:60000, status:'active'},
+    {id:4, firstName:'Елена', lastName:'Козлова', email:'kozlova@company.ru', position:'Бухгалтер', department:'Бухгалтерия', hireDate:'20.08.2021', salary:55000, status:'sick'},
+    {id:5, firstName:'Дмитрий', lastName:'Смирнов', email:'smirnov@company.ru', position:'Разработчик Go', department:'IT', hireDate:'05.12.2022', salary:120000, status:'active'}
+];
+let requests = [
+    {id:1, employeeName:'Сидоров Алексей', position:'Менеджер по продажам', startDate:'15.04.2026', endDate:'30.04.2026', days:15, type:'vacation'},
+    {id:2, employeeName:'Козлова Елена', position:'Бухгалтер', startDate:'07.04.2026', endDate:'07.04.2026', days:1, type:'dayoff'}
+];
+let candidates = {new:[{id:1,name:'Смирнов Дмитрий',position:'Разработчик Go',match:92},{id:2,name:'Васильева Анна',position:'HR-менеджер',match:88}], interview:[{id:3,name:'Морозов Илья',position:'Product Manager',date:'05.04 15:00'}], offer:[{id:4,name:'Новиков Павел',position:'DevOps'}], hired:[]};
+let courses = [{name:'Go Advanced', progress:45, duration:'40 часов'},{name:'HR Analytics', progress:80, duration:'24 часа'},{name:'Управление персоналом', progress:30, duration:'32 часа'}];
+function renderEmployees() {
+    let html = '';
+    employees.forEach(emp => {
+        html += `<tr class="border-b"><td class="p-3"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center text-white">${emp.firstName[0]}${emp.lastName[0]}</div><div><div class="font-medium">${emp.firstName} ${emp.lastName}</div><div class="text-xs text-gray-500">${emp.email}</div></div></div></td><td class="p-3">${emp.position}</td><td class="p-3">${emp.department}</td><td class="p-3">${emp.hireDate}</td><td class="p-3">${emp.salary.toLocaleString()} руб</td><td class="p-3"><span class="status-badge status-${emp.status}">${emp.status==='active'?'Активен':emp.status==='vacation'?'В отпуске':'На больничном'}</span></td><td class="p-3"><button class="btn btn-ghost btn-sm" onclick="viewEmployee(${emp.id})"><i class="fas fa-eye"></i></button><button class="btn btn-ghost btn-sm text-red-500" onclick="deleteEmployee(${emp.id})"><i class="fas fa-trash"></i></button></td></tr>`;
+    });
+    document.getElementById('employeesTableBody').innerHTML = html;
+    document.getElementById('totalEmployees').innerText = employees.length;
+    document.getElementById('vacationCount').innerText = employees.filter(e=>e.status==='vacation').length;
+    document.getElementById('sickCount').innerText = employees.filter(e=>e.status==='sick').length;
+    document.getElementById('pendingCount').innerText = requests.length;
 }
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
+function renderRequests() {
+    let html = '';
+    requests.forEach(req => {
+        html += `<div class="glass-card p-4"><div class="flex justify-between"><div><div class="font-medium">${req.employeeName}</div><div class="text-sm text-gray-500">${req.position}</div><div class="text-xs text-gray-500 mt-1">${req.type==='vacation'?'Отпуск':'Отгул'}: ${req.startDate} - ${req.endDate} (${req.days} дн)</div></div><div class="flex gap-2"><button class="btn btn-success btn-sm" onclick="approveRequest(${req.id})"><i class="fas fa-check"></i></button><button class="btn btn-error btn-sm" onclick="rejectRequest(${req.id})"><i class="fas fa-times"></i></button></div></div></div>`;
+    });
+    document.getElementById('requestsList').innerHTML = html;
 }
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
+function renderCandidates() {
+    document.getElementById('newCandidates').innerHTML = candidates.new.map(c => `<div class="candidate-card" onclick="viewCandidate(${c.id})"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-green-600 mt-1">${c.match}% match</div></div>`).join('');
+    document.getElementById('interviewCandidates').innerHTML = candidates.interview.map(c => `<div class="candidate-card" onclick="viewCandidate(${c.id})"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-yellow-600 mt-1">${c.date}</div></div>`).join('');
+    document.getElementById('offerCandidates').innerHTML = candidates.offer.map(c => `<div class="candidate-card" onclick="viewCandidate(${c.id})"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-blue-600 mt-1">Оффер отправлен</div></div>`).join('');
+    document.getElementById('hiredCandidates').innerHTML = candidates.hired.map(c => `<div class="candidate-card" onclick="viewCandidate(${c.id})"><div class="font-medium">${c.name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-green-600 mt-1">Принят</div></div>`).join('');
+}
+function renderCourses() {
+    let html = '';
+    courses.forEach(c => {
+        html += `<div><div class="flex justify-between"><span>${c.name}</span><span>${c.progress}%</span></div><div class="w-full bg-gray-200 rounded-full h-2 mt-1"><div class="bg-green-500 h-2 rounded-full" style="width: ${c.progress}%"></div></div><div class="text-xs text-gray-500 mt-1">${c.duration}</div></div>`;
+    });
+    document.getElementById('coursesList').innerHTML = html;
+}
+function renderSalary() {
+    let html = '';
+    employees.forEach(emp => {
+        let bonus = emp.salary * 0.1;
+        let total = emp.salary + bonus;
+        let tax = total * 0.13;
+        let net = total - tax;
+        html += `<tr class="border-b"><td class="p-3">${emp.firstName} ${emp.lastName}</td><td class="p-3">${emp.salary.toLocaleString()} руб</td><td class="p-3">${bonus.toLocaleString()} руб</td><td class="p-3 text-green-600 font-semibold">${net.toLocaleString()} руб</td></tr>`;
+    });
+    document.getElementById('salaryTableBody').innerHTML = html;
+}
+function saveEmployee(e) {
+    e.preventDefault();
+    let newEmp = {id: employees.length+1, firstName: document.getElementById('empFirstName').value, lastName: document.getElementById('empLastName').value, email: document.getElementById('empEmail').value, position: document.getElementById('empPosition').value, department: document.getElementById('empDepartment').value, hireDate: document.getElementById('empHireDate').value ? new Date(document.getElementById('empHireDate').value).toLocaleDateString('ru-RU') : new Date().toLocaleDateString('ru-RU'), salary: parseInt(document.getElementById('empSalary').value), status: 'active'};
+    employees.push(newEmp);
+    renderEmployees();
+    renderSalary();
+    closeModal();
+    alert(`Сотрудник ${newEmp.firstName} ${newEmp.lastName} принят на работу!`);
+    document.getElementById('employeeForm').reset();
+}
+function approveRequest(id) { alert(`Заявка одобрена`); requests = requests.filter(r=>r.id!==id); renderRequests(); }
+function rejectRequest(id) { alert(`Заявка отклонена`); requests = requests.filter(r=>r.id!==id); renderRequests(); }
+function viewEmployee(id) { alert(`Просмотр сотрудника`); }
+function deleteEmployee(id) { if(confirm('Удалить сотрудника?')){ employees = employees.filter(e=>e.id!==id); renderEmployees(); renderSalary(); alert('Сотрудник удален'); } }
+function viewCandidate(id) { alert(`Просмотр кандидата`); }
+function openAddEmployee() { document.getElementById('employeeModal').showModal(); }
+function closeModal() { document.getElementById('employeeModal').close(); }
+function exportEmployees() { alert(`Экспорт сотрудников в Excel`); }
+function exportData(type) { alert(`Экспорт ${type} в Excel`); }
+function openVacancy() { alert(`Создание вакансии`); }
+function importFromHH() { alert(`Импорт с hh.ru`); }
+function uploadDoc() { alert(`Загрузка документа`); }
+function createOrder() { alert(`Создание приказа`); }
+function useTemplate(t) { alert(`Использование шаблона: ${t}`); }
+function showAI() { alert(`AI прогноз: риск увольнения высок у Петровой М., Сидорова А., Козловой Е.`); }
+function connectTelegram() { alert(`Telegram бот подключен!`); }
+document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',()=>{document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));item.classList.add('active');let page=item.dataset.page;document.querySelectorAll('.page-content').forEach(c=>c.classList.add('hidden'));document.getElementById(page+'Page').classList.remove('hidden');let titles={dashboard:'HR Дашборд',employees:'Сотрудники',vacations:'Отпуска',recruitment:'Рекрутинг',documents:'Документы',analytics:'Аналитика',salary:'Зарплаты',training:'Обучение',settings:'Настройки'};document.getElementById('pageTitle').innerText=titles[page];});});
+function initCharts() {
+    let ctx = document.getElementById('employeesChart')?.getContext('2d');
+    if(ctx) new Chart(ctx, {type:'line', data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'], datasets:[{label:'Сотрудники', data:[18,19,21,22,23,24], borderColor:'#667eea', tension:0.4, fill:true, backgroundColor:'rgba(102,126,234,0.1)'}]}});
+    let ctx2 = document.getElementById('departmentsChart')?.getContext('2d');
+    if(ctx2) new Chart(ctx2, {type:'doughnut', data:{labels:['Руководство','IT','Продажи','HR','Бухгалтерия'], datasets:[{data:[2,8,6,3,3], backgroundColor:['#667eea','#764ba2','#f093fb','#4facfe','#43e97b']}]}});
+    let ctx3 = document.getElementById('turnoverChart')?.getContext('2d');
+    if(ctx3) new Chart(ctx3, {type:'line', data:{labels:['Янв','Фев','Мар','Апр','Май','Июн'], datasets:[{label:'Текучесть', data:[8.5,7.2,6.8,6.5,5.9,5.5], borderColor:'#f59e0b', tension:0.4}]}});
+}
+renderEmployees(); renderRequests(); renderCandidates(); renderCourses(); renderSalary(); initCharts();
+</script>
 </body>
 </html>
-
-

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR-модуль | SaaSPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
+        .gradient-text { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .nav-item { padding: 12px 20px; border-radius: 12px; cursor: pointer; color: #4a5568; font-weight: 500; transition: all 0.2s; }
+        .nav-item:hover { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .back-button-oval { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 28px; border-radius: 60px; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 1000; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.3s; }
+        .back-button-oval:hover { transform: scale(1.05); }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #667eea; }
+        .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .data-table { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .data-table th { background: #f8f9fa; color: #4a5568; padding: 16px; font-weight: 600; }
+        .data-table td { padding: 16px; border-bottom: 1px solid #e2e8f0; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .status-active { background: #d1fae5; color: #10b981; }
+        .status-vacation { background: #fed7aa; color: #f59e0b; }
+        .status-sick { background: #fee2e2; color: #ef4444; }
+        .kanban-col { background: #f8f9fa; border-radius: 16px; padding: 16px; min-width: 280px; }
+        .candidate-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+        .candidate-card:hover { transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+<div class="flex h-screen">
+    <aside class="w-80 glass-card m-4 flex flex-col">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center"><i class="fas fa-crown text-white text-lg"></i></div>
+                <div><span class="text-xl font-bold gradient-text">SaaSPro</span><span class="text-xs text-gray-500 block">HR Management</span></div>
+            </div>
+        </div>
+        <div class="p-4 mx-4 my-4 glass-card">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center"><span class="text-lg font-bold text-white">A</span></div>
+                <div><h4 class="font-semibold">Admin</h4><p class="text-xs text-gray-500">admin@example.com</p></div>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-pie w-5 mr-3"></i>HR Дашборд</div>
+            <div class="nav-item" data-page="employees"><i class="fas fa-users w-5 mr-3"></i>Сотрудники</div>
+            <div class="nav-item" data-page="vacations"><i class="fas fa-calendar-alt w-5 mr-3"></i>Отпуска</div>
+            <div class="nav-item" data-page="recruitment"><i class="fas fa-search w-5 mr-3"></i>Рекрутинг</div>
+            <div class="nav-item" data-page="analytics"><i class="fas fa-chart-line w-5 mr-3"></i>Аналитика</div>
+        </nav>
+    </aside>
+    <main class="flex-1 overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <div><h1 class="text-3xl font-bold gradient-text" id="pageTitle">HR Дашборд</h1><p class="text-gray-600 text-sm mt-1" id="pageDesc">Обзор персонала и ключевые метрики</p></div>
+            <button class="btn-gradient" id="actionBtn"><i class="fas fa-plus mr-2"></i>Принять сотрудника</button>
+        </div>
+        
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page-content">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="statsContainer">
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Сотрудников</p><div class="stat-number" id="totalEmployees">0</div></div><div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center"><i class="fas fa-users text-purple-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">В отпуске</p><div class="stat-number" id="vacationCount">0</div></div><div class="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center"><i class="fas fa-umbrella-beach text-yellow-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Заявок</p><div class="stat-number" id="pendingCount">0</div></div><div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center"><i class="fas fa-clipboard-list text-blue-500 text-xl"></i></div></div></div>
+                <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Кандидатов</p><div class="stat-number" id="candidatesCount">0</div></div><div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center"><i class="fas fa-user-plus text-green-500 text-xl"></i></div></div></div>
+            </div>
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">Сотрудники</h3><div class="overflow-x-auto"><table class="w-full"><thead><tr><th>Сотрудник</th><th>Должность</th><th>Отдел</th><th>Статус</th></tr></thead><tbody id="employeesTable"></tbody></table></div></div>
+        </div>
+        
+        <!-- Employees Page -->
+        <div id="employeesPage" class="page-content hidden">
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">Все сотрудники</h3><div class="overflow-x-auto"><table class="w-full"><thead><tr><th>Сотрудник</th><th>Должность</th><th>Отдел</th><th>Зарплата</th><th>Статус</th><th></th></tr></thead><tbody id="allEmployeesTable"></tbody></table></div></div>
+        </div>
+        
+        <!-- Vacations Page -->
+        <div id="vacationsPage" class="page-content hidden">
+            <div class="glass-card p-6"><h3 class="font-semibold mb-4">Заявки на отпуск</h3><div id="requestsList" class="space-y-3"></div></div>
+        </div>
+        
+        <!-- Recruitment Page -->
+        <div id="recruitmentPage" class="page-content hidden">
+            <div class="flex gap-4 overflow-x-auto pb-4"><div class="kanban-col"><h3 class="font-semibold mb-3">Новые</h3><div id="newCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Собеседование</h3><div id="interviewCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Оффер</h3><div id="offerCandidates"></div></div><div class="kanban-col"><h3 class="font-semibold mb-3">Наняты</h3><div id="hiredCandidates"></div></div></div>
+        </div>
+    </main>
+</div>
+<button onclick="location.href='/dashboard-improved'" class="back-button-oval"><i class="fas fa-arrow-left"></i><span>На главный дашборд</span></button>
+
+<script>
+let currentPage = 'dashboard';
+let employees = [];
+
+async function loadStats() {
+    const res = await fetch('/hr/api/statistics');
+    const data = await res.json();
+    document.getElementById('totalEmployees').innerText = data.statistics.totalEmployees;
+    document.getElementById('vacationCount').innerText = data.statistics.vacationCount;
+    document.getElementById('pendingCount').innerText = data.statistics.pendingRequests;
+    document.getElementById('candidatesCount').innerText = data.statistics.candidatesCount;
+}
+
+async function loadEmployees() {
+    const res = await fetch('/hr/api/employees');
+    const data = await res.json();
+    employees = data.employees;
+    
+    let html = '';
+    employees.slice(0, 5).forEach(emp => {
+        html += `<tr class="border-b"><td class="p-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs">${emp.first_name[0]}${emp.last_name[0]}</div><div>${emp.full_name}</div></div></td><td class="p-3">${emp.position}</td><td class="p-3">${emp.department}</td><td class="p-3"><span class="status-badge status-${emp.status}">${emp.status === 'active' ? 'Активен' : emp.status === 'vacation' ? 'В отпуске' : 'На больничном'}</span></td></tr>`;
+    });
+    document.getElementById('employeesTable').innerHTML = html;
+    
+    let allHtml = '';
+    employees.forEach(emp => {
+        allHtml += `<tr class="border-b"><td class="p-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center text-white text-xs">${emp.first_name[0]}${emp.last_name[0]}</div><div>${emp.full_name}<br><span class="text-xs text-gray-500">${emp.email}</span></div></div></td><td class="p-3">${emp.position}</td><td class="p-3">${emp.department}</td><td class="p-3">${emp.salary.toLocaleString()} руб</td><td class="p-3"><span class="status-badge status-${emp.status}">${emp.status === 'active' ? 'Активен' : emp.status === 'vacation' ? 'В отпуске' : 'На больничном'}</span></td><td class="p-3"><button class="text-red-500" onclick="deleteEmployee('${emp.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
+    });
+    document.getElementById('allEmployeesTable').innerHTML = allHtml;
+}
+
+async function loadVacations() {
+    const res = await fetch('/hr/api/vacations');
+    const data = await res.json();
+    let html = '';
+    data.requests.forEach(req => {
+        html += `<div class="glass-card p-4"><div class="flex justify-between"><div><div class="font-medium">${req.employee}</div><div class="text-sm text-gray-500">${req.position}</div><div class="text-xs text-gray-500 mt-1">${req.start_date} - ${req.end_date} (${req.days} дн)</div></div><div class="flex gap-2"><button class="btn btn-success btn-sm" onclick="approveRequest('${req.id}')"><i class="fas fa-check"></i></button><button class="btn btn-error btn-sm" onclick="rejectRequest('${req.id}')"><i class="fas fa-times"></i></button></div></div></div>`;
+    });
+    document.getElementById('requestsList').innerHTML = html || '<div class="text-center text-gray-500 py-10">Нет заявок</div>';
+}
+
+async function loadCandidates() {
+    const res = await fetch('/hr/api/candidates');
+    const data = await res.json();
+    const candidates = data.candidates;
+    
+    document.getElementById('newCandidates').innerHTML = candidates.new.map(c => `<div class="candidate-card"><div class="font-medium">${c.full_name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-green-600 mt-1">${c.match_score}% match</div></div>`).join('') || '<div class="text-center text-gray-500 py-5">Нет кандидатов</div>';
+    document.getElementById('interviewCandidates').innerHTML = candidates.interview.map(c => `<div class="candidate-card"><div class="font-medium">${c.full_name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-yellow-600 mt-1">${c.interview_date || 'Дата не назначена'}</div></div>`).join('') || '<div class="text-center text-gray-500 py-5">Нет кандидатов</div>';
+    document.getElementById('offerCandidates').innerHTML = candidates.offer.map(c => `<div class="candidate-card"><div class="font-medium">${c.full_name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-blue-600 mt-1">Оффер отправлен</div></div>`).join('') || '<div class="text-center text-gray-500 py-5">Нет кандидатов</div>';
+    document.getElementById('hiredCandidates').innerHTML = candidates.hired.map(c => `<div class="candidate-card"><div class="font-medium">${c.full_name}</div><div class="text-sm text-gray-500">${c.position}</div><div class="text-xs text-green-600 mt-1">Принят</div></div>`).join('') || '<div class="text-center text-gray-500 py-5">Нет кандидатов</div>';
+}
+
+async function approveRequest(id) {
+    await fetch(`/hr/api/vacations/${id}/approve`, { method: 'POST' });
+    loadVacations();
+    loadStats();
+}
+
+async function rejectRequest(id) {
+    await fetch(`/hr/api/vacations/${id}/reject`, { method: 'POST' });
+    loadVacations();
+}
+
+async function deleteEmployee(id) {
+    if (confirm('Удалить сотрудника?')) {
+        await fetch(`/hr/api/employees/${id}`, { method: 'DELETE' });
+        loadEmployees();
+        loadStats();
+    }
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        currentPage = item.dataset.page;
+        document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+        document.getElementById(currentPage + 'Page').classList.remove('hidden');
+        
+        const titles = { dashboard: 'HR Дашборд', employees: 'Сотрудники', vacations: 'Отпуска', recruitment: 'Рекрутинг', analytics: 'Аналитика' };
+        document.getElementById('pageTitle').innerText = titles[currentPage];
+        
+        if (currentPage === 'employees') loadEmployees();
+        else if (currentPage === 'vacations') loadVacations();
+        else if (currentPage === 'recruitment') loadCandidates();
+    });
+});
+
+document.getElementById('actionBtn').onclick = () => {
+    if (currentPage === 'employees') {
+        const name = prompt('Имя сотрудника');
+        if (name) alert('Функция добавления сотрудника');
+    }
+};
+
+loadStats();
+loadEmployees();
+loadVacations();
+loadCandidates();
+</script>
+</body>
+</html>

@@ -2,11 +2,9 @@ package main
 
 import (
     "context"
-    "embed"
     "encoding/json"
     "fmt"
     "html/template"
-    "io/fs"
     "log"
     "net/http"
     "strings"
@@ -23,10 +21,11 @@ import (
     "subscription-system/middleware"
     "subscription-system/services"
     _ "subscription-system/docs"
+
 )
 
-//go:embed templates/*.html
-var templateFS embed.FS
+// //go:embed templates/*.html templates/hr/*.html
+// var templateFS embed.FS
 
 type ServiceOrder struct {
     Name        string `json:"name"`
@@ -162,18 +161,11 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.Use(middleware.SecurityMonitor())
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
 
-
-    subFS, err := fs.Sub(templateFS, "templates")
-    if err != nil {
-        log.Fatalf("❌ Не удалось открыть встроенные шаблоны: %v", err)
-    }
-    tmpl := template.New("").Funcs(template.FuncMap{
+    // ========== ЗАГРУЗКА ШАБЛОНОВ ==========
+    tmpl, err := template.New("").Funcs(template.FuncMap{
         "jsonParse": func(s json.RawMessage) []interface{} {
             var arr []interface{}
-            err := json.Unmarshal(s, &arr)
-            if err != nil {
-                return []interface{}{}
-            }
+            json.Unmarshal(s, &arr)
             return arr
         },
         "firstLetter": func(s string) string {
@@ -200,23 +192,34 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
             return a / b
         },
         "default": func(defaultVal, val interface{}) interface{} {
-            switch v := val.(type) {
-            case nil:
-                return defaultVal
-            case string:
-                if v == "" {
-                    return defaultVal
-                }
-            }
             if val == nil {
+                return defaultVal
+            }
+            if str, ok := val.(string); ok && str == "" {
                 return defaultVal
             }
             return val
         },
-    })
-    tmpl = template.Must(tmpl.ParseFS(subFS, "*.html"))
+    }).ParseGlob("templates/*.html")
+    if err != nil {
+        log.Fatalf("❌ Не удалось загрузить шаблоны: %v", err)
+    }
+
+    // Добавляем HR шаблоны
+    hrTmpl, err := template.ParseGlob("templates/hr/*.html")
+    if err == nil && hrTmpl != nil {
+        for _, t := range hrTmpl.Templates() {
+            tmpl.AddParseTree(t.Name(), t.Tree)
+        }
+    }
+
     r.SetHTMLTemplate(tmpl)
-    log.Println("✅ Шаблоны загружены из embed.FS")
+    log.Println("✅ Шаблоны загружены")
+
+
+
+    // Загружаем шаблоны из файловой системы
+    
 
     // ========== СТАТИКА, РЕДИРЕКТЫ ==========
     r.Static("/static", cfg.StaticPath)
@@ -417,9 +420,30 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
    // Projects page
    r.GET("/projects", handlers.ProjectsPageHandler)
 
-
- 
-
+// HR маршруты
+hr := r.Group("/hr")
+{
+    hr.GET("/", handlers.HRDashboardHandler)
+    hr.GET("/api/employees", handlers.GetEmployeesHandler)
+    hr.POST("/api/employees", handlers.AddEmployeeHandler)
+    hr.PUT("/api/employees/:id", handlers.UpdateEmployeeHandler)
+    hr.DELETE("/api/employees/:id", handlers.DeleteEmployeeHandler)
+    hr.GET("/api/vacations", handlers.GetVacationRequestsHandler)
+    hr.POST("/api/vacations", handlers.AddVacationRequestHandler)
+    hr.POST("/api/vacations/:id/approve", handlers.ApproveRequestHandler)
+    hr.POST("/api/vacations/:id/reject", handlers.RejectRequestHandler)
+    hr.GET("/api/candidates", handlers.GetCandidatesHandler)
+    hr.POST("/api/candidates", handlers.AddCandidateHandler)
+    hr.PUT("/api/candidates/:id/status", handlers.UpdateCandidateStatusHandler)
+    hr.DELETE("/api/candidates/:id", handlers.DeleteCandidateHandler)
+    hr.GET("/api/statistics", handlers.GetStatisticsHandler)
+    hr.POST("/api/candidates/:id/analyze", handlers.AnalyzeCandidateHandler)
+    hr.POST("/api/ai/chat", handlers.AIChatHandler)
+    hr.GET("/api/training/suggestions", handlers.SuggestTrainingHandler)
+    hr.GET("/api/turnover/predict", handlers.PredictTurnoverHandler)
+    hr.POST("/api/orders/generate", handlers.GenerateOrderHandler)
+    hr.GET("/api/departments", handlers.GetDepartmentsHandler)
+}
     // ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
     r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
     r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
@@ -903,3 +927,5 @@ r.GET("/analytics-center", func(c *gin.Context) {
 
 
 }
+
+

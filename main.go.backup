@@ -1,6 +1,7 @@
 package main
 
 import (
+    "context"
     "embed"
     "encoding/json"
     "fmt"
@@ -15,16 +16,50 @@ import (
     "github.com/joho/godotenv"
     swaggerFiles "github.com/swaggo/files"
     ginSwagger "github.com/swaggo/gin-swagger"
-
+    
     "subscription-system/config"
     "subscription-system/database"
     "subscription-system/handlers"
     "subscription-system/middleware"
+    "subscription-system/services"
     _ "subscription-system/docs"
+
 )
 
-//go:embed templates/*.html
+//go:embed templates/*.html templates/hr/*.html
 var templateFS embed.FS
+
+type ServiceOrder struct {
+    Name        string `json:"name"`
+    Contact     string `json:"contact"`
+    Description string `json:"description"`
+}
+
+func serviceOrderHandler(c *gin.Context) {
+    var order ServiceOrder
+    if err := c.ShouldBindJSON(&order); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные данные"})
+        return
+    }
+
+    if order.Name == "" || order.Contact == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Имя и контакт обязательны"})
+        return
+    }
+
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO service_requests (name, contact, description, created_at)
+        VALUES ($1, $2, $3, NOW())
+    `, order.Name, order.Contact, order.Description)
+    if err != nil {
+        log.Printf("Ошибка сохранения заявки: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка базы данных"})
+        return
+    }
+
+    log.Printf("📦 Новая заявка на услуги: %s (%s): %s", order.Name, order.Contact, order.Description)
+    c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
 
 func main() {
     if err := godotenv.Load(); err != nil {
@@ -39,29 +74,96 @@ func main() {
     }
     defer database.CloseDB()
 
+    // ========== СОЗДАНИЕ ТАБЛИЦ VPN ==========
+    ctx := context.Background()
+    
+    _, err := database.Pool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS vpn_plans (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(50) NOT NULL,
+            price DECIMAL(10,2) NOT NULL,
+            days INTEGER NOT NULL,
+            speed VARCHAR(50),
+            devices INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    `)
+    if err != nil {
+        log.Printf("⚠️ Ошибка создания vpn_plans: %v", err)
+    } else {
+        log.Println("✅ Таблица vpn_plans готова")
+    }
+    
+   _, err = database.Pool.Exec(ctx, `
+    INSERT INTO vpn_plans (name, price, days, speed, devices, tenant_id) 
+    VALUES ($1, $2, $3, $4, $5, $6),
+           ($7, $8, $9, $10, $11, $12),
+           ($13, $14, $15, $16, $17, $18),
+           ($19, $20, $21, $22, $23, $24)
+    ON CONFLICT (id) DO NOTHING
+`,
+    "Пробный", 0, 3, "10 Mbps", 1, "11111111-1111-1111-1111-111111111111",
+    "Старт", 299, 30, "50 Mbps", 2, "11111111-1111-1111-1111-111111111111",
+    "Про", 999, 90, "100 Mbps", 5, "11111111-1111-1111-1111-111111111111",
+    "Премиум", 2999, 365, "1 Gbps", 10, "11111111-1111-1111-1111-111111111111",
+)
+    if err != nil {
+        log.Printf("⚠️ Ошибка вставки тарифов: %v", err)
+    } else {
+        log.Println("✅ VPN тарифы загружены")
+    }
+    
+    handlers.InitVPNWithDB(database.Pool)
+
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
+
+    var yandexService *services.YandexAdapter
+    var aiAgentService *services.AIAgentService
+    var speechKitService *services.SpeechKitService
+
+    yandexService = services.NewYandexService(cfg)
+    aiAgentService = services.NewAIAgentService(yandexService)
+    aiAgentService.StartAgentScheduler()
+    log.Println("🤖 Сервис ИИ-агентов запущен с YandexGPT")
+
+    speechKitService = services.NewSpeechKitService(cfg)
+    _ = speechKitService
+    log.Println("🎙️ Сервис транскрибации SpeechKit инициализирован")
 
     if cfg.Env == "release" {
         gin.SetMode(gin.ReleaseMode)
     }
 
     r := gin.New()
+
+// ========== МЕГА-БЕЗОПАСНОСТЬ ==========
+r.Use(middleware.MegaSecurityMiddleware())
+// ========================================
+
+r.Use(middleware.AuditMiddleware())          // Аудит действий
+r.Use(middleware.Fail2BanMiddleware())       // Блокировка IP
+r.Use(middleware.ForcePasswordChangeMiddleware()) // Принудительная смена пароля
+
+// Для админских маршрутов добавляем 2FA
+admin := r.Group("/admin")
+admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.AdminRequire2FA())
+{
+    admin.GET("/", handlers.AdminDashboardHandler)
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
     r.Use(middleware.Logger())
     r.SetTrustedProxies(cfg.TrustedProxies)
     r.Use(middleware.SetupCORS(cfg))
+    r.Use(middleware.TenantMiddleware(database.Pool))
 
-    // ========== MIDDLEWARE БЕЗОПАСНОСТИ ==========
-    // Увеличил лимит для API с 5 до 30 запросов в минуту, чтобы AI не блокировался
+
+
     rateLimiter := middleware.NewRateLimiter(30, time.Minute)
-
     r.Use(middleware.SecurityMonitor())
-
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
 
-    // Загрузка шаблонов
+
     subFS, err := fs.Sub(templateFS, "templates")
     if err != nil {
         log.Fatalf("❌ Не удалось открыть встроенные шаблоны: %v", err)
@@ -113,16 +215,16 @@ func main() {
             return val
         },
     })
-    tmpl = template.Must(tmpl.ParseFS(subFS, "*.html"))
+  tmpl = template.Must(tmpl.ParseFS(subFS, "*.html", "hr/*.html"))
     r.SetHTMLTemplate(tmpl)
     log.Println("✅ Шаблоны загружены из embed.FS")
 
     // ========== СТАТИКА, РЕДИРЕКТЫ ==========
-    r.Static("/static", "C:/Projects/subscription-clean-WORKS/static")
+    r.Static("/static", cfg.StaticPath)
     r.Static("/frontend", cfg.FrontendPath)
     r.Static("/app", "C:/Projects/subscription-clean-WORKS/telegram-mini-app")
-    r.GET("/manifest.json", func(c *gin.Context) { c.File("./telegram-mini-app/manifest.json") })
-    r.GET("/service-worker.js", func(c *gin.Context) { c.File("./telegram-mini-app/service-worker.js") })
+    r.GET("/telegram/manifest.json", func(c *gin.Context) { c.File("./telegram-mini-app/manifest.json") })
+    r.GET("/telegram/sw.js", func(c *gin.Context) { c.File("./telegram-mini-app/service-worker.js") })
     r.GET("/app", func(c *gin.Context) { c.File("C:/Projects/subscription-clean-WORKS/telegram-mini-app/index.html") })
     r.GET("/dashboard_improved", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
     r.GET("/dashboard", func(c *gin.Context) { c.Redirect(http.StatusMovedPermanently, "/dashboard-improved") })
@@ -131,22 +233,247 @@ func main() {
     r.GET("/my-keys", handlers.MyKeysPageHandler)
     r.GET("/api-keys", handlers.APIKeysPageHandler)
     r.GET("/support", handlers.SupportPageHandler)
-    r.GET("/security", handlers.SecurityPageHandler)
     r.GET("/referral", handlers.ReferralPageHandler)
     r.GET("/ai-settings", handlers.AISettingsPageHandler)
+    r.GET("/transcriptions", handlers.TranscriptionsPage)
+    r.GET("/ai-agents", handlers.AIAgentsPage)
+    r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
 
-// Явная раздача файлов FullCalendar (временное решение до выяснения причины)
-r.GET("/static/fullcalendar/main.min.js", func(c *gin.Context) {
-    c.File("./static/fullcalendar/main.min.js")
-})
-r.GET("/static/fullcalendar/main.min.css", func(c *gin.Context) {
-    c.File("./static/fullcalendar/main.min.css")
-})
-r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
-    c.File("./static/fullcalendar/ru.js")
+    // QR код авторизация
+    r.GET("/qr-login", handlers.QRLoginPageHandler)
+    r.POST("/api/qr/generate", handlers.GenerateQRCode)
+    r.GET("/api/qr/status", handlers.QRStatusWebSocket)
+    r.POST("/api/qr/scan", handlers.ScanQRCode)
+    r.POST("/api/qr/approve", handlers.ApproveQRLogin)
+
+    // Телефонная авторизация
+    r.POST("/api/auth/send-code", handlers.SendPhoneCode)
+    r.POST("/api/auth/verify-code", handlers.VerifyPhoneCode)
+
+    // Push уведомления
+    r.POST("/api/push/register", handlers.RegisterPushDevice)
+    r.GET("/api/push/devices", handlers.GetUserDevices)
+    r.DELETE("/api/push/devices/:id", handlers.RemovePushDevice)
+    
+    r.GET("/api-sales", handlers.APISalesPageHandler)           
+    r.GET("/api/user/plan", handlers.GetUserPlan)                
+    r.POST("/api/create-key", handlers.CreateAPIKey)             
+    r.POST("/api/upgrade-key", handlers.UpgradeAPIKey)           
+    r.GET("/api/user/usage", handlers.GetAPIUsage)  
+
+    // Инвентаризация
+    r.GET("/inventory", handlers.InventoryPageHandler)
+    r.GET("/api/inventory/products", handlers.GetProducts)
+    r.POST("/api/inventory/products", handlers.CreateProduct)
+    r.PUT("/api/inventory/products/:id", handlers.UpdateProduct)
+    r.DELETE("/api/inventory/products/:id", handlers.DeleteProduct)
+    r.GET("/api/inventory/orders", handlers.GetOrders)
+    r.POST("/api/inventory/orders", handlers.CreateOrder)
+    r.GET("/api/inventory/orders/:id", handlers.GetOrderDetails)
+    r.GET("/api/inventory/stats", handlers.GetInventoryStats)
+    r.GET("/api/inventory/products/export/csv", handlers.ExportProductsCSV)
+
+    // Поставщики
+    r.GET("/api/suppliers", handlers.GetSuppliers)
+    r.GET("/api/suppliers/:id", handlers.GetSupplier)
+    r.POST("/api/suppliers", handlers.CreateSupplier)
+    r.PUT("/api/suppliers/:id", handlers.UpdateSupplier)
+    r.DELETE("/api/suppliers/:id", handlers.DeleteSupplier)
+
+    // Заказы поставщикам
+    r.GET("/api/purchase-orders", handlers.GetPurchaseOrders)
+    r.GET("/api/purchase-orders/:id", handlers.GetPurchaseOrder)
+    r.POST("/api/purchase-orders", handlers.CreatePurchaseOrder)
+    r.PUT("/api/purchase-orders/:id/status", handlers.UpdatePurchaseOrderStatus)
+    r.DELETE("/api/purchase-orders/:id", handlers.DeletePurchaseOrder)
+
+    // Страница приемки товаров
+    r.GET("/goods-receipts", handlers.GoodsReceiptsPageHandler)
+    r.GET("/api/goods-receipts", handlers.GetGoodsReceipts)
+    r.GET("/api/goods-receipts/:id", handlers.GetGoodsReceipt)
+    r.POST("/api/goods-receipts", handlers.CreateGoodsReceipt)
+
+    // ========== ФИНАНСОВЫЙ УЧЕТ ==========
+    r.GET("/api/chart-of-accounts", handlers.GetChartOfAccounts)
+    r.POST("/api/chart-of-accounts", handlers.CreateChartOfAccount)
+    r.PUT("/api/chart-of-accounts/:id", handlers.UpdateChartOfAccount)
+    r.DELETE("/api/chart-of-accounts/:id", handlers.DeleteChartOfAccount)
+
+    r.GET("/finance", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "finance.html", gin.H{
+            "title": "Финансовый учет | SaaSPro",
+        })
+    })
+
+    r.GET("/api/payments", handlers.GetFinancePayments)
+    r.POST("/api/payments", handlers.CreateFinancePayment)
+    r.PUT("/api/payments/:id/status", handlers.UpdateFinancePaymentStatus)
+
+    r.GET("/api/cash-operations", handlers.GetCashOperations)
+    r.POST("/api/cash-operations", handlers.CreateCashOperation)
+    r.GET("/api/journal-entries", handlers.GetJournalEntries)
+    r.GET("/api/journal-entries/:id", handlers.GetJournalEntry)
+    r.POST("/api/journal-entries", handlers.CreateJournalEntry)
+    r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
+    r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
+
+    // Страница поставщиков
+    r.GET("/suppliers", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "suppliers.html", gin.H{
+            "title": "Поставщики | SaaSPro",
+        })
+    })
+
+    // Страница закупок
+    r.GET("/purchases", func(c *gin.Context) {
+        c.Header("Cache-Control", "no-cache, no-store, must-revalidate, private")
+        c.Header("Pragma", "no-cache")
+        c.Header("Expires", "0")
+        c.Header("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+        c.Header("ETag", "")
+        c.HTML(http.StatusOK, "purchases.html", gin.H{
+            "title": "Закупки | SaaSPro",
+            "cacheBuster": time.Now().UnixNano(),
+        })
+    })
+
+    // Уведомления
+    r.GET("/api/notifications", handlers.GetNotifications)
+    r.PUT("/api/notifications/:id/read", handlers.MarkNotificationRead)
+    r.GET("/api/notifications/unread", handlers.GetUnreadCount)
+
+    // Экспорт отчетов
+    r.GET("/api/reports/export/osv", handlers.ExportOSVToExcel)
+    r.GET("/api/reports/export/profit-loss", handlers.ExportProfitLossToHTML)
+
+    // Гант-диаграмма
+    r.GET("/api/gantt", handlers.GetGanttData)
+
+    // Обновление статуса заказа
+    r.PUT("/api/inventory/orders/:id/status", handlers.UpdateOrderStatus)
+
+    // Отчеты
+    r.GET("/api/inventory/reports/sales", handlers.GetSalesReport)
+    r.GET("/api/inventory/reports/top-products", handlers.GetTopProducts)
+
+    // OAuth2 / OpenID Connect маршруты
+    r.GET("/.well-known/openid-configuration", handlers.OIDCConfigurationHandler)
+    r.GET("/oauth/jwks", handlers.JWKSHander)
+    r.GET("/oauth/authorize", handlers.OAuthAuthorizeHandler)
+    r.POST("/oauth/token", handlers.OAuthTokenHandler)
+    r.GET("/oauth/userinfo", handlers.OAuthUserInfoHandler)
+    r.GET("/identity-hub", handlers.IdentityHubPageHandler)
+
+    // ========== ОТЧЕТЫ И АНАЛИТИКА ==========
+    r.GET("/api/reports/turnover-balance", handlers.GetTurnoverBalanceSheet)
+    r.GET("/api/reports/profit-loss", handlers.GetProfitAndLoss)
+    r.GET("/api/reports/dashboard-stats", handlers.GetDashboardStats)
+    r.GET("/api/reports/sales-chart", handlers.GetSalesChart)
+
+    r.GET("/reports", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "reports.html", gin.H{
+            "title": "Отчеты и аналитика | SaaSPro",
+        })
+    })
+
+    // ========== ИНТЕГРАЦИЯ С 1С ==========
+    r.GET("/api/1c/export/products", handlers.ExportProductsTo1C)
+    r.GET("/api/1c/export/orders", handlers.ExportOrdersTo1C)
+    r.POST("/api/1c/import/products", handlers.ImportProductsFrom1C)
+    r.GET("/api/1c/logs", handlers.GetSyncLogs)
+    r.GET("/api/1c/settings", handlers.GetSyncSettings)
+    r.POST("/api/1c/settings", handlers.UpdateSyncSettings)
+    r.GET("/integration/1c", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "integration_1c.html", gin.H{
+            "title": "Интеграция с 1С | SaaSPro",
+        })
+    })
+    r.POST("/api/1c/webhook", handlers.AddWebhookHandler)
+
+    // ========== BITRIX24 ==========
+    r.GET("/api/bitrix/settings", handlers.GetBitrixSettings)
+    r.POST("/api/bitrix/settings", handlers.SaveBitrixSettings)
+    r.POST("/api/bitrix/export/lead", handlers.ExportLeadToBitrix)
+    r.GET("/api/bitrix/import/leads", handlers.ImportLeadsFromBitrix)
+    r.POST("/api/bitrix/sync/contacts", handlers.SyncBitrixContacts)
+    r.GET("/api/bitrix/logs", handlers.GetBitrixSyncLogs)
+    r.GET("/integration/bitrix", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "integration_bitrix.html", gin.H{
+            "title": "Интеграция с Bitrix24 | SaaSPro",
+        })
+    })
+    r.POST("/api/bitrix/task", handlers.SyncTasksToBitrix)
+    r.GET("/api/bitrix/tasks", handlers.GetBitrixTasks)
+    r.POST("/api/bitrix/webhook", handlers.BitrixWebhookHandler)
+
+ // TeamSphere - Bitrix24 Alternative
+   r.GET("/teamsphere", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "teamsphere_welcome.html", gin.H{
+        "title": "TeamSphere | Добро пожаловать",
+    })
 })
 
-    // ========== ПУБЛИЧНЫЕ СТРАНИЦЫ ==========
+r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
+    r.GET("/integrations", handlers.IntegrationsHandler)
+   // Projects page
+   r.GET("/projects", handlers.ProjectsPageHandler)
+
+// HR маршруты
+hr := r.Group("/hr")
+{
+    hr.GET("/", handlers.HRDashboardHandler)
+    hr.GET("/api/employees", handlers.GetEmployeesHandler)
+    hr.POST("/api/employees", handlers.AddEmployeeHandler)
+    hr.PUT("/api/employees/:id", handlers.UpdateEmployeeHandler)
+    hr.DELETE("/api/employees/:id", handlers.DeleteEmployeeHandler)
+    hr.GET("/api/vacations", handlers.GetVacationRequestsHandler)
+    hr.POST("/api/vacations", handlers.AddVacationRequestHandler)
+    hr.POST("/api/vacations/:id/approve", handlers.ApproveRequestHandler)
+    hr.POST("/api/vacations/:id/reject", handlers.RejectRequestHandler)
+    hr.GET("/api/candidates", handlers.GetCandidatesHandler)
+    hr.POST("/api/candidates", handlers.AddCandidateHandler)
+    hr.PUT("/api/candidates/:id/status", handlers.UpdateCandidateStatusHandler)
+    hr.DELETE("/api/candidates/:id", handlers.DeleteCandidateHandler)
+    hr.GET("/api/statistics", handlers.GetStatisticsHandler)
+    hr.POST("/api/candidates/:id/analyze", handlers.AnalyzeCandidateHandler)
+    hr.POST("/api/ai/chat", handlers.AIChatHandler)
+    hr.GET("/api/training/suggestions", handlers.SuggestTrainingHandler)
+    hr.GET("/api/turnover/predict", handlers.PredictTurnoverHandler)
+    hr.POST("/api/orders/generate", handlers.GenerateOrderHandler)
+    hr.GET("/api/departments", handlers.GetDepartmentsHandler)
+}
+    // ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
+    r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
+    r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
+    r.GET("/api/pwa/info", handlers.GetPWAInfo)
+    r.POST("/api/push/subscribe", handlers.SavePushSubscription)
+    r.GET("/api/push/subscriptions", handlers.GetPushSubscriptions)
+
+    // Админские маршруты для управления OAuth клиентами
+    adminOAuth := r.Group("/admin/oauth")
+    adminOAuth.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    {
+        adminOAuth.GET("/clients", handlers.OAuthClientsPageHandler)
+        adminOAuth.POST("/clients", handlers.CreateOAuthClient)
+    }
+    
+    // VPN маршруты
+    r.GET("/vpn", handlers.VPNSalesPageHandler)
+    r.POST("/api/vpn/create", handlers.CreateVPNKey)
+    r.GET("/api/vpn/config/:client", handlers.GetVPNConfig)
+    r.GET("/api/vpn/status/:client", handlers.CheckVPNKey)
+    r.GET("/api/vpn/stats", handlers.GetVPNStats)
+    r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
+
+    // Админ маршруты для VPN
+    adminVPN := r.Group("/admin/vpn")
+    adminVPN.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    {
+        adminVPN.GET("/keys", handlers.GetAllVPNKeys)
+        adminVPN.GET("/stats", handlers.AdminVPNHandler)
+    }
+
+    // Публичные маршруты
     public := r.Group("/")
     {
         public.GET("/", handlers.HomeHandler)
@@ -157,7 +484,9 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         public.GET("/partner", handlers.PartnerHandler)
     }
 
-    // ========== СТРАНИЦЫ АВТОРИЗАЦИИ ==========
+    r.POST("/api/service-order", serviceOrderHandler)
+
+    // Страницы авторизации
     authPages := r.Group("/")
     {
         authPages.GET("/login", handlers.LoginPageHandler)
@@ -165,7 +494,7 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         authPages.GET("/forgot-password", handlers.ForgotPasswordHandler)
     }
 
-    // ========== API АВТОРИЗАЦИИ С ЗАЩИТОЙ ==========
+    // API авторизации
     authAPI := r.Group("/api/auth")
     authAPI.Use(func(c *gin.Context) {
         ip := c.ClientIP()
@@ -188,7 +517,7 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         authAPI.GET("/trusted-devices/list", handlers.GetTrustedDevices)
     }
 
-    // ========== ПАРТНЁРСКАЯ ПРОГРАММА ==========
+    // Реферальная программа
     referralAPI := r.Group("/api/referral")
     referralAPI.Use(middleware.AuthMiddleware(cfg))
     {
@@ -199,7 +528,7 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
     }
     r.GET("/ref", handlers.ProcessReferral)
 
-    // ========== ВЕРИФИКАЦИЯ ==========
+    // Верификация
     verificationAPI := r.Group("/api/verification")
     {
         verificationAPI.POST("/send-email", handlers.SendVerificationEmail)
@@ -208,22 +537,19 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         verificationAPI.GET("/status", handlers.CheckVerificationStatus)
     }
 
-    // ========== ЗАЩИЩЕННЫЕ СТРАНИЦЫ ==========
+    // Защищенные маршруты
     protected := r.Group("/")
     protected.Use(middleware.AuthMiddleware(cfg))
     {
         protected.GET("/settings", handlers.SettingsHandler)
         protected.GET("/my-subscriptions", handlers.MySubscriptionsPageHandler)
-        protected.GET("/security-hub", handlers.SecurityHubHandler)
-        protected.GET("/security-panel", handlers.SecurityPanelHandler)
         protected.GET("/trusted-devices", handlers.TrustedDevicesHandler)
-        protected.GET("/integrations", handlers.IntegrationsHandler)
         protected.GET("/monetization", handlers.MonetizationHandler)
         protected.GET("/profile", handlers.ProfilePageHandler)
         protected.GET("/calendar", handlers.CalendarHandler)
     }
 
-    // ========== АДМИН СТРАНИЦЫ ==========
+    // Админские маршруты
     admin := r.Group("/")
     admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
@@ -235,12 +561,19 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         admin.GET("/database-admin", handlers.DatabaseAdminHandler)
         admin.GET("/users", handlers.UsersHandler)
         admin.GET("/subscriptions", handlers.SubscriptionsHandler)
-        admin.GET("/analytics", handlers.AnalyticsHandler)
         admin.GET("/crm", handlers.CRMHandler)
         admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
+
+
+admin2FA := r.Group("/api/admin/2fa")
+admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    admin2FA.POST("/enable", handlers.EnableAdmin2FA)
+    admin2FA.POST("/verify", handlers.VerifyAdmin2FA)
+}
     }
 
-    // ========== ДАШБОРДЫ ==========
+    // Дашборды
     dashboards := r.Group("/")
     dashboards.Use(middleware.AuthMiddleware(cfg))
     {
@@ -252,7 +585,7 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler)
     }
 
-    // ========== ПЛАТЕЖИ ==========
+    // Платежи
     payments := r.Group("/")
     payments.Use(middleware.AuthMiddleware(cfg))
     {
@@ -263,20 +596,35 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         payments.GET("/rub-payment", handlers.RUBPaymentHandler)
     }
 
-    // ========== ЛОГИСТИКА ==========
-    logistics := r.Group("/")
-    logistics.Use(middleware.AuthMiddleware(cfg))
+      // ========== ЛОГИСТИКА ==========
+    // Страницы логистики (публичные или с авторизацией)
+    logisticsGroup := r.Group("/logistics")
+    logisticsGroup.Use(middleware.AuthMiddleware(cfg))
     {
-        logistics.GET("/logistics", handlers.LogisticsHandler)
-        logistics.GET("/track", handlers.TrackHandler)
+        logisticsGroup.GET("/", handlers.LogisticsDashboardHandler)
+        logisticsGroup.GET("/orders", handlers.LogisticsOrdersHandler)
+        logisticsGroup.GET("/track", handlers.TrackHandler)
     }
+    
+    // API логистики
+    logisticsAPI := r.Group("/api/logistics")
+    logisticsAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        logisticsAPI.POST("/orders", handlers.APICreateOrder)
+        logisticsAPI.GET("/orders", handlers.APIGetOrders)
+        logisticsAPI.PUT("/orders/:id/status", handlers.APIUpdateOrderStatus)
+        logisticsAPI.GET("/stats", handlers.APIGetStats)
+        logisticsAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
+    }
+    
+    // Доставка (оставляем для обратной совместимости)
     deliveryAPI := r.Group("/api/delivery")
     deliveryAPI.Use(middleware.AuthMiddleware(cfg))
     {
         deliveryAPI.GET("/track/:trackingNumber", handlers.TrackAPIHandler)
     }
 
-    // ========== API (JSON) С ЗАЩИТОЙ ==========
+    // Основное API
     api := r.Group("/api")
     api.Use(func(c *gin.Context) {
         ip := c.ClientIP()
@@ -321,11 +669,12 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
         api.POST("/2fa/verify", handlers.VerifyTwoFACode)
         api.POST("/2fa/disable", handlers.DisableTwoFA)
-        api.GET("/2fa/settings", handlers.Get2FASettings)
-        api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
-        api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
-        api.POST("/2fa/trust-device", handlers.TrustDevice)
-        api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+api.GET("/2fa/backup-codes", handlers.GetBackupCodes)
+api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
+api.GET("/2fa/settings", handlers.Get2FASettings)
+api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+api.POST("/2fa/trust-device", handlers.TrustDevice)
+api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/crm/customers", handlers.GetCustomers)
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
@@ -351,25 +700,40 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         api.GET("/crm/deals/export/csv", handlers.ExportDealsCSV)
         api.GET("/crm/deals/export/excel", handlers.ExportDealsExcel)
         api.GET("/crm/history/:type/:id", handlers.GetEntityHistory)
-        // ДОБАВЛЕНО: маршруты для тегов
         api.GET("/crm/tags", handlers.GetTags)
         api.POST("/crm/tags", handlers.CreateTag)
         api.DELETE("/crm/tags/:id", handlers.DeleteTag)
-        // ДОБАВЛЕНО: маршруты для активностей
         api.POST("/crm/activities", handlers.AddActivity)
         api.GET("/crm/activities/:type/:id", handlers.GetActivities)
         api.POST("/crm/ai/ask", handlers.AIAskHandler)
 
-        // Настройки уведомлений
+        api.POST("/transcription/upload", handlers.UploadAudio)
+        api.GET("/transcriptions", handlers.GetTranscriptions)
+        api.GET("/transcription/:id", handlers.GetTranscriptionByID)
+
         api.GET("/notifications/settings", handlers.GetNotificationSettings)
         api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
         api.GET("/crm/forecast", handlers.GetSalesForecast)
         api.GET("/crm/conversion", handlers.GetStageConversion)
         api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
+        api.POST("/ai/consultant", handlers.AIConsultantHandler)
+
+        api.GET("/ai/agents", handlers.GetAgents)
+        api.POST("/ai/agents", handlers.CreateAgent)
+        api.PUT("/ai/agents/:id", handlers.UpdateAgent)
+        api.DELETE("/ai/agents/:id", handlers.DeleteAgent)
+        api.POST("/ai/agents/:id/actions", handlers.AddAgentAction)
+        api.GET("/ai/agents/logs", handlers.GetAgentLogs)
+        api.GET("/ai/agents/stats", handlers.GetAgentStats)
+
+        api.GET("/analytics/ltv", handlers.GetLTVPredictions)
+        api.GET("/analytics/ltv/:id", handlers.GetCustomerLTV)
+        api.GET("/analytics/insights", handlers.GetInsights)
+        api.GET("/analytics/segments", handlers.GetSegmentSummary)
+        api.GET("/analytics/cohorts/run", handlers.RunCohortAnalysis)
     }
 
-    // ========== ЗАЩИЩЕННЫЕ API ==========
     secureAPI := r.Group("/api")
     secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
@@ -391,30 +755,65 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
         // Зарезервировано
     }
 
-    adminAPI := r.Group("/api/admin")
-    adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
-    {
-        adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
-        adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
-        adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
-        adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
-        adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
-        adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
-        adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
-        adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
-        adminAPI.GET("/stats", handlers.AdminStatsHandler)
-        adminAPI.GET("/users", handlers.AdminUsersHandler)
-        adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
-        adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
-        adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
-        adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
-        adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
-        adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
-        adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
-        adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
-    }
+  adminAPI := r.Group("/api/admin")
+adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
+    adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
+    adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
+    adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
+    adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
+    adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
+    adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
+    adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
+    adminAPI.GET("/stats", handlers.AdminStatsHandler)
+    adminAPI.GET("/users", handlers.AdminUsersHandler)
+    adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
+    adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
+    adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
+    adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
+    adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
+    adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
+    adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
+    adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
+    
+    // ДОБАВЬ ЭТИ СТРОКИ:
+    adminAPI.GET("/tenants", handlers.GetTenants)
+    adminAPI.POST("/tenants", handlers.CreateTenant)
+    adminAPI.PUT("/tenants/:id", handlers.UpdateTenant)
+    adminAPI.DELETE("/tenants/:id", handlers.DeleteTenant)
+    adminAPI.POST("/tenants/:id/switch", handlers.SwitchTenant)
+}
 
-    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+// Админская страница для управления компаниями (отдельно)
+adminTenants := r.Group("/admin/tenants")
+adminTenants.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+{
+    adminTenants.GET("/", handlers.TenantAdminPage)
+}
+   // API Documentation with back button
+r.GET("/api-docs", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "api_with_back.html", gin.H{
+        "title": "API Documentation - TeamSphere",
+    })
+})
+
+// Original Swagger (без кнопки)
+r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+// Обработка запросов Chrome DevTools
+r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) {
+    c.JSON(http.StatusOK, gin.H{
+        "app-specific": true,
+    })
+})
+
+r.NoRoute(func(c *gin.Context) {
+    c.HTML(http.StatusNotFound, "404.html", gin.H{
+        "Title":   "Страница не найдена - SaaSPro",
+        "Version": "3.0",
+    })
+})
 
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
@@ -425,9 +824,7 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
 
     port := ":" + cfg.Port
     baseURL := "http://localhost:" + cfg.Port
-    fmt.Printf("\n============================================================\n")
-    fmt.Printf("   🚀 SaaSPro - ПОЛНАЯ ВЕРСИЯ 3.0 (УНИФИЦИРОВАННАЯ)\n")
-    fmt.Printf("============================================================\n\n")
+    fmt.Printf("   🔒 Безопасность     %s/security-center\n", baseURL)
     fmt.Printf("📍 ВСЕ ИНТЕРФЕЙСЫ ДОСТУПНЫ ПО ССЫЛКАМ:\n\n")
     fmt.Printf("   🔹 Главная           %s/\n", baseURL)
     fmt.Printf("   🔹 Дашборд          %s/dashboard-improved\n", baseURL)
@@ -448,9 +845,6 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
     fmt.Printf("   ⚙️  Подписки        %s/subscriptions\n", baseURL)
     fmt.Printf("   ⚙️  Мои подписки    %s/my-subscriptions\n", baseURL)
     fmt.Printf("   👤 Профиль          %s/profile\n\n", baseURL)
-    fmt.Printf("   🔒 Безопасность     %s/security\n", baseURL)
-    fmt.Printf("   🔒 Центр безопасн.  %s/security-hub\n", baseURL)
-    fmt.Printf("   🔒 Панель безопасн. %s/security-panel\n\n", baseURL)
     fmt.Printf("   💳 Оплата картой    %s/bank_card_payment\n", baseURL)
     fmt.Printf("   💳 USDT             %s/usdt-payment\n", baseURL)
     fmt.Printf("   💳 RUB              %s/rub-payment\n", baseURL)
@@ -474,5 +868,60 @@ r.GET("/static/fullcalendar/ru.js", func(c *gin.Context) {
     fmt.Printf("============================================================\n")
 
     log.Printf("🚀 Сервер запущен на порту %s", port)
-    r.Run(port)
+    
+   // Запуск планировщиков
+handlers.StartSyncScheduler()
+handlers.StartBitrixSyncScheduler()
+handlers.StartTeamSphereScheduler() // Планировщик TeamSphere
+
+// Favicon обработка
+r.GET("/favicon.ico", func(c *gin.Context) {
+    c.File("./static/favicon.ico")
+})  
+  r.GET("/team/team", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "team_page.html", gin.H{
+        "title": "Команда | TeamSphere",
+    })
+})
+
+  // Tasks page
+    r.GET("/tasks", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "tasks.html", gin.H{
+            "title": "Задачи - TeamSphere",
+        })
+    })
+    
+// Chat page
+r.GET("/chat", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "chat.html", gin.H{
+        "title": "Чат - TeamSphere",
+    })
+})
+     // TeamSphere Calendar page
+r.GET("/team-calendar", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "calendar.html", gin.H{
+        "title": "Календарь - TeamSphere",
+    })
+})
+    
+
+
+r.GET("/security-center", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "security_universal.html", gin.H{
+        "title": "Security Center | SaaSPro",
+    })
+})
+
+ // Универсальная аналитика - новый путь
+r.GET("/analytics-center", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
+        "title": "Analytics Center | SaaSPro",
+    })
+})
+   r.Run(port)
+}
+
+
+
+
 }
