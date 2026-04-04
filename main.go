@@ -162,6 +162,7 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
 
     // ========== ЗАГРУЗКА ШАБЛОНОВ ==========
+        // Загружаем шаблоны из файловой системы
     tmpl, err := template.New("").Funcs(template.FuncMap{
         "jsonParse": func(s json.RawMessage) []interface{} {
             var arr []interface{}
@@ -213,8 +214,16 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
         }
     }
 
+    // Добавляем MARKETPLACE шаблоны
+    marketplaceTmpl, err := template.ParseGlob("templates/marketplace/*.html")
+    if err == nil && marketplaceTmpl != nil {
+        for _, t := range marketplaceTmpl.Templates() {
+            tmpl.AddParseTree(t.Name(), t.Tree)
+        }
+    }
+
     r.SetHTMLTemplate(tmpl)
-    log.Println("✅ Шаблоны загружены")
+    log.Println("✅ Шаблоны загружены из файловой системы")
 
 
 
@@ -472,6 +481,18 @@ archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
     archiveGroup.GET("/api/export", handlers.ExportArchiveToExcel)
 
 archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
+}
+
+// ========== МАРКЕТПЛЕЙС ==========
+marketplace := r.Group("/marketplace")
+marketplace.Use(middleware.AuthMiddleware(cfg))
+{
+    marketplace.GET("/", handlers.MarketplacePageHandler)
+    marketplace.GET("/api/apps", handlers.GetMarketplaceApps)
+    marketplace.GET("/api/apps/:slug", handlers.GetMarketplaceApp)
+    marketplace.POST("/api/purchase", handlers.PurchaseApp)
+    marketplace.POST("/api/review", handlers.AddReview)
+    marketplace.GET("/api/my-purchases", handlers.GetMyPurchases)
 }
 // API для архивации из CRM
 crmArchive := r.Group("/api/crm")
@@ -962,6 +983,9 @@ r.GET("/analytics-center", func(c *gin.Context) {
 
 
 }
+
+
+
 
 
 
