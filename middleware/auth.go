@@ -16,10 +16,17 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
         path := c.Request.URL.Path
         method := c.Request.Method
 
+        // Пропускаем маршруты архива (публичный доступ)
+        if strings.HasPrefix(path, "/archive/") {
+            if cfg.SkipAuth {
+                log.Printf("[AUTH] Архив: публичный доступ %s %s", method, path)
+            }
+            c.Next()
+            return
+        }
+
         // ========== ПУБЛИЧНЫЕ МАРШРУТЫ ==========
-        // Эти маршруты доступны без авторизации всегда
         publicRoutes := map[string]bool{
-            // Публичные страницы
             "/":                        true,
             "/about":                   true,
             "/contact":                 true,
@@ -29,8 +36,6 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             "/login":                   true,
             "/register":                true,
             "/forgot-password":         true,
-            
-            // Публичные API
             "/api/health":              true,
             "/api/crm/health":          true,
             "/api/test":                true,
@@ -38,45 +43,34 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             "/api/auth/register":       true,
             "/api/auth/refresh":        true,
             "/api/auth/logout":         true,
-            
-            // AI ассистент (должен работать без авторизации)
             "/api/crm/ai/ask":          true,
             "/api/ai/ask":              true,
         }
 
-        // Проверяем публичные маршруты
         if publicRoutes[path] {
-            if cfg.SkipAuth {
-                log.Printf("[AUTH] Публичный маршрут %s %s (режим разработки)", method, path)
-            }
             c.Next()
             return
         }
 
         // ========== РЕЖИМ РАЗРАБОТКИ ==========
         if cfg.SkipAuth {
-            // В режиме разработки используем тестового администратора
             userID := "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
             c.Set("userID", userID)
             c.Set("role", "admin")
-            
+            c.Set("tenant_id", "11111111-1111-1111-1111-111111111111")
             log.Printf("[AUTH] 🟢 Режим разработки: %s %s, user=%s", method, path, userID)
             c.Next()
             return
         }
 
         // ========== ПРОДАКШЕН РЕЖИМ ==========
-        // Проверка заголовка для пропуска авторизации (только для тестирования)
         if c.GetHeader("X-Skip-Auth") == "true" {
-            log.Printf("[AUTH] ⚠️ Внимание: X-Skip-Auth использован для %s %s", method, path)
             c.Next()
             return
         }
 
-        // Стандартная JWT авторизация
         authHeader := c.GetHeader("Authorization")
         if authHeader == "" {
-            log.Printf("[AUTH] 🔴 Ошибка: нет Authorization header для %s %s", method, path)
             c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
                 "error": "authorization header required",
                 "code":  "UNAUTHORIZED",
@@ -85,8 +79,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
         }
 
         parts := strings.SplitN(authHeader, " ", 2)
-        if !(len(parts) == 2 && strings.ToLower(parts[0]) == "bearer") {
-            log.Printf("[AUTH] 🔴 Ошибка: неверный формат Authorization header для %s %s", method, path)
+        if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
             c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
                 "error": "invalid authorization header format. Use 'Bearer <token>'",
                 "code":  "INVALID_AUTH_FORMAT",
@@ -97,7 +90,6 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
         tokenString := parts[1]
         claims, err := utils.ValidateToken(tokenString)
         if err != nil {
-            log.Printf("[AUTH] 🔴 Ошибка: невалидный токен для %s %s: %v", method, path, err)
             c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
                 "error": "invalid or expired access token",
                 "code":  "INVALID_TOKEN",
@@ -105,12 +97,10 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             return
         }
 
-        // Успешная авторизация
         c.Set("userID", claims.UserID)
         c.Set("role", claims.Role)
-        log.Printf("[AUTH] 🟢 Успешная авторизация: %s %s, user=%s, role=%s", 
-            method, path, claims.UserID, claims.Role)
-        
+        c.Set("tenant_id", claims.TenantID)
+        log.Printf("[AUTH] 🟢 Успешная авторизация: %s %s, user=%s, role=%s", method, path, claims.UserID, claims.Role)
         c.Next()
     }
 }
@@ -121,7 +111,6 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
         path := c.Request.URL.Path
         method := c.Request.Method
 
-        // В режиме разработки пропускаем всех
         if cfg.SkipAuth {
             log.Printf("[ADMIN] 🟢 Режим разработки: доступ разрешен для %s %s", method, path)
             c.Next()
@@ -130,7 +119,6 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
 
         role, exists := c.Get("role")
         if !exists {
-            log.Printf("[ADMIN] 🔴 Ошибка: роль не найдена для %s %s", method, path)
             c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
                 "error": "unauthorized - role not found",
                 "code":  "ROLE_NOT_FOUND",
@@ -139,7 +127,6 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
         }
 
         if role != "admin" {
-            log.Printf("[ADMIN] 🔴 Ошибка: доступ запрещен для роли %v на %s %s", role, method, path)
             c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
                 "error": "admin access required",
                 "code":  "ADMIN_REQUIRED",

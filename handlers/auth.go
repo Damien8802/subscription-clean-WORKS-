@@ -167,7 +167,7 @@ func LoginHandler(c *gin.Context) {
         refreshExpiry = 24 * time.Hour
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID.String(), user.Role, accessExpiry, refreshExpiry)
+    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID.String(), user.Email, user.Role, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return

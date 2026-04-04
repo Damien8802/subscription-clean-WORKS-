@@ -11,23 +11,27 @@ import (
 var cfg = config.Load()
 
 type Claims struct {
-    UserID string `json:"user_id"`
-    Role   string `json:"role"`
+    UserID   string `json:"user_id"`
+    Email    string `json:"email"`
+    Role     string `json:"role"`
+    TenantID string `json:"tenant_id"`
     jwt.RegisteredClaims
 }
 
 // GenerateTokens создаёт access и refresh токены (стандартные сроки)
 func GenerateTokens(userID, role string) (string, string, error) {
-    return GenerateTokensWithExpiry(userID, role, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+    return GenerateTokensWithExpiry(userID, "", role, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
 }
 
 // GenerateTokensWithExpiry создаёт токены с указанными сроками
-func GenerateTokensWithExpiry(userID, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
+func GenerateTokensWithExpiry(userID, email, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
     // Access token
     accessClaims := Claims{
-        userID,
-        role,
-        jwt.RegisteredClaims{
+        UserID: userID,
+        Email:  email,
+        Role:   role,
+        TenantID: "11111111-1111-1111-1111-111111111111",
+        RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
         },
@@ -40,9 +44,11 @@ func GenerateTokensWithExpiry(userID, role string, accessExpiry, refreshExpiry t
 
     // Refresh token
     refreshClaims := Claims{
-        userID,
-        role,
-        jwt.RegisteredClaims{
+        UserID: userID,
+        Email:  email,
+        Role:   role,
+        TenantID: "11111111-1111-1111-1111-111111111111",
+        RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
         },
@@ -83,19 +89,20 @@ func RefreshToken(refreshToken string) (string, error) {
         return "", errors.New("invalid refresh token")
     }
 
-    // Получаем user_id из claims
     claims, ok := token.Claims.(jwt.MapClaims)
     if !ok {
         return "", errors.New("invalid claims")
     }
 
     userID, _ := claims["user_id"].(string)
+    email, _ := claims["email"].(string)
     role, _ := claims["role"].(string)
 
-    // Создаём новый access token
     accessClaims := Claims{
         UserID: userID,
+        Email:  email,
         Role:   role,
+        TenantID: "11111111-1111-1111-1111-111111111111",
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
             IssuedAt:  jwt.NewNumericDate(time.Now()),

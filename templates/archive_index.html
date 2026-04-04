@@ -10,296 +10,153 @@
     <style>
         * { font-family: 'Inter', sans-serif; }
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        
-        /* Стеклянные карточки */
-        .glass-card { 
-            background: rgba(255,255,255,0.95); 
-            backdrop-filter: blur(10px); 
-            border-radius: 24px; 
-            border: 1px solid rgba(255,255,255,0.3); 
-            transition: all 0.3s; 
-        }
-        .glass-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); 
-        }
-        
-        /* Текст с градиентом */
-        .gradient-text { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-        }
-        
-        /* Овальная кнопка */
-        .back-button-oval { 
-            position: fixed; 
-            bottom: 30px; 
-            right: 30px; 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            color: white; 
-            padding: 14px 28px; 
-            border-radius: 60px; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            font-size: 16px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            z-index: 1000; 
-            border: none; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
-            transition: all 0.3s; 
-        }
-        .back-button-oval:hover { 
-            transform: scale(1.05); 
-            background: linear-gradient(135deg, #764ba2, #667eea); 
-        }
-        
-        /* Карточка статистики */
-        .stat-card { 
-            background: white; 
-            border-radius: 20px; 
-            padding: 20px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
-            transition: all 0.3s; 
-        }
-        .stat-number { 
-            font-size: 2rem; 
-            font-weight: 700; 
-            color: #667eea; 
-        }
-        
-        /* Кнопка градиент */
-        .btn-gradient { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            color: white; 
-            padding: 10px 24px; 
-            border-radius: 12px; 
-            border: none; 
-            cursor: pointer; 
-            transition: all 0.3s; 
-        }
-        .btn-gradient:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 4px 12px rgba(102,126,234,0.4); 
-        }
-        
-        /* Карточка архивной записи - БЕЛАЯ на синем фоне */
-        .archive-card { 
-            background: white; 
-            border-radius: 20px; 
-            padding: 20px; 
-            margin-bottom: 16px; 
-            transition: all 0.3s; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            border-left: 5px solid #667eea;
-        }
-        .archive-card:hover { 
-            transform: translateX(4px); 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
-        }
-        
-        /* Бейджи */
-        .entity-badge { 
-            display: inline-block; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-size: 12px; 
-            font-weight: 600; 
-        }
+        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
+        .gradient-text { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .back-button-oval { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 28px; border-radius: 60px; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 1000; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.3s; }
+        .back-button-oval:hover { transform: scale(1.05); background: linear-gradient(135deg, #764ba2, #667eea); }
+        .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .archive-card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 16px; transition: all 0.3s; border-left: 4px solid #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .archive-card:hover { transform: translateX(4px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .entity-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .entity-customer { background: #dbeafe; color: #1e40af; }
         .entity-deal { background: #dcfce7; color: #166534; }
         .entity-entry { background: #fef3c7; color: #92400e; }
-        
-        /* Кнопка восстановления */
-        .restore-btn { 
-            background: none; 
-            border: 1px solid #10b981; 
-            color: #10b981; 
-            padding: 6px 16px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            transition: all 0.2s; 
-        }
-        .restore-btn:hover { 
-            background: #10b981; 
-            color: white; 
-        }
-        
-        /* Прогресс бар */
-        .usage-bar-container { 
-            background: rgba(102,126,234,0.2); 
-            border-radius: 20px; 
-            height: 12px; 
-            overflow: hidden; 
-        }
-        .usage-bar { 
-            background: linear-gradient(90deg, #667eea, #764ba2); 
-            border-radius: 20px; 
-            height: 100%; 
-            transition: width 0.5s; 
-        }
-        
-        /* Вкладки */
-        .tabs { 
-            display: flex; 
-            gap: 8px; 
-            margin-bottom: 24px; 
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 4px;
-            backdrop-filter: blur(5px);
-        }
-        .tab-btn { 
-            padding: 10px 24px; 
-            background: transparent; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 15px; 
-            font-weight: 500; 
-            color: white; 
-            border-radius: 12px;
-            transition: all 0.2s; 
-        }
-        .tab-btn.active { 
-            background: white; 
-            color: #667eea; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        /* Пагинация */
-        .pagination { 
-            display: flex; 
-            justify-content: center; 
-            gap: 8px; 
-            margin-top: 32px; 
-        }
-        .page-btn { 
-            padding: 8px 12px; 
-            border: none; 
-            background: white; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            transition: all 0.2s; 
-            color: #4a5568;
-            font-weight: 500;
-        }
-        .page-btn.active { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            color: white; 
-        }
-        .page-btn:hover:not(.active) { 
-            background: #e2e8f0; 
-        }
-        
-        /* Карточка апгрейда */
-        .upgrade-card { 
-            background: linear-gradient(135deg, #f59e0b, #f97316); 
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-top: 20px; 
-            color: white; 
-        }
-        
-        /* Модальное окно */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            bottom: 0; 
-            background: rgba(0,0,0,0.5); 
-            align-items: center; 
-            justify-content: center; 
-            z-index: 1001; 
-        }
-        .modal-content { 
-            background: white; 
-            border-radius: 24px; 
-            max-width: 600px; 
-            width: 90%; 
-            padding: 32px; 
-        }
-        
-        /* План тарифов */
-        .plan-card { 
-            background: white; 
-            border-radius: 16px; 
-            padding: 20px; 
-            text-align: center; 
-            border: 1px solid #e2e8f0; 
-            transition: all 0.2s; 
-            cursor: pointer; 
-        }
-        .plan-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1); 
-            border-color: #667eea; 
-        }
-        .plan-card.popular { 
-            border: 2px solid #f59e0b; 
-            position: relative; 
-        }
-        .popular-badge { 
-            position: absolute; 
-            top: -12px; 
-            right: 20px; 
-            background: #f59e0b; 
-            color: white; 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-size: 12px; 
-            font-weight: 600; 
-        }
-        
-        /* Заголовки на синем фоне */
-        h1, p { color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .text-gray-600 { color: rgba(255,255,255,0.9) !important; }
-        .gradient-text { background: white; -webkit-background-clip: text; -webkit-text-fill-color: white; }
+        .restore-btn { background: none; border: 1px solid #10b981; color: #10b981; padding: 6px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .restore-btn:hover { background: #10b981; color: white; }
+        .usage-bar-container { background: rgba(102,126,234,0.2); border-radius: 20px; height: 12px; overflow: hidden; }
+        .usage-bar { background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 20px; height: 100%; transition: width 0.5s; }
+        .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; background: rgba(255,255,255,0.1); border-radius: 16px; padding: 8px; }
+        .tab-btn { padding: 10px 20px; background: transparent; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: white; border-radius: 12px; transition: all 0.2s; }
+        .tab-btn.active { background: white; color: #667eea; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 32px; }
+        .page-btn { padding: 8px 12px; border: none; background: white; border-radius: 10px; cursor: pointer; transition: all 0.2s; color: #4a5568; font-weight: 500; }
+        .page-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .upgrade-card { background: linear-gradient(135deg, #f59e0b, #f97316); border-radius: 16px; padding: 20px; margin-top: 20px; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1001; }
+        .modal-content { background: white; border-radius: 24px; max-width: 600px; width: 90%; padding: 32px; }
+        .plan-card { background: white; border-radius: 16px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; transition: all 0.2s; cursor: pointer; }
+        .plan-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); border-color: #667eea; }
+        .plan-card.popular { border: 2px solid #f59e0b; position: relative; }
+        .popular-badge { position: absolute; top: -12px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #667eea; }
+        .warning { background: #fef3c7; color: #92400e; }
+        .danger { background: #fee2e2; color: #dc2626; }
     </style>
 </head>
 <body>
-
 <div class="container mx-auto px-6 py-8 max-w-7xl">
     <!-- Шапка -->
     <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-4xl font-bold mb-2" style="color: white;">🗄️ Архив</h1>
-            <p style="color: rgba(255,255,255,0.9);">Старые данные хранятся здесь. Вы можете восстановить их в любой момент.</p>
+            <h1 class="text-4xl font-bold mb-2" style="color: white;">🗄️ Архив SaaSPro</h1>
+            <p style="color: rgba(255,255,255,0.9);">Все архивные данные вашей компании в одном месте</p>
         </div>
-        <div class="flex gap-3">
-            <button onclick="location.href='/dashboard-improved'" class="btn-gradient flex items-center gap-2">
-                <i class="fas fa-chart-line"></i> Главный дашборд
-            </button>
+        <button onclick="location.href='/dashboard-improved'" class="btn-gradient flex items-center gap-2">
+            <i class="fas fa-chart-line"></i> Главный дашборд
+        </button>
+    </div>
+
+    <!-- Статистика использования -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card">
+            <i class="fas fa-database text-2xl text-[#667eea] mb-2"></i>
+            <div class="stat-number" id="totalItems">0</div>
+            <div class="text-sm text-gray-500">Всего записей</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-chart-pie text-2xl text-[#667eea] mb-2"></i>
+            <div class="stat-number" id="usedPercent">0%</div>
+            <div class="text-sm text-gray-500">Места занято</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-cloud-upload-alt text-2xl text-[#667eea] mb-2"></i>
+            <div class="stat-number" id="usedSpace">0 GB</div>
+            <div class="text-sm text-gray-500">Использовано</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-cloud-download-alt text-2xl text-[#667eea] mb-2"></i>
+            <div class="stat-number" id="freeSpace">0 GB</div>
+            <div class="text-sm text-gray-500">Свободно</div>
         </div>
     </div>
 
-    <!-- Статистика хранилища -->
-    <div class="glass-card p-6 mb-8" id="statsContainer">
-        <div class="flex flex-wrap justify-between items-center">
-            <div>
-                <h3 class="text-xl font-semibold mb-2" style="color: #1a2a3a;">📦 Хранилище архива</h3>
-                <p class="text-gray-600" id="usageText" style="color: #4a5568;">Загрузка...</p>
+    <!-- Детализация по типам -->
+    <div class="glass-card p-6 mb-8">
+        <h3 class="text-xl font-semibold mb-4">📊 Детализация хранилища</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-3 rounded-xl bg-blue-50">
+                <i class="fas fa-users text-2xl text-blue-500 mb-2"></i>
+                <div class="font-bold text-lg" id="customersCount">0</div>
+                <div class="text-sm text-gray-500">Клиенты в архиве</div>
+                <div class="text-xs text-gray-400" id="customersSize">0 MB</div>
             </div>
-            <div class="text-right">
-                <div class="text-3xl font-bold gradient-text" id="usedPercent" style="color: #667eea;">0%</div>
-                <div class="text-sm" style="color: #4a5568;">использовано</div>
+            <div class="text-center p-3 rounded-xl bg-green-50">
+                <i class="fas fa-handshake text-2xl text-green-500 mb-2"></i>
+                <div class="font-bold text-lg" id="dealsCount">0</div>
+                <div class="text-sm text-gray-500">Сделки в архиве</div>
+                <div class="text-xs text-gray-400" id="dealsSize">0 MB</div>
+            </div>
+            <div class="text-center p-3 rounded-xl bg-yellow-50">
+                <i class="fas fa-receipt text-2xl text-yellow-500 mb-2"></i>
+                <div class="font-bold text-lg" id="entriesCount">0</div>
+                <div class="text-sm text-gray-500">Проводки в архиве</div>
+                <div class="text-xs text-gray-400" id="entriesSize">0 MB</div>
             </div>
         </div>
-        <div class="usage-bar-container mt-4">
-            <div class="usage-bar" id="usageBar" style="width: 0%"></div>
+        <div class="mt-4 pt-4 border-t">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-semibold">Использование хранилища</span>
+                <span class="text-sm" id="usageText">0 GB / 0 GB</span>
+            </div>
+            <div class="usage-bar-container">
+                <div class="usage-bar" id="totalUsageBar" style="width: 0%"></div>
+            </div>
+            <div class="text-right text-xs text-gray-500 mt-1" id="freeMemoryText">Свободно: 0 GB</div>
         </div>
-        <div class="upgrade-card mt-4" id="upgradeCard" style="display: none;">
-            <div class="flex justify-between items-center flex-wrap gap-4">
-                <div>
-                    <div class="font-semibold">⚠️ Место заканчивается!</div>
-                    <div class="text-sm opacity-90">Расширьте архив до 10 ГБ всего за 490 ₽/мес</div>
-                </div>
-                <button onclick="openUpgradeModal()" class="btn-gradient bg-white text-[#f59e0b] hover:bg-gray-100">Расширить →</button>
+    </div>
+
+    <!-- Тарифы -->
+    <div class="glass-card p-6 mb-8">
+        <h3 class="text-xl font-semibold mb-4">💰 Тарифы хранилища</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="plan-card" onclick="selectPlan('free')">
+                <h3 class="text-lg font-semibold">📦 Бесплатный</h3>
+                <div class="text-3xl font-bold gradient-text my-3">0 ₽</div>
+                <div class="text-sm text-gray-500">1 ГБ хранилища</div>
+                <div class="mt-2 text-sm">✅ Базовая архивация</div>
+                <div class="text-sm">✅ Восстановление</div>
+                <div class="text-sm text-gray-400">❌ Расширенный экспорт</div>
+            </div>
+            <div class="plan-card popular" onclick="selectPlan('10gb')">
+                <div class="popular-badge">🔥 Популярный</div>
+                <h3 class="text-lg font-semibold">🚀 Старт</h3>
+                <div class="text-3xl font-bold gradient-text my-3">490 ₽</div>
+                <div class="text-sm text-gray-500">10 ГБ хранилища</div>
+                <div class="mt-2 text-sm">✅ Всё из бесплатного</div>
+                <div class="text-sm">✅ Расширенный экспорт</div>
+                <div class="text-sm">✅ Приоритетная поддержка</div>
+            </div>
+            <div class="plan-card" onclick="selectPlan('50gb')">
+                <h3 class="text-lg font-semibold">💼 Бизнес</h3>
+                <div class="text-3xl font-bold gradient-text my-3">1 490 ₽</div>
+                <div class="text-sm text-gray-500">50 ГБ хранилища</div>
+                <div class="mt-2 text-sm">✅ Всё из тарифа Старт</div>
+                <div class="text-sm">✅ API доступ</div>
+                <div class="text-sm">✅ 24/7 поддержка</div>
+            </div>
+            <div class="plan-card" onclick="selectPlan('100gb')">
+                <h3 class="text-lg font-semibold">👑 Корпоративный</h3>
+                <div class="text-3xl font-bold gradient-text my-3">2 490 ₽</div>
+                <div class="text-sm text-gray-500">100 ГБ хранилища</div>
+                <div class="mt-2 text-sm">✅ Всё из тарифа Бизнес</div>
+                <div class="text-sm">✅ Неограниченный экспорт</div>
+                <div class="text-sm">✅ Интеграция с 1С</div>
             </div>
         </div>
+        <div class="mt-4 text-center text-sm text-gray-500" id="currentPlanInfo">Текущий тариф: Бесплатный</div>
     </div>
 
     <!-- Вкладки -->
@@ -308,55 +165,73 @@
         <button class="tab-btn" data-tab="customers">👥 Клиенты</button>
         <button class="tab-btn" data-tab="deals">💰 Сделки</button>
         <button class="tab-btn" data-tab="entries">📊 Проводки</button>
+        <button class="tab-btn" data-tab="trash">🗑️ Корзина</button>
+        <button class="tab-btn" data-tab="logs">📜 Логи</button>
+        <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
+    </div>
+
+    <!-- Поиск -->
+    <div class="flex justify-end mb-4">
+        <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchInput" placeholder="Поиск по названию..." class="pl-10 pr-4 py-2 border rounded-xl w-80 bg-white">
+        </div>
+        <button onclick="exportArchive()" class="btn-gradient ml-3">
+            <i class="fas fa-download mr-2"></i> Экспорт
+        </button>
     </div>
 
     <!-- Список архивных записей -->
     <div id="archiveList" class="space-y-4">
-        <div class="text-center py-12 text-white">
-            <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
-            <p>Загрузка архивных записей...</p>
+        <div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>
+    </div>
+
+    <div id="trashTab" class="tab-content hidden space-y-4">
+        <div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка корзины...</p></div>
+    </div>
+
+    <div id="logsTab" class="tab-content hidden space-y-4">
+        <div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка логов...</p></div>
+    </div>
+
+    <div id="settingsTab" class="tab-content hidden">
+        <div class="glass-card p-6">
+            <h3 class="text-xl font-semibold mb-4">🤖 Автоматическая архивация</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <div><div class="font-medium">Включить авто-архивацию</div><div class="text-sm text-gray-500">Автоматически архивировать неактивных клиентов</div></div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="autoArchiveEnabled" class="sr-only peer" onchange="toggleAutoArchive()">
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#667eea] peer-checked:to-[#764ba2]"></div>
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Период неактивности (дней)</label>
+                    <input type="number" id="inactiveDays" class="w-48 px-4 py-2 border rounded-xl bg-white" value="180" min="30" max="730">
+                </div>
+                <button onclick="runAutoArchive()" class="btn-gradient"><i class="fas fa-play mr-2"></i> Запустить архивацию сейчас</button>
+                <div id="autoArchiveResult" class="mt-3 text-sm"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Пагинация -->
     <div id="pagination" class="pagination"></div>
 </div>
 
-<!-- Овальная кнопка назад -->
 <button onclick="location.href='/dashboard-improved'" class="back-button-oval">
     <i class="fas fa-arrow-left"></i>
     <span>На главный дашборд</span>
 </button>
 
-<!-- Модальное окно апгрейда -->
 <div id="upgradeModal" class="modal">
     <div class="modal-content">
         <h2 class="text-2xl font-bold mb-4 gradient-text">🚀 Расширить архивное хранилище</h2>
-        <p class="text-gray-600 mb-6">Выберите подходящий тариф для вашего бизнеса</p>
-        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="plan-card" onclick="selectPlan('10gb')">
-                <h3 class="text-lg font-semibold">10 ГБ</h3>
-                <div class="text-3xl font-bold gradient-text my-3">490 ₽</div>
-                <div class="text-sm text-gray-500">в месяц</div>
-                <div class="mt-3 text-sm text-gray-600">✅ Для малого бизнеса</div>
-            </div>
-            <div class="plan-card popular" onclick="selectPlan('50gb')">
-                <div class="popular-badge">🔥 Популярный</div>
-                <h3 class="text-lg font-semibold">50 ГБ</h3>
-                <div class="text-3xl font-bold gradient-text my-3">1 490 ₽</div>
-                <div class="text-sm text-gray-500">в месяц</div>
-                <div class="mt-3 text-sm text-gray-600">✅ Для среднего бизнеса</div>
-            </div>
-            <div class="plan-card" onclick="selectPlan('100gb')">
-                <h3 class="text-lg font-semibold">100 ГБ</h3>
-                <div class="text-3xl font-bold gradient-text my-3">2 490 ₽</div>
-                <div class="text-sm text-gray-500">в месяц</div>
-                <div class="mt-3 text-sm text-gray-600">✅ Для крупного бизнеса</div>
-            </div>
+            <div class="plan-card" onclick="selectPlan('10gb')"><h3>10 ГБ</h3><div class="text-3xl font-bold gradient-text my-3">490 ₽</div><div class="text-sm text-gray-500">в месяц</div></div>
+            <div class="plan-card popular" onclick="selectPlan('50gb')"><div class="popular-badge">🔥 Популярный</div><h3>50 ГБ</h3><div class="text-3xl font-bold gradient-text my-3">1 490 ₽</div><div class="text-sm text-gray-500">в месяц</div></div>
+            <div class="plan-card" onclick="selectPlan('100gb')"><h3>100 ГБ</h3><div class="text-3xl font-bold gradient-text my-3">2 490 ₽</div><div class="text-sm text-gray-500">в месяц</div></div>
         </div>
-        
-        <button onclick="closeUpgradeModal()" class="w-full py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition">Отмена</button>
+        <button onclick="closeUpgradeModal()" class="w-full py-3 border border-gray-200 rounded-xl hover:bg-gray-50">Отмена</button>
     </div>
 </div>
 
@@ -368,21 +243,35 @@ async function loadStats() {
     try {
         const res = await fetch('/archive/api/stats');
         const data = await res.json();
-        
-        const usedGB = data.used_gb.toFixed(1);
-        const totalGB = data.total_gb.toFixed(1);
+        const usedGB = data.used_gb.toFixed(2);
+        const totalGB = data.total_gb.toFixed(0);
         const percent = data.used_percent;
         
-        document.getElementById('usageText').innerHTML = `📊 Использовано ${usedGB} ГБ из ${totalGB} ГБ`;
-        document.getElementById('usedPercent').innerText = `${percent}%`;
-        document.getElementById('usageBar').style.width = `${percent}%`;
+        document.getElementById('usedPercent').innerText = percent + '%';
+        document.getElementById('usedSpace').innerText = usedGB + ' GB';
+        document.getElementById('freeSpace').innerText = (totalGB - usedGB).toFixed(2) + ' GB';
+        document.getElementById('usageText').innerHTML = usedGB + ' GB / ' + totalGB + ' GB';
+        document.getElementById('totalUsageBar').style.width = percent + '%';
+        document.getElementById('freeMemoryText').innerHTML = 'Свободно: ' + (totalGB - usedGB).toFixed(2) + ' GB';
         
-        if (percent >= 85) {
-            document.getElementById('upgradeCard').style.display = 'block';
+        if (percent > 85) {
+            document.getElementById('totalUsageBar').style.background = 'linear-gradient(90deg, #f59e0b, #ef4444)';
         }
-    } catch(e) {
-        console.error(e);
-    }
+    } catch(e) { console.error(e); }
+}
+
+async function loadMemoryStats() {
+    try {
+        const res = await fetch('/archive/api/memory-stats');
+        const data = await res.json();
+        document.getElementById('customersCount').innerText = data.customers.count;
+        document.getElementById('customersSize').innerHTML = data.customers.mb.toFixed(2) + ' MB';
+        document.getElementById('dealsCount').innerText = data.deals.count;
+        document.getElementById('dealsSize').innerHTML = data.deals.mb.toFixed(2) + ' MB';
+        document.getElementById('entriesCount').innerText = data.entries.count;
+        document.getElementById('entriesSize').innerHTML = data.entries.mb.toFixed(2) + ' MB';
+        document.getElementById('totalItems').innerText = data.customers.count + data.deals.count + data.entries.count;
+    } catch(e) { console.error(e); }
 }
 
 async function loadArchiveItems() {
@@ -390,8 +279,9 @@ async function loadArchiveItems() {
     container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>';
     
     try {
-        let url = `/archive/api/items?page=${currentPage}&limit=10`;
-        if (currentTab !== 'all') {
+        const search = document.getElementById('searchInput')?.value || '';
+        let url = `/archive/api/items?page=${currentPage}&limit=20&search=${encodeURIComponent(search)}`;
+        if (currentTab !== 'all' && currentTab !== 'trash' && currentTab !== 'logs' && currentTab !== 'settings') {
             url += `&type=${currentTab}`;
         }
         
@@ -425,21 +315,214 @@ async function loadArchiveItems() {
             container.innerHTML = html;
             renderPagination(data.total, data.page);
         } else {
-            container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-archive text-4xl mb-3 opacity-50"></i><p class="text-lg">Архив пуст</p><p class="text-sm opacity-75">Перемещайте неактивных клиентов в архив, чтобы не загромождать список</p></div>';
+            container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-archive text-4xl mb-3 opacity-50"></i><p>Архив пуст</p></div>';
         }
     } catch(e) {
-        console.error(e);
-        container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-exclamation-triangle text-3xl mb-3"></i><p>Ошибка загрузки архива</p></div>';
+        container.innerHTML = '<div class="text-center py-12 text-red-400">Ошибка загрузки</div>';
     }
 }
 
-function renderPagination(total, current) {
-    const totalPages = Math.ceil(total / 10);
-    if (totalPages <= 1) {
-        document.getElementById('pagination').innerHTML = '';
+async function loadTrash() {
+    const container = document.getElementById('trashTab');
+    container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>';
+    
+    try {
+        const res = await fetch('/archive/api/trash');
+        const data = await res.json();
+        
+        if (data.items && data.items.length > 0) {
+            let html = '<div class="flex justify-end mb-4"><button onclick="clearTrash()" class="btn-gradient bg-red-500 hover:bg-red-600"><i class="fas fa-trash-alt mr-2"></i>Очистить корзину</button></div>';
+            data.items.forEach(item => {
+                html += `
+                    <div class="archive-card">
+                        <div class="flex justify-between items-start flex-wrap gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="entity-badge">${item.entity_type === 'customer' ? '👤 Клиент' : '💰 Сделка'}</span>
+                                    <span class="text-sm text-gray-400"><i class="far fa-clock mr-1"></i>Удалён: ${item.deleted_at}</span>
+                                    <span class="text-sm text-orange-500"><i class="fas fa-hourglass-half mr-1"></i>Истекает: ${item.expires_at}</span>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-1">${item.entity_name}</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="restoreFromTrash('${item.id}')" class="restore-btn"><i class="fas fa-undo-alt mr-1"></i> Восстановить</button>
+                                <button onclick="deletePermanently('${item.id}')" class="restore-btn" style="border-color: #ef4444; color: #ef4444;"><i class="fas fa-trash-alt mr-1"></i> Удалить навсегда</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-trash-alt text-4xl mb-3 opacity-50"></i><p>Корзина пуста</p></div>';
+        }
+    } catch(e) {
+        container.innerHTML = '<div class="text-center py-12 text-red-400">Ошибка загрузки</div>';
+    }
+}
+
+async function loadLogs() {
+    const container = document.getElementById('logsTab');
+    container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>';
+    
+    try {
+        const res = await fetch('/archive/api/logs');
+        const data = await res.json();
+        
+        if (data.logs && data.logs.length > 0) {
+            let html = '';
+            data.logs.forEach(log => {
+                html += `
+                    <div class="archive-card">
+                        <div class="flex justify-between items-start flex-wrap gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="entity-badge">${log.action === 'archive' ? '📦 Архивация' : log.action === 'restore' ? '🔄 Восстановление' : '🗑️ Удаление'}</span>
+                                    <span class="text-sm text-gray-400"><i class="far fa-clock mr-1"></i>${log.created_at}</span>
+                                </div>
+                                <div class="text-gray-800">${log.entity_name || log.entity_type}</div>
+                                <div class="text-sm text-gray-500 mt-1"><i class="fas fa-user mr-1"></i>${log.user_email || 'Система'} <i class="fas fa-globe ml-3 mr-1"></i>${log.ip || 'localhost'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-history text-4xl mb-3 opacity-50"></i><p>Логов пока нет</p></div>';
+        }
+    } catch(e) {
+        container.innerHTML = '<div class="text-center py-12 text-red-400">Ошибка загрузки</div>';
+    }
+}
+
+async function loadAutoSettings() {
+    try {
+        const res = await fetch('/archive/api/auto-settings');
+        const data = await res.json();
+        document.getElementById('autoArchiveEnabled').checked = data.enabled;
+        document.getElementById('inactiveDays').value = data.inactive_days;
+    } catch(e) {}
+}
+
+async function loadCurrentPlan() {
+    try {
+        const res = await fetch('/archive/api/plan');
+        const data = await res.json();
+        document.getElementById('currentPlanInfo').innerHTML = `Текущий тариф: ${data.plan_name} (${data.total_gb} ГБ)`;
+    } catch(e) {}
+}
+
+async function toggleAutoArchive() {
+    const enabled = document.getElementById('autoArchiveEnabled').checked;
+    const inactiveDays = document.getElementById('inactiveDays').value;
+    try {
+        await fetch('/archive/api/auto-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: enabled, inactive_days: parseInt(inactiveDays), auto_archive_enabled: enabled })
+        });
+        showToast('Настройки сохранены', 'success');
+    } catch(e) { showToast('Ошибка сохранения', 'error'); }
+}
+
+async function runAutoArchive() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Запуск...';
+    btn.disabled = true;
+    try {
+        const res = await fetch('/archive/api/run-auto-archive', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Архивация выполнена', 'success');
+        loadStats();
+        loadArchiveItems();
+    } catch(e) { showToast('Ошибка', 'error'); }
+    finally { btn.innerHTML = originalText; btn.disabled = false; }
+}
+
+async function restoreItem(type, id) {
+    if (confirm('Восстановить запись?')) {
+        try {
+            await fetch(`/archive/api/restore/${type}/${id}`, { method: 'POST' });
+            showToast('Запись восстановлена', 'success');
+            loadArchiveItems();
+            loadStats();
+        } catch(e) { showToast('Ошибка', 'error'); }
+    }
+}
+
+async function restoreFromTrash(id) {
+    if (confirm('Восстановить из корзины?')) {
+        try {
+            await fetch(`/archive/api/trash/restore/${id}`, { method: 'POST' });
+            showToast('Запись восстановлена', 'success');
+            loadTrash();
+            loadStats();
+        } catch(e) { showToast('Ошибка', 'error'); }
+    }
+}
+
+async function deletePermanently(id) {
+    if (confirm('Удалить навсегда? Отменить нельзя.')) {
+        try {
+            await fetch(`/archive/api/trash/${id}`, { method: 'DELETE' });
+            showToast('Запись удалена', 'success');
+            loadTrash();
+            loadStats();
+        } catch(e) { showToast('Ошибка', 'error'); }
+    }
+}
+
+async function clearTrash() {
+    if (confirm('Очистить корзину? Все записи будут удалены навсегда.')) {
+        try {
+            await fetch('/archive/api/trash/clear', { method: 'DELETE' });
+            showToast('Корзина очищена', 'success');
+            loadTrash();
+            loadStats();
+        } catch(e) { showToast('Ошибка', 'error'); }
+    }
+}
+
+function exportArchive() {
+    window.location.href = '/archive/api/export';
+}
+
+function selectPlan(plan) {
+    if (plan === 'free') {
+        showToast('Бесплатный тариф уже активен', 'info');
         return;
     }
-    
+    const planNames = { '10gb': 'Старт (490 ₽/мес)', '50gb': 'Бизнес (1490 ₽/мес)', '100gb': 'Корпоративный (2490 ₽/мес)' };
+    if (confirm(`Перейти на тариф ${planNames[plan]}?`)) {
+        fetch('/archive/api/upgrade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan: plan })
+        }).then(() => {
+            showToast('Тариф обновлён', 'success');
+            loadStats();
+            loadCurrentPlan();
+            closeUpgradeModal();
+        }).catch(() => showToast('Ошибка', 'error'));
+    }
+}
+
+function openUpgradeModal() { document.getElementById('upgradeModal').style.display = 'flex'; }
+function closeUpgradeModal() { document.getElementById('upgradeModal').style.display = 'none'; }
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-20 right-30 px-4 py-2 rounded-lg text-white z-50 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function renderPagination(total, current) {
+    const totalPages = Math.ceil(total / 20);
+    if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
     let html = '';
     for (let i = 1; i <= Math.min(totalPages, 5); i++) {
         html += `<button class="page-btn ${i === current ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
@@ -447,75 +530,37 @@ function renderPagination(total, current) {
     document.getElementById('pagination').innerHTML = html;
 }
 
-function goToPage(page) {
-    currentPage = page;
-    loadArchiveItems();
-}
+function goToPage(page) { currentPage = page; loadArchiveItems(); }
 
-async function restoreItem(type, id) {
-    if (confirm('Восстановить запись? Она вернётся в активные данные.')) {
-        try {
-            const res = await fetch(`/archive/api/restore/${type}/${id}`, { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                alert('✅ Запись восстановлена!');
-                loadArchiveItems();
-                loadStats();
-            } else {
-                alert('❌ Ошибка восстановления');
-            }
-        } catch(e) {
-            alert('❌ Ошибка восстановления');
-        }
-    }
-}
-
-function openUpgradeModal() {
-    document.getElementById('upgradeModal').style.display = 'flex';
-}
-
-function closeUpgradeModal() {
-    document.getElementById('upgradeModal').style.display = 'none';
-}
-
-async function selectPlan(plan) {
-    const planNames = { '10gb': '10 ГБ', '50gb': '50 ГБ', '100gb': '100 ГБ' };
-    const prices = { '10gb': '490', '50gb': '1490', '100gb': '2490' };
-    
-    if (confirm(`Расширить архив до ${planNames[plan]} за ${prices[plan]} ₽/мес?`)) {
-        try {
-            const res = await fetch('/archive/api/upgrade', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan: plan })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`✅ Архив расширен до ${data.total_gb} ГБ!`);
-                closeUpgradeModal();
-                loadStats();
-            } else {
-                alert('❌ Ошибка при расширении архива');
-            }
-        } catch(e) {
-            alert('❌ Ошибка при расширении архива');
-        }
-    }
-}
-
-// Переключение вкладок
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentTab = btn.dataset.tab;
         currentPage = 1;
-        loadArchiveItems();
+        document.getElementById('archiveList').style.display = currentTab === 'all' || currentTab === 'customers' || currentTab === 'deals' || currentTab === 'entries' ? 'block' : 'none';
+        document.getElementById('trashTab').style.display = currentTab === 'trash' ? 'block' : 'none';
+        document.getElementById('logsTab').style.display = currentTab === 'logs' ? 'block' : 'none';
+        document.getElementById('settingsTab').style.display = currentTab === 'settings' ? 'block' : 'none';
+        if (currentTab === 'trash') loadTrash();
+        else if (currentTab === 'logs') loadLogs();
+        else if (currentTab === 'settings') loadAutoSettings();
+        else loadArchiveItems();
     });
 });
 
+let searchTimeout;
+document.getElementById('searchInput')?.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { currentPage = 1; loadArchiveItems(); }, 500);
+});
+
 loadStats();
+loadMemoryStats();
 loadArchiveItems();
+loadCurrentPlan();
+setInterval(loadStats, 30000);
+setInterval(loadMemoryStats, 60000);
 </script>
 </body>
 </html>

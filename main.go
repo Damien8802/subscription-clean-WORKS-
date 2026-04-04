@@ -446,16 +446,33 @@ hr := r.Group("/hr")
 }
 
 // ========== АРХИВ ==========
-archive := r.Group("/archive")
-archive.Use(middleware.AuthMiddleware(cfg))
-{
-    archive.GET("/", handlers.ArchivePageHandler)
-    archive.GET("/api/stats", handlers.GetArchiveStats)
-    archive.GET("/api/items", handlers.GetArchiveItems)
-    archive.POST("/api/restore/:type/:id", handlers.RestoreFromArchive)
-    archive.POST("/api/upgrade", handlers.UpgradeArchiveQuota)
-}
+archiveGroup := r.Group("/archive")
+archiveGroup.Use(middleware.AuthMiddleware(cfg))
 
+archiveGroup.DELETE("/api/trash/:id", handlers.DeleteFromTrashPermanently)
+archiveGroup.DELETE("/api/trash/clear", handlers.ClearTrashBin)
+{
+    archiveGroup.GET("/", handlers.ArchivePageHandler)
+    archiveGroup.GET("/api/stats", handlers.GetArchiveStats)
+    archiveGroup.GET("/api/items", handlers.GetArchiveItems)
+    archiveGroup.POST("/api/restore/:type/:id", handlers.RestoreFromArchive)
+    archiveGroup.POST("/api/upgrade", handlers.UpgradeArchiveQuota)
+
+// В блоке archiveGroup добавь:
+archiveGroup.GET("/api/notifications", handlers.GetNotifications)
+archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
+// Дополнительные маршруты
+    archiveGroup.GET("/api/auto-settings", handlers.GetAutoArchiveSettings)
+    archiveGroup.POST("/api/auto-settings", handlers.UpdateAutoArchiveSettings)
+    archiveGroup.POST("/api/run-auto-archive", handlers.RunAutoArchive)
+    archiveGroup.GET("/api/trash", handlers.GetTrashItems)
+    archiveGroup.POST("/api/trash/:type/:id", handlers.MoveToTrash)
+    archiveGroup.POST("/api/trash/restore/:id", handlers.RestoreFromTrash)
+    archiveGroup.GET("/api/logs", handlers.GetArchiveLogs)
+    archiveGroup.GET("/api/export", handlers.ExportArchiveToExcel)
+
+archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
+}
 // API для архивации из CRM
 crmArchive := r.Group("/api/crm")
 crmArchive.Use(middleware.AuthMiddleware(cfg))
@@ -945,5 +962,8 @@ r.GET("/analytics-center", func(c *gin.Context) {
 
 
 }
+
+
+
 
 
