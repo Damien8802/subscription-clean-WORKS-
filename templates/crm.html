@@ -659,6 +659,101 @@
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+/* Kanban Board Styles */
+.kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 20px 0;
+    min-height: 500px;
+}
+
+.kanban-column {
+    min-width: 320px;
+    background: #f8f9fa;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.kanban-column-header {
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kanban-column.lead .kanban-column-header { background: #17a2b8; color: white; }
+.kanban-column.negotiation .kanban-column-header { background: #ffc107; color: #212529; }
+.kanban-column.proposal .kanban-column-header { background: #6f42c1; color: white; }
+.kanban-column.closed_won .kanban-column-header { background: #28a745; color: white; }
+.kanban-column.closed_lost .kanban-column-header { background: #dc3545; color: white; }
+
+.kanban-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.kanban-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.kanban-card-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.kanban-card-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #28a745;
+    margin-bottom: 8px;
+}
+
+.kanban-card-customer {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #6c757d;
+    border-top: 1px solid #e9ecef;
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+.drag-over {
+    background: #e3f2fd;
+    border: 2px dashed #2196f3;
+}
+
+.kanban-toggle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .kanban-column {
+        min-width: 280px;
+    }
+}
         }
         .fc-toolbar-title { font-size: 1.5rem; }
         .fc-event { cursor: pointer; }
@@ -4262,6 +4357,7 @@ async function processCallUpload(customerId) {
 // ==================== НОВАЯ ФУНКЦИЯ ДЛЯ ОБРАБОТКИ ЗАЯВОК ====================
 // Обработка формы заявки на новую функцию
 document.addEventListener('DOMContentLoaded', function() {
+  loadKanban();
     const form = document.getElementById('crm-function-request');
     if (form) {
         form.addEventListener('submit', async (e) => {

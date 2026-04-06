@@ -328,6 +328,8 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
+
+   
     // Страница поставщиков
     r.GET("/suppliers", func(c *gin.Context) {
         c.HTML(http.StatusOK, "suppliers.html", gin.H{
