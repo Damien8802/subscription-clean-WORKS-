@@ -14,7 +14,8 @@ import (
     "subscription-system/database"
 )
 
-// GetProducts возвращает список товаров
+// ========== ТОВАРЫ ==========
+
 func GetProducts(c *gin.Context) {
     userID := getUserIDFromContext(c)
     isAdmin := isAdmin(c)
@@ -83,26 +84,16 @@ func GetProducts(c *gin.Context) {
             &unit, &category, &description, &isActive, &createdAt)
 
         products = append(products, map[string]interface{}{
-            "id":          id,
-            "name":        name,
-            "sku":         sku,
-            "barcode":     barcode,
-            "price":       price,
-            "cost":        cost,
-            "quantity":    quantity,
-            "min_stock":   minStock,
-            "unit":        unit,
-            "category":    category,
-            "description": description,
-            "is_active":   isActive,
-            "created_at":  createdAt,
+            "id":          id, "name": name, "sku": sku, "barcode": barcode,
+            "price": price, "cost": cost, "quantity": quantity,
+            "min_stock": minStock, "unit": unit, "category": category,
+            "description": description, "is_active": isActive, "created_at": createdAt,
         })
     }
 
     c.JSON(http.StatusOK, gin.H{"products": products, "total": total, "page": page, "page_size": pageSize})
 }
 
-// CreateProduct создает товар
 func CreateProduct(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -143,7 +134,6 @@ func CreateProduct(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true, "id": productID})
 }
 
-// UpdateProduct обновляет товар
 func UpdateProduct(c *gin.Context) {
     userID := getUserIDFromContext(c)
     productID := c.Param("id")
@@ -182,7 +172,6 @@ func UpdateProduct(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// DeleteProduct удаляет товар
 func DeleteProduct(c *gin.Context) {
     userID := getUserIDFromContext(c)
     productID := c.Param("id")
@@ -200,7 +189,6 @@ func DeleteProduct(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// GetInventoryStats возвращает статистику склада
 func GetInventoryStats(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -228,48 +216,8 @@ func GetInventoryStats(c *gin.Context) {
     })
 }
 
-// ExportProductsCSV экспортирует товары в CSV
-func ExportProductsCSV(c *gin.Context) {
-    userID := getUserIDFromContext(c)
+// ========== ЗАКАЗЫ ==========
 
-    rows, err := database.Pool.Query(c.Request.Context(), `
-        SELECT name, sku, price, quantity, unit, category
-        FROM inventory_products
-        WHERE user_id = $1 AND is_active = true
-        ORDER BY name
-    `, userID)
-
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    defer rows.Close()
-
-    c.Header("Content-Type", "text/csv")
-    c.Header("Content-Disposition", "attachment;filename=products.csv")
-
-    writer := csv.NewWriter(c.Writer)
-    writer.Write([]string{"Название", "Артикул", "Цена", "Количество", "Ед.изм", "Категория"})
-
-    for rows.Next() {
-        var name, sku, unit, category string
-        var price float64
-        var quantity int
-        rows.Scan(&name, &sku, &price, &quantity, &unit, &category)
-        writer.Write([]string{name, sku, fmt.Sprintf("%.2f", price), fmt.Sprintf("%d", quantity), unit, category})
-    }
-
-    writer.Flush()
-}
-
-// InventoryPageHandler страница склада
-func InventoryPageHandler(c *gin.Context) {
-    c.HTML(http.StatusOK, "inventory.html", gin.H{
-        "title": "Складской учет | SaaSPro",
-    })
-}
-
-// GetOrders возвращает список заказов
 func GetOrders(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -325,7 +273,6 @@ func GetOrders(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"orders": orders})
 }
 
-// CreateOrder создает заказ
 func CreateOrder(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -418,7 +365,6 @@ func CreateOrder(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true, "order_id": orderID, "order_number": orderNumber})
 }
 
-// GetOrderDetails возвращает детали заказа
 func GetOrderDetails(c *gin.Context) {
     userID := getUserIDFromContext(c)
     orderID := c.Param("id")
@@ -475,7 +421,6 @@ func GetOrderDetails(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"order": order, "items": items})
 }
 
-// UpdateOrderStatus обновляет статус заказа
 func UpdateOrderStatus(c *gin.Context) {
     userID := getUserIDFromContext(c)
     orderID := c.Param("id")
@@ -502,7 +447,8 @@ func UpdateOrderStatus(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
-// GetSalesReport возвращает отчет по продажам
+// ========== ОТЧЕТЫ ==========
+
 func GetSalesReport(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -553,7 +499,6 @@ func GetSalesReport(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"report": report})
 }
 
-// GetTopProducts возвращает топ товаров
 func GetTopProducts(c *gin.Context) {
     userID := getUserIDFromContext(c)
 
@@ -591,4 +536,43 @@ func GetTopProducts(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{"top_products": products})
+}
+
+func ExportProductsCSV(c *gin.Context) {
+    userID := getUserIDFromContext(c)
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT name, sku, price, quantity, unit, category
+        FROM inventory_products
+        WHERE user_id = $1 AND is_active = true
+        ORDER BY name
+    `, userID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    c.Header("Content-Type", "text/csv")
+    c.Header("Content-Disposition", "attachment;filename=products.csv")
+
+    writer := csv.NewWriter(c.Writer)
+    writer.Write([]string{"Название", "Артикул", "Цена", "Количество", "Ед.изм", "Категория"})
+
+    for rows.Next() {
+        var name, sku, unit, category string
+        var price float64
+        var quantity int
+        rows.Scan(&name, &sku, &price, &quantity, &unit, &category)
+        writer.Write([]string{name, sku, fmt.Sprintf("%.2f", price), fmt.Sprintf("%d", quantity), unit, category})
+    }
+
+    writer.Flush()
+}
+
+func InventoryPageHandler(c *gin.Context) {
+    c.HTML(http.StatusOK, "inventory.html", gin.H{
+        "title": "Складской учет | SaaSPro",
+    })
 }

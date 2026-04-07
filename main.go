@@ -328,7 +328,8 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
-
+    r.GET("/api/admin/create-inventory-tables", handlers.CreateInventoryTables)
+    r.GET("/api/current-user", handlers.GetCurrentUserID)
 
    r.GET("/api/backup", handlers.CreateBackup)
    r.POST("/api/restore", handlers.RestoreBackup)
@@ -338,6 +339,11 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
             "title": "Поставщики | SaaSPro",
         })
     })
+   r.GET("/inventory/products", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "inventory_products.html", gin.H{
+        "title": "Товары - SaaSPro",
+    })
+})
 
     // Страница закупок
     r.GET("/purchases", func(c *gin.Context) {
@@ -870,12 +876,6 @@ r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) 
     })
 })
 
-r.NoRoute(func(c *gin.Context) {
-    c.HTML(http.StatusNotFound, "404.html", gin.H{
-        "Title":   "Страница не найдена - SaaSPro",
-        "Version": "3.0",
-    })
-})
 
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
