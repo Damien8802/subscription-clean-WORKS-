@@ -1,68 +1,90 @@
 package middleware
 
 import (
-        "log"
-        "net/http"
-        "strings"
+	"context"
+	"net/http"
+	"strings"
 
-        "subscription-system/models"
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 
-        "github.com/gin-gonic/gin"
+	"subscription-system/database"
 )
 
-// APIKeyAuthMiddleware проверяет API-ключ в заголовке Authorization
+// APIKeyAuthMiddleware - проверка API ключа
 func APIKeyAuthMiddleware() gin.HandlerFunc {
-        return func(c *gin.Context) {
-                authHeader := c.GetHeader("Authorization")
-                if authHeader == "" {
-                        log.Println("❌ Authorization header missing")
-                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
-                        return
-                }
+	return func(c *gin.Context) {
+		// Получаем ключ из заголовка
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "API key required"})
+			c.Abort()
+			return
+		}
 
-                parts := strings.SplitN(authHeader, " ", 2)
-                if !(len(parts) == 2 && strings.ToLower(parts[0]) == "bearer") {
-                        log.Println("❌ Invalid authorization header format")
-                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-                        return
-                }
+		// Поддержка "Bearer sk_xxx" и просто "sk_xxx"
+		apiKey := strings.TrimPrefix(authHeader, "Bearer ")
+		if !strings.HasPrefix(apiKey, "sk_") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key format"})
+			c.Abort()
+			return
+		}
 
-                rawKey := parts[1]
+		// Ищем ключ в БД
+		var keyID, userID, keyHash string
+		var isActive bool
 
-                apiKey, err := models.VerifyAPIKey(rawKey)
-                if err != nil {
-                        log.Printf("❌ VerifyAPIKey failed: %v", err)
-                        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid API key"})
-                        return
-                }
+		err := database.Pool.QueryRow(context.Background(), `
+			SELECT id, user_id, key_hash, is_active
+			FROM api_keys 
+			WHERE is_active = true
+		`).Scan(&keyID, &userID, &keyHash, &isActive)
 
-                // Подробное логирование состояния ключа
-                log.Printf("🔍 APIKey: id=%s, userID=%s, isActive=%v, quotaLimit=%d, quotaUsed=%d",
-                        apiKey.ID, apiKey.UserID, apiKey.IsActive, apiKey.QuotaLimit, apiKey.QuotaUsed)
+		if err == pgx.ErrNoRows {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
+			c.Abort()
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			c.Abort()
+			return
+		}
 
-                if !apiKey.IsActive {
-                        log.Printf("⛔ API key is disabled (isActive=false)")
-                        c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "API key is disabled"})
-                        return
-                }
+		// Проверяем хеш
+		if err := bcrypt.CompareHashAndPassword([]byte(keyHash), []byte(apiKey)); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"})
+			c.Abort()
+			return
+		}
 
-                // Проверяем лимит, если он не безлимитный
-                if apiKey.QuotaLimit != -1 && apiKey.QuotaUsed >= apiKey.QuotaLimit {
-                        log.Printf("⛔ Quota exceeded: limit=%d, used=%d", apiKey.QuotaLimit, apiKey.QuotaUsed)
-                        c.AbortWithStatusJSON(http.StatusPaymentRequired, gin.H{"error": "quota exceeded"})
-                        return
-                }
+		// Сохраняем в контекст
+		c.Set("api_key_id", keyID)
+		c.Set("user_id", userID)
 
-                // Логируем значения квоты (уже есть выше, но оставим для совместимости)
-                log.Printf("✅ APIKey проверен, пропускаем запрос")
+		c.Next()
 
-                // Сохраняем информацию о ключе в контекст
-                c.Set("apiKeyID", apiKey.ID)
-                c.Set("apiKeyUserID", apiKey.UserID)
-                c.Set("providerCredentials", []byte(apiKey.ProviderCredentials))
-                c.Set("quotaLimit", apiKey.QuotaLimit)
-                c.Set("quotaUsed", apiKey.QuotaUsed)
+		// После запроса - обновляем статистику
+		UpdateAPIKeyStats(keyID, c.Writer.Status())
+	}
+}
 
-                c.Next()
-        }
+// UpdateAPIKeyStats - обновление статистики использования API ключа
+func UpdateAPIKeyStats(keyID string, statusCode int) {
+	go func() {
+		ctx := context.Background()
+		database.Pool.Exec(ctx, `
+			UPDATE api_keys 
+			SET daily_used = daily_used + 1,
+			    monthly_used = monthly_used + 1,
+			    last_used_at = NOW()
+			WHERE id = $1
+		`, keyID)
+
+		database.Pool.Exec(ctx, `
+			INSERT INTO api_request_logs (api_key_id, status_code, created_at)
+			VALUES ($1, $2, NOW())
+		`, keyID, statusCode)
+	}()
 }

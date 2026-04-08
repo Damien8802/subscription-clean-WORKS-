@@ -816,14 +816,6 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
         api.POST("/ai/consultant", handlers.AIConsultantHandler)
 
-        api.GET("/ai/agents", handlers.GetAgents)
-        api.POST("/ai/agents", handlers.CreateAgent)
-        api.PUT("/ai/agents/:id", handlers.UpdateAgent)
-        api.DELETE("/ai/agents/:id", handlers.DeleteAgent)
-        api.POST("/ai/agents/:id/actions", handlers.AddAgentAction)
-        api.GET("/ai/agents/logs", handlers.GetAgentLogs)
-        api.GET("/ai/agents/stats", handlers.GetAgentStats)
-
         api.GET("/analytics/ltv", handlers.GetLTVPredictions)
         api.GET("/analytics/ltv/:id", handlers.GetCustomerLTV)
         api.GET("/analytics/insights", handlers.GetInsights)
@@ -831,11 +823,33 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/analytics/cohorts/run", handlers.RunCohortAnalysis)
     }
 
+      // ========== API KEYS MANAGEMENT ==========
+    apiKeysGroup := r.Group("/api/keys")
+    apiKeysGroup.Use(middleware.AuthMiddleware(cfg))
+    {
+        apiKeysGroup.POST("/generate", handlers.GenerateAPIKey)
+        apiKeysGroup.GET("", handlers.GetAPIKeys)          // ← без Handler
+        apiKeysGroup.DELETE("/:id", handlers.RevokeAPIKey)
+        apiKeysGroup.GET("/:id/stats", handlers.GetAPIKeyStats)
+        apiKeysGroup.GET("/:id/daily-stats", handlers.GetAPIKeyDailyStats)
+    }
     secureAPI := r.Group("/api")
     secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
         secureAPI.GET("/user/profile", handlers.GetUserProfile)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
+    }
+    // ========== AI AGENTS MANAGEMENT ==========
+    aiAgents := r.Group("/api/ai/agents")
+    aiAgents.Use(middleware.AuthMiddleware(cfg))
+    {
+        aiAgents.GET("", handlers.GetAgents)
+        aiAgents.POST("", handlers.CreateAgent)
+        aiAgents.PUT("/:id", handlers.UpdateAgent)
+        aiAgents.DELETE("/:id", handlers.DeleteAgent)
+        aiAgents.POST("/:id/actions", handlers.AddAgentAction)
+        aiAgents.GET("/logs", handlers.GetAgentLogs)
+        aiAgents.GET("/stats", handlers.GetAgentStats)
     }
 
     r.GET("/notify", handlers.NotifyPageHandler)
@@ -846,10 +860,17 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
+       // Публичное API с защитой через API ключи
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
-        // Зарезервировано
+        v1.GET("/health", handlers.HealthHandler)
+        v1.POST("/ai/ask", handlers.AIAskHandler)
+        v1.POST("/ai/consultant", handlers.AIConsultantHandler)
+        v1.GET("/crm/customers", handlers.GetCustomers)
+        v1.GET("/crm/deals", handlers.GetDeals)
+        v1.GET("/vpn/status", handlers.GetVPNStats)
+        v1.GET("/vpn/plans", handlers.GetStealthPlansHandler)
     }
 
   adminAPI := r.Group("/api/admin")

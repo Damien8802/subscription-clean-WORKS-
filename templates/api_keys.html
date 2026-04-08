@@ -3,23 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мои API ключи</title>
+    <title>Мои API ключи - SaaSPro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background: #f8fafc; font-family: 'Inter', sans-serif; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
+        .container { max-width: 1200px; margin: 0 auto; }
         .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; }
         .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .create-section { background: #f0f3ff; border-radius: 15px; padding: 30px; margin-bottom: 30px; }
         .new-key-alert { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 10px; padding: 20px; margin-bottom: 20px; display: none; }
-        .raw-key { font-size: 18px; font-weight: bold; color: #28a745; word-break: break-all; }
-        .key-card { background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #667eea; }
-        .key-value { font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 8px; word-break: break-all; }
-        .btn-copy { background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; }
-        .btn-revoke { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; }
-        .badge-active { background: #4caf50; color: white; padding: 5px 10px; border-radius: 20px; }
-        .badge-inactive { background: #f44336; color: white; padding: 5px 10px; border-radius: 20px; }
+        .raw-key { font-size: 18px; font-weight: bold; color: #28a745; word-break: break-all; font-family: monospace; }
+        .key-card { background: #f8f9fa; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #667eea; transition: all 0.3s; }
+        .key-card:hover { box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .key-value { font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 8px; word-break: break-all; font-size: 12px; }
+        .btn-copy { background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-copy:hover { background: #5a67d8; }
+        .btn-revoke { background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-revoke:hover { background: #d32f2f; }
+        .btn-create { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-create:hover { transform: translateY(-2px); }
+        .badge-active { background: #4caf50; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; }
+        .badge-inactive { background: #f44336; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; }
+        .badge-plan { background: #667eea; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; }
         .back-link { color: white; text-decoration: none; margin-top: 20px; display: inline-block; }
+        .back-link:hover { color: #ddd; }
+        .plan-card { background: white; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.3s; border: 2px solid #e9ecef; }
+        .plan-card:hover { transform: translateY(-3px); border-color: #667eea; }
+        .plan-card.selected { border-color: #667eea; background: #f0f3ff; }
+        .plan-name { font-weight: bold; font-size: 18px; }
+        .plan-price { color: #667eea; font-weight: bold; font-size: 20px; margin: 10px 0; }
+        .plan-limits { font-size: 12px; color: #666; }
+        .stats-number { font-size: 24px; font-weight: bold; color: #667eea; }
+        .back-button {
+            position: fixed; bottom: 30px; right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 12px 28px; border-radius: 40px;
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s; z-index: 9999; cursor: pointer;
+            font-size: 16px; font-weight: 500; border: none;
+        }
+        .back-button:hover { transform: translateY(-3px); background: linear-gradient(135deg, #764ba2, #667eea); }
+        @media (max-width: 768px) { .back-button { padding: 10px 20px; font-size: 14px; bottom: 20px; right: 20px; } }
     </style>
 </head>
 <body>
@@ -34,134 +60,222 @@
         <div class="new-key-alert" id="newKeyAlert">
             <h4>✅ Новый ключ создан! Сохраните его (показывается только один раз):</h4>
             <div class="raw-key" id="rawKeyDisplay"></div>
-            <button class="btn-copy mt-2" onclick="copyNewKey()">📋 Копировать ключ</button>
+            <button class="btn-copy mt-2" onclick="copyNewKey()"><i class="fas fa-copy"></i> Копировать ключ</button>
         </div>
 
-        <!-- Создание ключа -->
+        <!-- Создание ключа с выбором тарифа -->
         <div class="create-section">
-            <h3 class="mb-3">➕ Создать новый API ключ</h3>
+            <h3 class="mb-3"><i class="fas fa-plus-circle"></i> Создать новый API ключ</h3>
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Название ключа</label>
-                        <input type="text" class="form-control" id="keyName" placeholder="Например: Production, Development">
+                        <input type="text" class="form-control" id="keyName" placeholder="Например: Мой бот, Production">
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label class="form-label">Лимит запросов</label>
-                        <input type="number" class="form-control" id="quotaLimit" value="1000">
-                    </div>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100" onclick="createKey()">Создать</button>
                 </div>
             </div>
+            
+            <!-- Тарифы -->
+            <label class="form-label mb-2">Выберите тарифный план:</label>
+            <div class="row mb-4">
+                <div class="col-md-4 mb-2">
+                    <div class="plan-card" data-plan="free" onclick="selectPlan('free')">
+                        <div class="plan-name">🆓 Free</div>
+                        <div class="plan-price">0 ₽</div>
+                        <div class="plan-limits">100 запросов/день<br>1000/месяц</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="plan-card" data-plan="basic" onclick="selectPlan('basic')">
+                        <div class="plan-name">⚡ Basic</div>
+                        <div class="plan-price">299 ₽/мес</div>
+                        <div class="plan-limits">1,000 запросов/день<br>10,000/месяц</div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="plan-card" data-plan="pro" onclick="selectPlan('pro')">
+                        <div class="plan-name">💎 Pro</div>
+                        <div class="plan-price">999 ₽/мес</div>
+                        <div class="plan-limits">5,000 запросов/день<br>50,000/месяц</div>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" id="selectedPlan" value="free">
+            <button class="btn-create" onclick="createKey()"><i class="fas fa-key"></i> Создать API ключ</button>
         </div>
 
         <!-- Список ключей -->
         <div class="card">
-            <h3 class="mb-4">📋 Мои ключи</h3>
+            <h3 class="mb-4"><i class="fas fa-list"></i> Мои ключи</h3>
             <div id="keysList">
-                <p class="text-center text-muted py-4">Загрузка...</p>
+                <p class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Загрузка...</p>
             </div>
         </div>
     </div>
 
-    <script>
-        const userId = localStorage.getItem('userId') || 'test-user-123';
+    <button class="back-button" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i> Назад
+    </button>
 
+    <script>
+        let selectedPlan = 'free';
+        
+        function selectPlan(plan) {
+            selectedPlan = plan;
+            document.getElementById('selectedPlan').value = plan;
+            
+            // Обновляем стили
+            document.querySelectorAll('.plan-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`.plan-card[data-plan="${plan}"]`).classList.add('selected');
+        }
+        
+        function getToken() {
+            return localStorage.getItem('access_token') || '';
+        }
+        
         async function loadKeys() {
-            const response = await fetch(`/api/user/keys?user_id=${userId}`);
-            const data = await response.json();
-            
-            const keysList = document.getElementById('keysList');
-            
-            if (!data.keys || data.keys.length === 0) {
-                keysList.innerHTML = '<p class="text-center text-muted py-4">У вас пока нет API ключей</p>';
+            const token = getToken();
+            if (!token) {
+                document.getElementById('keysList').innerHTML = '<p class="text-center text-muted py-4"><i class="fas fa-lock"></i> Пожалуйста, войдите в систему</p>';
                 return;
             }
-
-            keysList.innerHTML = data.keys.map(key => `
-                <div class="key-card" id="key-${key.id}">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h4 class="mb-1">${key.name || 'Без названия'}</h4>
-                            <small class="text-muted">Создан: ${new Date(key.created_at).toLocaleDateString()}</small>
-                        </div>
-                        <div>
-                            <span class="${key.is_active ? 'badge-active' : 'badge-inactive'}">
-                                ${key.is_active ? 'Активен' : 'Неактивен'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="key-value mb-3">
-                        ${key.key_hash.substring(0, 30)}...
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">Лимит запросов:</small>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <span class="badge bg-info">${key.quota_used}</span>
-                                <span>/</span>
-                                <span class="badge bg-secondary">${key.quota_limit}</span>
+            
+            try {
+                const response = await fetch('/api/keys', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                
+                if (data.keys && data.keys.length > 0) {
+                    document.getElementById('keysList').innerHTML = data.keys.map(key => `
+                        <div class="key-card" id="key-${key.id}">
+                            <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap">
+                                <div>
+                                    <h4 class="mb-1">${escapeHtml(key.name)} 
+                                        <span class="badge-plan">${key.plan_type || 'free'}</span>
+                                    </h4>
+                                    <small class="text-muted">
+                                        <i class="far fa-calendar-alt"></i> Создан: ${new Date(key.created_at).toLocaleDateString()}
+                                        ${key.last_used_at && key.last_used_at !== '0001-01-01T00:00:00Z' ? `<br><i class="far fa-clock"></i> Последнее использование: ${new Date(key.last_used_at).toLocaleString()}` : ''}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="${key.is_active ? 'badge-active' : 'badge-inactive'}">
+                                        <i class="fas ${key.is_active ? 'fa-circle' : 'fa-circle'}"></i> ${key.is_active ? 'Активен' : 'Неактивен'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="key-value">
+                                        <i class="fas fa-key"></i> ID: ${key.id.substring(0, 16)}...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted"><i class="fas fa-chart-line"></i> Сегодня:</small>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="badge bg-primary">${key.daily_used || 0}</span>
+                                        <span>/</span>
+                                        <span class="badge bg-secondary">${key.daily_limit || 100}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted"><i class="fas fa-calendar-month"></i> В этом месяце:</small>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <span class="badge bg-primary">${key.monthly_used || 0}</span>
+                                        <span>/</span>
+                                        <span class="badge bg-secondary">${key.monthly_limit || 1000}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    ${key.is_active ?
+                                        `<button class="btn-revoke" onclick="revokeKey('${key.id}')">
+                                            <i class="fas fa-trash-alt"></i> Отозвать ключ
+                                        </button>` :
+                                        ''}
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6 text-end">
-                            ${key.is_active ? 
-                                `<button class="btn-revoke" onclick="revokeKey('${key.id}')">
-                                    Отозвать ключ
-                                </button>` : 
-                                ''}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                    `).join('');
+                } else {
+                    document.getElementById('keysList').innerHTML = '<p class="text-center text-muted py-4"><i class="fas fa-key"></i> У вас пока нет API ключей. Создайте первый!</p>';
+                }
+            } catch (err) {
+                document.getElementById('keysList').innerHTML = '<p class="text-center text-danger py-4">Ошибка загрузки ключей</p>';
+            }
         }
 
         async function createKey() {
-            const name = document.getElementById('keyName').value || 'Мой ключ';
-            const quota = document.getElementById('quotaLimit').value;
-
-            const response = await fetch('/api/keys/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: userId,
-                    name: name,
-                    quota_limit: parseInt(quota)
-                })
-            });
-
-            const data = await response.json();
+            const token = getToken();
+            if (!token) {
+                alert('Пожалуйста, войдите в систему');
+                window.location.href = '/login';
+                return;
+            }
             
-            if (data.success) {
-                document.getElementById('newKeyAlert').style.display = 'block';
-                document.getElementById('rawKeyDisplay').textContent = data.raw_key;
-                document.getElementById('keyName').value = '';
-                loadKeys();
-            } else {
-                alert('Ошибка: ' + data.error);
+            const name = document.getElementById('keyName').value.trim();
+            if (!name) {
+                alert('Введите название ключа');
+                return;
+            }
+            
+            const planType = document.getElementById('selectedPlan').value;
+            
+            try {
+                const response = await fetch('/api/keys/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ name: name, plan_type: planType })
+                });
+                const data = await response.json();
+                
+                if (data.key) {
+                    document.getElementById('rawKeyDisplay').textContent = data.key;
+                    document.getElementById('newKeyAlert').style.display = 'block';
+                    document.getElementById('keyName').value = '';
+                    loadKeys();
+                    
+                    // Автоматически скрываем через 30 секунд
+                    setTimeout(() => {
+                        document.getElementById('newKeyAlert').style.display = 'none';
+                    }, 30000);
+                } else {
+                    alert('Ошибка: ' + JSON.stringify(data));
+                }
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
             }
         }
 
         async function revokeKey(keyId) {
             if (!confirm('Отозвать ключ? Он перестанет работать.')) return;
-
-            const response = await fetch('/api/keys/revoke', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key_id: keyId })
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                alert('✅ Ключ отозван');
-                loadKeys();
-            } else {
-                alert('❌ Ошибка: ' + data.error);
+            
+            const token = getToken();
+            try {
+                const response = await fetch(`/api/keys/${keyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Ключ отозван');
+                    loadKeys();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
             }
         }
 
@@ -170,61 +284,15 @@
             navigator.clipboard.writeText(key);
             alert('✅ Ключ скопирован!');
         }
-
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // При загрузке страницы
         loadKeys();
     </script>
-    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<style>
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
-<!-- Овальная кнопка назад -->
-<a href="javascript:history.back()" class="back-button" title="Назад">
-    <i class="fas fa-arrow-left"></i> Назад
-</a>
-
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 12px 28px;
-    border-radius: 40px !important;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    transition: all 0.3s;
-    z-index: 9999;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    border: none;
-    width: auto;
-    height: auto;
-}
-.back-button:hover {
-    transform: translateY(-3px);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
-    text-decoration: none;
-}
-@media (max-width: 768px) {
-    .back-button {
-        padding: 10px 20px;
-        font-size: 14px;
-        bottom: 20px;
-        right: 20px;
-    }
-}
-</style>
 </body>
 </html>
-
-

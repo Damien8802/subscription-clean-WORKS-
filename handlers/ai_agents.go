@@ -12,11 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// GetAccountID получает account_id из контекста
+// GetAccountID получает user_id из контекста
 func GetAccountID(c *gin.Context) string {
     accountID, exists := c.Get("accountID")
     if !exists {
-        // В режиме SkipAuth используем тестовый account_id
+        // В режиме SkipAuth используем тестовый user_id
         log.Println("⚠️ accountID не найден в контексте, использую тестовый")
         return "00000000-0000-0000-0000-000000000001"
     }
@@ -64,7 +64,7 @@ func CreateAgent(c *gin.Context) {
 	
 	// Сохраняем в БД
 	_, err := database.Pool.Exec(c.Request.Context(), `
-		INSERT INTO ai_agents (id, account_id, name, role, instructions, model, temperature, schedule, is_active, created_at, updated_at)
+		INSERT INTO ai_agents (id, user_id, name, role, instructions, model, temperature, schedule, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`, agent.ID, agent.AccountID, agent.Name, agent.Role, agent.Instructions,
 		agent.Model, agent.Temperature, agent.Schedule, agent.IsActive,
@@ -89,7 +89,7 @@ func GetAgents(c *gin.Context) {
 	rows, err := database.Pool.Query(c.Request.Context(), `
 		SELECT id, name, role, instructions, model, temperature, schedule, is_active, created_at, updated_at
 		FROM ai_agents
-		WHERE account_id = $1
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`, accountID)
 	
@@ -145,7 +145,7 @@ func UpdateAgent(c *gin.Context) {
 	// Проверяем, что агент принадлежит аккаунту
 	var exists bool
 	err := database.Pool.QueryRow(c.Request.Context(), `
-		SELECT EXISTS(SELECT 1 FROM ai_agents WHERE id = $1 AND account_id = $2)
+		SELECT EXISTS(SELECT 1 FROM ai_agents WHERE id = $1 AND user_id = $2)
 	`, agentID, accountID).Scan(&exists)
 	
 	if err != nil || !exists {
@@ -162,7 +162,7 @@ func UpdateAgent(c *gin.Context) {
 	i := 1
 	
 	for key, value := range updates {
-		if key == "id" || key == "account_id" || key == "created_at" {
+		if key == "id" || key == "user_id" || key == "created_at" {
 			continue
 		}
 		if i > 1 {
@@ -172,7 +172,7 @@ func UpdateAgent(c *gin.Context) {
 		args = append(args, value)
 		i++
 	}
-	query += " WHERE id = $" + string(rune('0'+i)) + " AND account_id = $" + string(rune('0'+i+1))
+	query += " WHERE id = $" + string(rune('0'+i)) + " AND user_id = $" + string(rune('0'+i+1))
 	args = append(args, agentID, accountID)
 	
 	_, err = database.Pool.Exec(c.Request.Context(), query, args...)
@@ -190,7 +190,7 @@ func DeleteAgent(c *gin.Context) {
 	accountID := GetAccountID(c)
 	
 	_, err := database.Pool.Exec(c.Request.Context(), `
-		DELETE FROM ai_agents WHERE id = $1 AND account_id = $2
+		DELETE FROM ai_agents WHERE id = $1 AND user_id = $2
 	`, agentID, accountID)
 	
 	if err != nil {
@@ -220,7 +220,7 @@ func AddAgentAction(c *gin.Context) {
 	// Проверяем агента
 	var exists bool
 	err := database.Pool.QueryRow(c.Request.Context(), `
-		SELECT EXISTS(SELECT 1 FROM ai_agents WHERE id = $1 AND account_id = $2)
+		SELECT EXISTS(SELECT 1 FROM ai_agents WHERE id = $1 AND user_id = $2)
 	`, agentID, accountID).Scan(&exists)
 	
 	if err != nil || !exists {
@@ -252,7 +252,7 @@ func GetAgentLogs(c *gin.Context) {
 		FROM ai_agent_logs l
 		JOIN ai_agents a ON a.id = l.agent_id
 		LEFT JOIN customers c ON c.id = l.customer_id
-		WHERE a.account_id = $1
+		WHERE a.user_id = $1
 		ORDER BY l.created_at DESC
 		LIMIT 100
 	`, accountID)
@@ -302,7 +302,7 @@ func GetAgentStats(c *gin.Context) {
 			COALESCE(COUNT(CASE WHEN action = 'create_deal' AND status = 'success' THEN 1 END), 0) as deals
 		FROM ai_agent_logs l
 		JOIN ai_agents a ON a.id = l.agent_id
-		WHERE a.account_id = $1
+		WHERE a.user_id = $1
 	`, accountID).Scan(&totalActions, &successActions, &errorActions, &dealsCreated)
 	
 	if err != nil {
