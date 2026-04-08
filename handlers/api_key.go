@@ -34,7 +34,7 @@ func CreateAPIKeyHandler(c *gin.Context) {
     var req struct {
         Name     string                 `json:"name"`
         Creds    map[string]interface{} `json:"credentials"`
-        Quota    int64                   `json:"quota_limit"`
+        Quota    int64                  `json:"quota_limit"`
     }
 
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -42,7 +42,6 @@ func CreateAPIKeyHandler(c *gin.Context) {
         return
     }
 
-    // ВАЖНО: если credentials не переданы, создаём пустой объект
     if req.Creds == nil {
         req.Creds = make(map[string]interface{})
     }
@@ -61,7 +60,6 @@ func CreateAPIKeyHandler(c *gin.Context) {
         UpdatedAt:  time.Now(),
     }
 
-    // Теперь req.Creds точно не nil
     credsJSON, _ := json.Marshal(req.Creds)
     apiKey.ProviderCredentials = credsJSON
 
@@ -82,40 +80,58 @@ func CreateAPIKeyHandler(c *gin.Context) {
         },
     })
 }
+
 func GetUserAPIKeysHandler(c *gin.Context) {
-    userID := c.Query("user_id")
-    if userID == "" {
-        if uid, exists := c.Get("userID"); exists {
-            userID = uid.(string)
-        } else {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "user_id required"})
-            return
-        }
+    userID, exists := c.Get("userID")
+    if !exists {
+        userID, exists = c.Get("user_id")
+    }
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+        return
     }
 
-    keys, err := models.GetAPIKeysByUser(userID)
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, name, plan_type, quota_limit, quota_used, daily_limit, monthly_limit,
+               daily_used, monthly_used, is_active, expires_at, last_used_at, created_at
+        FROM api_keys 
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+    `, userID)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
+    defer rows.Close()
 
-    var safeKeys []gin.H
-    for _, key := range keys {
-        safeKeys = append(safeKeys, gin.H{
-            "id":          key.ID,
-            "name":        key.Name,
-            "quota_limit": key.QuotaLimit,
-            "quota_used":  key.QuotaUsed,
-            "is_active":   key.IsActive,
-            "created_at":  key.CreatedAt,
-            "updated_at":  key.UpdatedAt,
+    var keys []gin.H
+    for rows.Next() {
+        var id, name, planType string
+        var quotaLimit, quotaUsed, dailyLimit, monthlyLimit, dailyUsed, monthlyUsed int
+        var isActive bool
+        var expiresAt, lastUsedAt, createdAt time.Time
+
+        rows.Scan(&id, &name, &planType, &quotaLimit, &quotaUsed, &dailyLimit, &monthlyLimit,
+            &dailyUsed, &monthlyUsed, &isActive, &expiresAt, &lastUsedAt, &createdAt)
+
+        keys = append(keys, gin.H{
+            "id":             id,
+            "name":           name,
+            "plan_type":      planType,
+            "quota_limit":    quotaLimit,
+            "quota_used":     quotaUsed,
+            "daily_limit":    dailyLimit,
+            "daily_used":     dailyUsed,
+            "monthly_limit":  monthlyLimit,
+            "monthly_used":   monthlyUsed,
+            "is_active":      isActive,
+            "expires_at":     expiresAt,
+            "last_used_at":   lastUsedAt,
+            "created_at":     createdAt,
         })
     }
 
-    c.JSON(http.StatusOK, gin.H{
-        "success": true,
-        "keys":    safeKeys,
-    })
+    c.JSON(http.StatusOK, gin.H{"keys": keys})
 }
 
 func RevokeAPIKeyHandler(c *gin.Context) {

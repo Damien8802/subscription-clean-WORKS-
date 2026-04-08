@@ -4,83 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🤖 ИИ-агенты - SaaSPro CRM</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-        
+
         .header {
             background: white;
-            border-radius: 15px;
+            border-radius: 20px;
             padding: 30px;
             margin-bottom: 30px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        
+
         .header h1 {
             font-size: 2.5em;
-            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
-        
+
         .header p {
             color: #666;
             font-size: 1.1em;
         }
-        
+
         .create-agent-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             padding: 12px 30px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 1.1em;
             cursor: pointer;
             transition: 0.3s;
             margin-top: 20px;
+            font-weight: 600;
         }
-        
+
         .create-agent-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
-        
+
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 25px;
             margin-top: 30px;
         }
-        
+
         .agent-card {
             background: white;
-            border-radius: 15px;
+            border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: 0.3s;
             position: relative;
-            overflow: hidden;
+            border: 1px solid #e9ecef;
         }
-        
+
         .agent-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-color: #cce5ff;
         }
-        
+
         .agent-card.active::before {
             content: '';
             position: absolute;
@@ -89,170 +95,123 @@
             right: 0;
             height: 4px;
             background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 20px 20px 0 0;
         }
-        
+
         .agent-role {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: 600;
             margin-bottom: 15px;
         }
-        
-        .role-sales { background: #e3f2fd; color: #1976d2; }
-        .role-support { background: #e8f5e9; color: #388e3c; }
-        .role-manager { background: #fff3e0; color: #f57c00; }
-        
+
+        .role-sales { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .role-support { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .role-manager { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .role-crm { background: #e7f1ff; color: #004085; border: 1px solid #b8daff; }
+        .role-hr { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
         .agent-name {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
         }
-        
+
         .agent-instructions {
-            color: #666;
-            line-height: 1.6;
+            color: #555;
+            line-height: 1.5;
             margin-bottom: 20px;
-            padding: 15px;
+            padding: 12px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 10px;
             font-style: italic;
+            font-size: 0.9em;
+            border-left: 3px solid #667eea;
         }
-        
+
         .agent-meta {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 20px;
             padding: 10px 0;
             border-top: 1px solid #eee;
             border-bottom: 1px solid #eee;
         }
-        
+
         .meta-item {
             text-align: center;
+            flex: 1;
         }
-        
+
         .meta-value {
-            font-size: 1.2em;
-            font-weight: 600;
+            font-size: 1.1em;
+            font-weight: 700;
             color: #667eea;
         }
-        
+
         .meta-label {
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #999;
             text-transform: uppercase;
         }
-        
-        .actions-list {
-            margin-bottom: 20px;
-        }
-        
-        .action-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 5px;
-        }
-        
-        .action-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
-        }
-        
-        .action-create_deal .action-icon { background: #e8f5e9; color: #4CAF50; }
-        .action-send_message .action-icon { background: #e3f2fd; color: #2196F3; }
-        .action-tag_customer .action-icon { background: #fff3e0; color: #FF9800; }
-        .action-remind_manager .action-icon { background: #ffebee; color: #f44336; }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .stat {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .stat-label {
-            font-size: 0.8em;
-            color: #999;
-        }
-        
+
         .agent-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 20px;
-            padding-top: 20px;
+            padding-top: 15px;
             border-top: 1px solid #eee;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        
+
         .status-badge {
             padding: 5px 12px;
             border-radius: 20px;
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: 600;
         }
-        
+
         .status-active {
-            background: #e8f5e9;
-            color: #4CAF50;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        
+
         .status-inactive {
-            background: #ffebee;
-            color: #f44336;
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
-        
-        .edit-btn, .delete-btn {
-            padding: 8px 15px;
+
+        .btn-icon {
+            padding: 8px 14px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: 0.3s;
-            font-size: 0.9em;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin: 0 2px;
         }
-        
-        .edit-btn {
-            background: #667eea;
-            color: white;
-        }
-        
-        .delete-btn {
-            background: #f44336;
-            color: white;
-        }
-        
-        .edit-btn:hover {
-            background: #5a67d8;
-        }
-        
-        .delete-btn:hover {
-            background: #e53935;
-        }
-        
+
+        .btn-edit { background: #667eea; color: white; }
+        .btn-edit:hover { background: #5a67d8; transform: scale(1.02); }
+
+        .btn-clone { background: #17a2b8; color: white; }
+        .btn-clone:hover { background: #138496; transform: scale(1.02); }
+
+        .btn-toggle { background: #ffc107; color: #212529; }
+        .btn-toggle:hover { background: #e0a800; transform: scale(1.02); }
+
+        .btn-delete { background: #dc3545; color: white; }
+        .btn-delete:hover { background: #c82333; transform: scale(1.02); }
+
+        /* Модальное окно */
         .modal {
             display: none;
             position: fixed;
@@ -261,161 +220,240 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             align-items: center;
             justify-content: center;
             z-index: 1000;
         }
-        
-        .modal.active {
-            display: flex;
-        }
-        
+
+        .modal.active { display: flex; }
+
         .modal-content {
             background: white;
-            border-radius: 15px;
+            border-radius: 20px;
             padding: 30px;
             width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
+            max-width: 550px;
+            max-height: 85vh;
             overflow-y: auto;
         }
-        
-        .modal h2 {
+
+        .modal-content h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: #1a1a2e;
+            font-size: 1.5em;
         }
-        
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
-        
+
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #666;
-            font-weight: 500;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9em;
         }
-        
+
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 10px;
+            padding: 10px 12px;
             border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1em;
+            border-radius: 10px;
+            font-size: 0.95em;
+            transition: 0.2s;
         }
-        
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
         .form-group textarea {
             min-height: 100px;
             resize: vertical;
         }
-        
+
         .modal-buttons {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: flex-end;
-            margin-top: 30px;
+            margin-top: 25px;
         }
-        
-        .save-btn {
+
+        .btn-save {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
+            padding: 10px 28px;
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
         }
-        
-        .cancel-btn {
-            background: #f44336;
+
+        .btn-cancel {
+            background: #6c757d;
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: 6px;
+            padding: 10px 28px;
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
         }
-        
+
+        /* Вкладки */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-flex;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .tab {
+            padding: 10px 24px;
+            cursor: pointer;
+            color: #666;
+            font-weight: 500;
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        /* Логи */
         .logs-section {
             background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-top: 50px;
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 0;
         }
-        
+
         .logs-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
-        
+
         .logs-table th,
         .logs-table td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
-        
+
         .logs-table th {
             background: #f8f9fa;
             font-weight: 600;
-            color: #666;
+            color: #555;
+            border-radius: 10px;
         }
-        
+
         .success-badge {
-            background: #e8f5e9;
-            color: #4CAF50;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
         }
-        
+
         .error-badge {
-            background: #ffebee;
-            color: #f44336;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
         }
-        
-        .nav-tabs {
-            display: flex;
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
+            margin-top: 20px;
         }
-        
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            color: #666;
-            font-weight: 500;
-            transition: 0.3s;
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            transition: 0.2s;
+            border: 1px solid #e9ecef;
         }
-        
-        .tab.active {
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 800;
             color: #667eea;
-            border-bottom: 2px solid #667eea;
         }
-        
-        .tab-pane {
-            display: none;
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
         }
-        
-        .tab-pane.active {
-            display: block;
-        }
-        
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: #999;
         }
-        
+
         .empty-state i {
             font-size: 4em;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            opacity: 0.5;
         }
+
+       .back-button-oval {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    border: none;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    text-decoration: none;
+}
+
+.back-button-oval:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+}
     </style>
 </head>
 <body>
@@ -423,395 +461,147 @@
         <div class="header">
             <h1>🤖 ИИ-агенты</h1>
             <p>Цифровые сотрудники, которые работают 24/7 без выходных</p>
-            <button class="create-agent-btn" onclick="showCreateModal()">
-                ➕ Создать нового агента
-            </button>
+            <button class="create-agent-btn" onclick="showCreateModal()">➕ Создать нового агента</button>
         </div>
-        
+
         <div class="nav-tabs">
             <div class="tab active" onclick="switchTab('agents')">🤖 Агенты</div>
             <div class="tab" onclick="switchTab('logs')">📋 Логи действий</div>
             <div class="tab" onclick="switchTab('stats')">📊 Статистика</div>
         </div>
-        
-        <!-- Вкладка с агентами -->
+
         <div id="agents-tab" class="tab-pane active">
-            <div class="agents-grid" id="agents-grid">
-                <!-- Агенты будут загружаться сюда -->
-            </div>
+            <div class="agents-grid" id="agents-grid"></div>
         </div>
-        
-        <!-- Вкладка с логами -->
+
         <div id="logs-tab" class="tab-pane">
             <div class="logs-section">
                 <h2>📋 История действий агентов</h2>
-                <table class="logs-table" id="logs-table">
-                    <thead>
-                        <tr>
-                            <th>Дата</th>
-                            <th>Агент</th>
-                            <th>Действие</th>
-                            <th>Клиент</th>
-                            <th>Результат</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logs-body">
-                        <!-- Логи будут загружаться сюда -->
-                    </tbody>
+                <table class="logs-table">
+                    <thead><tr><th>Дата</th><th>Агент</th><th>Действие</th><th>Клиент</th><th>Результат</th><th>Статус</th></tr></thead>
+                    <tbody id="logs-body"></tbody>
                 </table>
             </div>
         </div>
-        
-        <!-- Вкладка со статистикой -->
+
         <div id="stats-tab" class="tab-pane">
             <div class="logs-section">
                 <h2>📊 Статистика работы агентов</h2>
-                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
-                    <div class="stat">
-                        <div class="stat-value" id="total-actions">0</div>
-                        <div class="stat-label">Всего действий</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="success-actions">0</div>
-                        <div class="stat-label">Успешно</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="error-actions">0</div>
-                        <div class="stat-label">Ошибок</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value" id="deals-created">0</div>
-                        <div class="stat-label">Сделок создано</div>
-                    </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="total-actions">0</div><div class="stat-label">Всего действий</div></div>
+                    <div class="stat-card"><div class="stat-value" id="success-actions">0</div><div class="stat-label">Успешно</div></div>
+                    <div class="stat-card"><div class="stat-value" id="error-actions">0</div><div class="stat-label">Ошибок</div></div>
+                    <div class="stat-card"><div class="stat-value" id="deals-created">0</div><div class="stat-label">Сделок создано</div></div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Модальное окно создания агента -->
+
     <div id="agent-modal" class="modal">
         <div class="modal-content">
-            <h2 id="modal-title">🤖 Создать агента</h2>
+            <h2>🤖 Создать агента</h2>
             <form id="agent-form">
-                <div class="form-group">
-                    <label>Имя агента</label>
-                    <input type="text" id="agent-name" name="name" required placeholder="Например: Продажник Алиса">
-                </div>
-                
-                <div class="form-group">
-                    <label>Роль</label>
-                    <select id="agent-role" name="role" required>
-                        <option value="sales">Продажник</option>
-                        <option value="support">Саппорт</option>
-                        <option value="manager">Менеджер</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Инструкции (скрипт работы)</label>
-                    <textarea id="agent-instructions" name="instructions" required placeholder="Опишите, как должен работать агент...">Ты - дружелюбный помощник. Твоя задача - поддерживать связь с клиентами, напоминать о себе и помогать с вопросами.</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>Модель</label>
-                    <select id="agent-model" name="model">
-                        <option value="openrouter/auto">Auto (рекомендуется)</option>
-                        <option value="openrouter/gpt-4">GPT-4</option>
-                        <option value="openrouter/claude-v2">Claude 2</option>
-                        <option value="yandex/yandexgpt-lite">YandexGPT Lite</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Температура (креативность)</label>
-                    <input type="range" id="agent-temperature" name="temperature" min="0" max="1" step="0.1" value="0.7">
-                </div>
-                
-                <div class="form-group">
-                    <label>График работы</label>
-                    <select id="agent-schedule" name="schedule">
-                        <option value="24/7">24/7</option>
-                        <option value="office">Офисные часы (9:00-18:00)</option>
-                        <option value="night">Ночные часы (18:00-9:00)</option>
-                        <option value="weekend">Выходные</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Действия агента</label>
-                    <div style="margin-bottom: 10px;">
-                        <label><input type="checkbox" value="send_message" checked> Отправлять сообщения</label><br>
-                        <label><input type="checkbox" value="create_deal"> Создавать сделки</label><br>
-                        <label><input type="checkbox" value="tag_customer"> Тегировать клиентов</label><br>
-                        <label><input type="checkbox" value="remind_manager"> Напоминать менеджерам</label>
-                    </div>
-                </div>
-                
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeModal()">Отмена</button>
-                    <button type="submit" class="save-btn">Создать</button>
-                </div>
+                <div class="form-group"><label>Имя агента</label><input type="text" name="name" required placeholder="Например: Продажник Алиса"></div>
+                <div class="form-group"><label>Роль</label><select name="role"><option value="sales">Продажник</option><option value="support">Саппорт</option><option value="manager">Менеджер</option></select></div>
+                <div class="form-group"><label>Инструкции</label><textarea name="instructions" required>Ты - дружелюбный помощник. Твоя задача - поддерживать связь с клиентами.</textarea></div>
+                <div class="form-group"><label>Модель</label><select name="model"><option value="openrouter/auto">Auto</option><option value="openrouter/gpt-4">GPT-4</option><option value="yandex/yandexgpt-lite">YandexGPT</option></select></div>
+                <div class="form-group"><label>Температура</label><input type="range" name="temperature" min="0" max="1" step="0.1" value="0.7"></div>
+                <div class="form-group"><label>График</label><select name="schedule"><option value="24/7">24/7</option><option value="office">Офисные часы</option></select></div>
+                <div class="modal-buttons"><button type="button" class="btn-cancel" onclick="closeModal()">Отмена</button><button type="submit" class="btn-save">Создать</button></div>
             </form>
         </div>
     </div>
-    
-    <!-- ЕДИНСТВЕННЫЙ ПРАВИЛЬНЫЙ СКРИПТ -->
+
+   <button onclick="window.location.href='/dashboard-improved'" class="back-button-oval">
+    <i class="fas fa-arrow-left"></i>
+    <span>Назад</span>
+</button>
+
+
     <script>
-        // Переключение вкладок
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            
-            if (tab === 'agents') {
-                document.querySelectorAll('.tab')[0].classList.add('active');
-                document.getElementById('agents-tab').classList.add('active');
-                loadAgents();
-            } else if (tab === 'logs') {
-                document.querySelectorAll('.tab')[1].classList.add('active');
-                document.getElementById('logs-tab').classList.add('active');
-                loadLogs();
-            } else if (tab === 'stats') {
-                document.querySelectorAll('.tab')[2].classList.add('active');
-                document.getElementById('stats-tab').classList.add('active');
-                loadStats();
-            }
+            if (tab === 'agents') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('agents-tab').classList.add('active'); loadAgents(); }
+            else if (tab === 'logs') { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('logs-tab').classList.add('active'); loadLogs(); }
+            else if (tab === 'stats') { document.querySelectorAll('.tab')[2].classList.add('active'); document.getElementById('stats-tab').classList.add('active'); loadStats(); }
         }
-        
-        // Показать модальное окно
-        function showCreateModal() {
-            console.log('Открытие модального окна');
-            document.getElementById('modal-title').textContent = '🤖 Создать агента';
-            document.getElementById('agent-form').reset();
-            document.getElementById('agent-modal').classList.add('active');
-        }
-        
-        // Закрыть модальное окно
-        function closeModal() {
-            document.getElementById('agent-modal').classList.remove('active');
-        }
-        
-        // Загрузка агентов
+
+        function showCreateModal() { document.getElementById('agent-modal').classList.add('active'); }
+        function closeModal() { document.getElementById('agent-modal').classList.remove('active'); }
+
         async function loadAgents() {
             try {
-                const response = await fetch('/api/ai/agents');
-                const data = await response.json();
+                const res = await fetch('/api/ai/agents');
+                const data = await res.json();
                 renderAgents(data.agents || []);
-            } catch (err) {
-                console.error('Ошибка загрузки агентов:', err);
-            }
+            } catch(e) { console.error(e); }
         }
-        
-        // Загрузка логов
+
         async function loadLogs() {
             try {
-                const response = await fetch('/api/ai/agents/logs');
-                const data = await response.json();
+                const res = await fetch('/api/ai/agents/logs');
+                const data = await res.json();
                 renderLogs(data.logs || []);
-            } catch (err) {
-                console.error('Ошибка загрузки логов:', err);
-            }
+            } catch(e) { console.error(e); }
         }
-        
-        // Загрузка статистики
+
         async function loadStats() {
             try {
-                const response = await fetch('/api/ai/agents/stats');
-                const data = await response.json();
-                renderStats(data);
-            } catch (err) {
-                console.error('Ошибка загрузки статистики:', err);
-            }
+                const res = await fetch('/api/ai/agents/stats');
+                const data = await res.json();
+                document.getElementById('total-actions').textContent = data.total_actions || 0;
+                document.getElementById('success-actions').textContent = data.success_actions || 0;
+                document.getElementById('error-actions').textContent = data.error_actions || 0;
+                document.getElementById('deals-created').textContent = data.deals_created || 0;
+            } catch(e) { console.error(e); }
         }
-        
-        // Отрисовка агентов
+
         function renderAgents(agents) {
             const grid = document.getElementById('agents-grid');
-            if (!grid) return;
-            
-            if (agents.length === 0) {
-                grid.innerHTML = `
-                    <div class="empty-state" style="grid-column: 1/-1;">
-                        <i>🤖</i>
-                        <h3>У вас пока нет ИИ-агентов</h3>
-                        <p>Создайте первого агента, чтобы автоматизировать работу</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            grid.innerHTML = agents.map(agent => `
-                <div class="agent-card ${agent.is_active ? 'active' : ''}">
-                    <div class="agent-role role-${agent.role}">${getRoleName(agent.role)}</div>
-                    <div class="agent-name">${agent.name || 'Без имени'}</div>
-                    <div class="agent-instructions">${agent.instructions || 'Нет инструкций'}</div>
-                    
+            if (!agents.length) { grid.innerHTML = '<div class="empty-state"><i>🤖</i><h3>У вас пока нет ИИ-агентов</h3><p>Создайте первого агента</p></div>'; return; }
+            grid.innerHTML = agents.map(a => `
+                <div class="agent-card ${a.is_active ? 'active' : ''}">
+                    <div class="agent-role role-${a.role}">${a.role === 'sales' ? '💼 Продажник' : a.role === 'support' ? '🎧 Саппорт' : '📊 Менеджер'}</div>
+                    <div class="agent-name">${a.name}</div>
+                    <div class="agent-instructions">${a.instructions || 'Нет инструкций'}</div>
                     <div class="agent-meta">
-                        <div class="meta-item">
-                            <div class="meta-value">${agent.model || 'auto'}</div>
-                            <div class="meta-label">Модель</div>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-value">${agent.temperature || 0.7}</div>
-                            <div class="meta-label">Температура</div>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-value">${agent.schedule || '24/7'}</div>
-                            <div class="meta-label">График</div>
-                        </div>
+                        <div class="meta-item"><div class="meta-value">${a.model || 'auto'}</div><div class="meta-label">Модель</div></div>
+                        <div class="meta-item"><div class="meta-value">${a.temperature || 0.7}</div><div class="meta-label">Температура</div></div>
+                        <div class="meta-item"><div class="meta-value">${a.schedule || '24/7'}</div><div class="meta-label">График</div></div>
                     </div>
-                    
                     <div class="agent-footer">
-                        <div class="status-badge ${agent.is_active ? 'status-active' : 'status-inactive'}">
-                            ${agent.is_active ? '🟢 Активен' : '⚪ Неактивен'}
-                        </div>
+                        <span class="status-badge ${a.is_active ? 'status-active' : 'status-inactive'}">${a.is_active ? '🟢 Активен' : '⚪ Неактивен'}</span>
                         <div>
-                            <button class="edit-btn" onclick="editAgent('${agent.id}')">✏️</button>
-                            <button class="delete-btn" onclick="deleteAgent('${agent.id}')">🗑️</button>
+                            <button class="btn-icon btn-edit" onclick="editAgent('${a.id}')">✏️</button>
+                            <button class="btn-icon btn-clone" onclick="cloneAgent('${a.id}')">📋</button>
+                            <button class="btn-icon btn-toggle" onclick="toggleAgent('${a.id}')">${a.is_active ? '⏸️' : '▶️'}</button>
+                            <button class="btn-icon btn-delete" onclick="deleteAgent('${a.id}')">🗑️</button>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
-        
-        // Получение названия роли
-        function getRoleName(role) {
-            const roles = {
-                'sales': '💼 Продажник',
-                'support': '🎧 Саппорт',
-                'manager': '📊 Менеджер'
-            };
-            return roles[role] || role;
-        }
-        
-        // Отрисовка логов
+
         function renderLogs(logs) {
             const tbody = document.getElementById('logs-body');
-            if (!tbody) return;
-            
-            if (logs.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px;">
-                            Пока нет действий агентов
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            tbody.innerHTML = logs.map(log => `
-                <tr>
-                    <td>${new Date(log.created_at).toLocaleString()}</td>
-                    <td>${log.agent_name || log.agent_id || '-'}</td>
-                    <td>${log.action || '-'}</td>
-                    <td>${log.customer_name || log.customer_id || '-'}</td>
-                    <td>${log.result || '-'}</td>
-                    <td><span class="${log.status === 'success' ? 'success-badge' : 'error-badge'}">${log.status || '-'}</span></td>
-                </tr>
-            `).join('');
+            if (!logs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;">Пока нет действий</td></tr>'; return; }
+            tbody.innerHTML = logs.map(l => `<tr><td>${new Date(l.created_at).toLocaleString()}</td><td>${l.agent_name || '-'}</td><td>${l.action || '-'}</td><td>${l.customer_name || '-'}</td><td>${l.result || '-'}</td><td><span class="${l.status === 'success' ? 'success-badge' : 'error-badge'}">${l.status || '-'}</span></td></tr>`).join('');
         }
-        
-        // Отрисовка статистики
-        function renderStats(stats) {
-            document.getElementById('total-actions').textContent = stats.total_actions || 0;
-            document.getElementById('success-actions').textContent = stats.success_actions || 0;
-            document.getElementById('error-actions').textContent = stats.error_actions || 0;
-            document.getElementById('deals-created').textContent = stats.deals_created || 0;
-        }
-        
-        // Редактирование агента
-        async function editAgent(id) {
-            alert('Редактирование пока в разработке');
-        }
-        
-        // Удаление агента
-        async function deleteAgent(id) {
-            if (!confirm('Удалить этого агента?')) return;
-            
-            try {
-                const response = await fetch(`/api/ai/agents/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                if (response.ok) {
-                    loadAgents();
-                } else {
-                    alert('Ошибка при удалении');
-                }
-            } catch (err) {
-                console.error('Ошибка удаления:', err);
-                alert('Ошибка сети');
-            }
-        }
-        
-        // Обработка отправки формы
+
+        async function cloneAgent(id) { if (!confirm('Создать копию?')) return; try { await fetch(`/api/ai/agents/${id}/clone`, { method: 'POST' }); loadAgents(); alert('Агент скопирован'); } catch(e) { alert('Ошибка'); } }
+        async function toggleAgent(id) { try { await fetch(`/api/ai/agents/${id}/toggle`, { method: 'POST' }); loadAgents(); } catch(e) { alert('Ошибка'); } }
+        async function editAgent(id) { alert('Редактирование в разработке'); }
+        async function deleteAgent(id) { if (!confirm('Удалить агента?')) return; try { await fetch(`/api/ai/agents/${id}`, { method: 'DELETE' }); loadAgents(); } catch(e) { alert('Ошибка'); } }
+
         document.getElementById('agent-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const agentData = {
-                name: formData.get('name'),
-                role: formData.get('role'),
-                instructions: formData.get('instructions'),
-                model: formData.get('model') || 'openrouter/auto',
-                temperature: parseFloat(formData.get('temperature')) || 0.7,
-                schedule: formData.get('schedule') || '24/7',
-                is_active: true
-            };
-
-            console.log('Отправка данных:', agentData);
-
-            try {
-                const response = await fetch('/api/ai/agents', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(agentData)
-                });
-
-                if (response.ok) {
-                    closeModal();
-                    await loadAgents();
-                } else {
-                    const error = await response.text();
-                    alert('Ошибка: ' + error);
-                }
-            } catch (err) {
-                alert('Ошибка сети: ' + err.message);
-            }
+            const fd = new FormData(e.target);
+            const data = { name: fd.get('name'), role: fd.get('role'), instructions: fd.get('instructions'), model: fd.get('model'), temperature: parseFloat(fd.get('temperature')), schedule: fd.get('schedule'), is_active: true };
+            try { const res = await fetch('/api/ai/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); if (res.ok) { closeModal(); loadAgents(); } else alert('Ошибка'); } catch(e) { alert('Ошибка сети'); }
         });
-        
-        // Загружаем агентов при старте
+
         document.addEventListener('DOMContentLoaded', loadAgents);
     </script>
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    transition: all 0.3s;
-    z-index: 1000;
-    cursor: pointer;
-}
-.back-button:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-}
-</style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
-    <i class="fas fa-arrow-left fa-lg"></i>
-</a>
 </body>
 </html>
-

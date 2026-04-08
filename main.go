@@ -839,17 +839,22 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         secureAPI.GET("/user/profile", handlers.GetUserProfile)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
     }
-    // ========== AI AGENTS MANAGEMENT ==========
+       // ========== AI AGENTS MANAGEMENT ==========
     aiAgents := r.Group("/api/ai/agents")
     aiAgents.Use(middleware.AuthMiddleware(cfg))
     {
         aiAgents.GET("", handlers.GetAgents)
         aiAgents.POST("", handlers.CreateAgent)
+        aiAgents.GET("/:id", handlers.GetAgentDetails)
         aiAgents.PUT("/:id", handlers.UpdateAgent)
         aiAgents.DELETE("/:id", handlers.DeleteAgent)
+        aiAgents.POST("/:id/clone", handlers.CloneAgent)
+        aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
         aiAgents.POST("/:id/actions", handlers.AddAgentAction)
         aiAgents.GET("/logs", handlers.GetAgentLogs)
         aiAgents.GET("/stats", handlers.GetAgentStats)
+        aiAgents.GET("/export", handlers.ExportAgents)
+    
     }
 
     r.GET("/notify", handlers.NotifyPageHandler)

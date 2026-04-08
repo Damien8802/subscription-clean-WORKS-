@@ -1,6 +1,7 @@
 package handlers
 
 import (
+        "context"
 	"log"
 	"net/http"
 	"time"
@@ -11,25 +12,30 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
-
-// GetAccountID получает user_id из контекста
 func GetAccountID(c *gin.Context) string {
-    accountID, exists := c.Get("accountID")
-    if !exists {
-        // В режиме SkipAuth используем тестовый user_id
-        log.Println("⚠️ accountID не найден в контексте, использую тестовый")
-        return "00000000-0000-0000-0000-000000000001"
+    // Пробуем получить user_id из контекста
+    if userID, exists := c.Get("userID"); exists {
+        if str, ok := userID.(string); ok && str != "" {
+            log.Printf("✅ GetAccountID: userID=%s", str)
+            return str
+        }
     }
-    
-    // Преобразуем в строку
-    if str, ok := accountID.(string); ok {
-        return str
+    if userID, exists := c.Get("user_id"); exists {
+        if str, ok := userID.(string); ok && str != "" {
+            log.Printf("✅ GetAccountID: user_id=%s", str)
+            return str
+        }
     }
-    
-    log.Println("⚠️ accountID имеет неправильный тип, использую тестовый")
-    return "00000000-0000-0000-0000-000000000001"
+    // В режиме SkipAuth используем существующего пользователя из БД
+    var userID string
+    err := database.Pool.QueryRow(context.Background(), 
+        "SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1").Scan(&userID)
+    if err == nil && userID != "" {
+        log.Printf("⚠️ GetAccountID: используем пользователя из БД: %s", userID)
+        return userID
+    }
+    return "a65f3933-c84c-430d-a703-f1247897bbf4"
 }
-
 // CreateAgent - создание нового ИИ-агента
 func CreateAgent(c *gin.Context) {
 	accountID := GetAccountID(c)
@@ -341,4 +347,170 @@ func AIAgentsPage(c *gin.Context) {
 		"UserName":  userName,
 		"IsAdmin":   userRole == "admin",
 	})
+}
+
+// CloneAgent - клонирование агента
+func CloneAgent(c *gin.Context) {
+    agentID := c.Param("id")
+    accountID := GetAccountID(c)
+
+    // Получаем исходного агента
+    var agent models.AIAgent
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT name, role, instructions, model, temperature, schedule, is_active
+        FROM ai_agents
+        WHERE id = $1 AND user_id = $2
+    `, agentID, accountID).Scan(&agent.Name, &agent.Role, &agent.Instructions,
+        &agent.Model, &agent.Temperature, &agent.Schedule, &agent.IsActive)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "агент не найден"})
+        return
+    }
+
+    // Создаём копию
+    agent.ID = uuid.New().String()
+    agent.AccountID = accountID
+    agent.Name = agent.Name + " (копия)"
+    agent.CreatedAt = time.Now()
+    agent.UpdatedAt = time.Now()
+
+    _, err = database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO ai_agents (id, user_id, name, role, instructions, model, temperature, schedule, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `, agent.ID, agent.AccountID, agent.Name, agent.Role, agent.Instructions,
+        agent.Model, agent.Temperature, agent.Schedule, agent.IsActive,
+        agent.CreatedAt, agent.UpdatedAt)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "агент скопирован", "agent_id": agent.ID})
+}
+
+// ToggleAgentStatus - включение/выключение агента
+func ToggleAgentStatus(c *gin.Context) {
+    agentID := c.Param("id")
+    accountID := GetAccountID(c)
+
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        UPDATE ai_agents 
+        SET is_active = NOT is_active, updated_at = NOW()
+        WHERE id = $1 AND user_id = $2
+    `, agentID, accountID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "статус агента изменён"})
+}
+
+// GetAgentDetails - детальная информация об агенте
+func GetAgentDetails(c *gin.Context) {
+    agentID := c.Param("id")
+    accountID := GetAccountID(c)
+
+    var agent models.AIAgent
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT id, name, role, instructions, model, temperature, schedule, is_active, created_at, updated_at
+        FROM ai_agents
+        WHERE id = $1 AND user_id = $2
+    `, agentID, accountID).Scan(&agent.ID, &agent.Name, &agent.Role, &agent.Instructions,
+        &agent.Model, &agent.Temperature, &agent.Schedule, &agent.IsActive,
+        &agent.CreatedAt, &agent.UpdatedAt)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "агент не найден"})
+        return
+    }
+
+    // Получаем действия агента
+    actions, _ := database.Pool.Query(c.Request.Context(), `
+        SELECT action, condition, config, is_active, created_at
+        FROM ai_agent_actions
+        WHERE agent_id = $1
+    `, agentID)
+    defer actions.Close()
+
+    var actionList []gin.H
+    for actions.Next() {
+        var action, condition string
+        var config interface{}
+        var isActive bool
+        var createdAt time.Time
+        actions.Scan(&action, &condition, &config, &isActive, &createdAt)
+        actionList = append(actionList, gin.H{
+            "action":    action,
+            "condition": condition,
+            "config":    config,
+            "is_active": isActive,
+            "created_at": createdAt,
+        })
+    }
+
+    // Получаем статистику агента
+    var stats struct {
+        TotalActions int `json:"total_actions"`
+        SuccessRate  float64 `json:"success_rate"`
+    }
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT 
+            COUNT(*) as total_actions,
+            COALESCE(ROUND(AVG(CASE WHEN status = 'success' THEN 100 ELSE 0 END)), 0) as success_rate
+        FROM ai_agent_logs
+        WHERE agent_id = $1
+    `, agentID).Scan(&stats.TotalActions, &stats.SuccessRate)
+
+    c.JSON(http.StatusOK, gin.H{
+        "agent":   agent,
+        "actions": actionList,
+        "stats":   stats,
+    })
+}
+
+// ExportAgents - экспорт всех агентов в JSON
+func ExportAgents(c *gin.Context) {
+    accountID := GetAccountID(c)
+
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT id, name, role, instructions, model, temperature, schedule, is_active, created_at
+        FROM ai_agents
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+    `, accountID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    var agents []gin.H
+    for rows.Next() {
+        var id, name, role, instructions, model, schedule string
+        var temperature float64
+        var isActive bool
+        var createdAt time.Time
+        rows.Scan(&id, &name, &role, &instructions, &model, &temperature, &schedule, &isActive, &createdAt)
+
+        agents = append(agents, gin.H{
+            "id":           id,
+            "name":         name,
+            "role":         role,
+            "instructions": instructions,
+            "model":        model,
+            "temperature":  temperature,
+            "schedule":     schedule,
+            "is_active":    isActive,
+            "created_at":   createdAt,
+        })
+    }
+
+    c.Header("Content-Disposition", "attachment; filename=agents_export.json")
+    c.Header("Content-Type", "application/json")
+    c.JSON(http.StatusOK, gin.H{"agents": agents})
 }
