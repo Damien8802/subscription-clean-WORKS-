@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FusionAPI — Портал разработчика</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 50px; }
+        .logo { font-size: 64px; font-weight: 800; color: white; margin-bottom: 16px; }
+        .tagline { color: rgba(255,255,255,0.9); font-size: 18px; }
+        .card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .card h2 { color: #1e293b; margin-bottom: 20px; }
+        .key-display {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .key-value {
+            font-family: monospace;
+            font-size: 16px;
+            color: #1e293b;
+            word-break: break-all;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: scale(1.02); opacity: 0.9; }
+        .btn-secondary { background: #f1f5f9; color: #475569; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .stat-label { color: #64748b; font-size: 14px; }
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        .plan-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            transition: transform 0.3s;
+        }
+        .plan-card:hover { transform: translateY(-5px); }
+        .plan-card.popular { border: 2px solid #f59e0b; }
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: #f59e0b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .plan-name { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+        .plan-price { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+        .plan-features { list-style: none; margin: 20px 0; }
+        .plan-features li { padding: 8px 0; color: #475569; }
+        .docs-section {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+        }
+        .docs-section h2, .docs-section h3 { color: #1e293b; margin-bottom: 16px; }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: white;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .notification.success { background: #10b981; }
+        .notification.error { background: #ef4444; }
+        .notification.warning { background: #f59e0b; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 1000px) {
+            .plans-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 640px) {
+            .plans-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">⚡ FusionAPI</div>
+            <div class="tagline">Единый API для всех сервисов вашего бизнеса</div>
+        </div>
+
+        <div class="card">
+            <h2>🔑 Ваш API ключ</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">Используйте этот ключ для доступа к FusionAPI</p>
+            <div class="key-display">
+                <code class="key-value" id="apiKeyValue">Загрузка...</code>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-secondary" onclick="copyAPIKey()">📋 Копировать</button>
+                    <button class="btn btn-primary" onclick="regenerateKey()">🔄 Новый ключ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="requestsUsed">0</div>
+                <div class="stat-label">Использовано запросов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="requestsLimit">1000</div>
+                <div class="stat-label">Лимит в месяц</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="remainingPercent">0%</div>
+                <div class="stat-label">Осталось</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="planName">Free</div>
+                <div class="stat-label">Тариф</div>
+            </div>
+        </div>
+
+        <h2 style="color: white; margin-bottom: 24px;">📊 Выберите тариф</h2>
+        <div class="plans-grid" id="plansGrid"></div>
+
+        <div class="docs-section">
+            <h2>📚 Документация API</h2>
+            <h3>Аутентификация</h3>
+            <div class="code-block">
+                curl -X GET https://fusionapi.ru/v1/crm/customers \<br>
+                &nbsp;&nbsp;-H "X-API-Key: YOUR_API_KEY"
+            </div>
+            <h3>Эндпоинты</h3>
+            <div class="code-block">
+                GET  /api/v1/crm/customers - список клиентов<br>
+                POST /api/v1/crm/deals - создать сделку<br>
+                GET  /api/v1/fincore/entries - бухгалтерские проводки<br>
+                GET  /api/v1/teamsphere/tasks - задачи TeamSphere
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPlanCode = 'free';
+        let fullAPIKey = null;
+        
+        async function loadAPIKey() {
+            try {
+                const res = await fetch('/api/fusion/my-key');
+                const data = await res.json();
+                
+                if (data.is_first_time && data.full_key) {
+                    fullAPIKey = data.full_key;
+                    document.getElementById('apiKeyValue').textContent = data.key;
+                    showNotification('🔑 Ваш API ключ (показывается только один раз)!', 'success');
+                } else if (data.key) {
+                    document.getElementById('apiKeyValue').textContent = data.key;
+                    fullAPIKey = null;
+                }
+                
+                currentPlanCode = data.plan_code || 'free';
+            } catch(err) {
+                console.error('Error:', err);
+                document.getElementById('apiKeyValue').textContent = 'Ошибка загрузки';
+            }
+        }
+        
+        async function loadUsageStats() {
+            try {
+                const res = await fetch('/api/fusion/usage-stats');
+                const data = await res.json();
+                document.getElementById('requestsUsed').textContent = data.requests_used || 0;
+                document.getElementById('requestsLimit').textContent = data.requests_limit || 1000;
+                document.getElementById('remainingPercent').textContent = Math.round(data.remaining_percent || 0) + '%';
+                document.getElementById('planName').textContent = data.plan_name || 'Free';
+            } catch(err) {
+                console.error('Error:', err);
+            }
+        }
+        
+        async function loadPlans() {
+            try {
+                const res = await fetch('/api/fusion/plans');
+                const plans = await res.json();
+                const grid = document.getElementById('plansGrid');
+                grid.innerHTML = plans.map(p => `
+                    <div class="plan-card ${p.code === 'pro' ? 'popular' : ''}">
+                        ${p.code === 'pro' ? '<div class="popular-badge">🔥 Популярный</div>' : ''}
+                        <div class="plan-name">${p.name}</div>
+                        <div class="plan-price">${p.price_monthly} ₽</div>
+                        <ul class="plan-features">
+                            <li>📊 ${p.requests_limit.toLocaleString()} запросов/мес</li>
+                            <li>⚡ ${p.rate_limit} запросов/мин</li>
+                            ${p.has_support ? '<li>🎧 Поддержка</li>' : ''}
+                        </ul>
+                        <button class="btn ${p.code === currentPlanCode ? 'btn-secondary' : 'btn-primary'}" 
+                                onclick="upgradePlan('${p.code}')"
+                                ${p.code === currentPlanCode ? 'disabled' : ''}>
+                            ${p.code === currentPlanCode ? '✓ Текущий' : 'Выбрать'}
+                        </button>
+                    </div>
+                `).join('');
+            } catch(err) {
+                console.error('Error:', err);
+            }
+        }
+        
+        function copyAPIKey() {
+            if (fullAPIKey) {
+                navigator.clipboard.writeText(fullAPIKey);
+                showNotification('API ключ скопирован!', 'success');
+            } else {
+                const keyText = document.getElementById('apiKeyValue').textContent;
+                if (keyText && keyText !== 'Загрузка...' && keyText !== 'Ошибка загрузки') {
+                    navigator.clipboard.writeText(keyText);
+                    showNotification('API ключ скопирован!', 'success');
+                } else {
+                    showNotification('Нет ключа для копирования', 'warning');
+                }
+            }
+        }
+        
+        async function regenerateKey() {
+            if (confirm('Создание нового ключа отзовёт старый. Продолжить?')) {
+                try {
+                    const res = await fetch('/api/fusion/regenerate-key', { method: 'POST' });
+                    const data = await res.json();
+                    
+                    fullAPIKey = data.full_key || data.key;
+                    document.getElementById('apiKeyValue').textContent = data.key;
+                    
+                    showNotification('🔑 Новый API ключ создан! Сохраните его, он показывается только один раз!', 'success');
+                    loadUsageStats();
+                } catch (err) {
+                    showNotification('Ошибка при создании ключа', 'error');
+                }
+            }
+        }
+        
+        async function upgradePlan(code) {
+            if(code === currentPlanCode) return;
+            if(confirm(`Перейти на тариф ${code.toUpperCase()}?`)) {
+                try {
+                    const res = await fetch('/api/fusion/upgrade-plan', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ plan_code: code })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showNotification(`Тариф обновлён до ${data.plan_name}!`, 'success');
+                        loadUsageStats();
+                        loadPlans();
+                        currentPlanCode = code;
+                    } else {
+                        showNotification(data.error || 'Ошибка обновления тарифа', 'error');
+                    }
+                } catch(err) {
+                    showNotification('Ошибка при обновлении тарифа', 'error');
+                }
+            }
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.className = 'notification ' + type;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+        
+        loadAPIKey();
+        loadUsageStats();
+        loadPlans();
+        setInterval(loadUsageStats, 30000);
+    </script>
+</body>
+</html>

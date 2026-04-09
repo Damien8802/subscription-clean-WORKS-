@@ -22,6 +22,12 @@ type APIKey struct {
     IsActive            bool            `json:"is_active" db:"is_active"`
     CreatedAt           time.Time       `json:"created_at" db:"created_at"`
     UpdatedAt           time.Time       `json:"updated_at" db:"updated_at"`
+
+   PlanID        *string     `json:"plan_id" db:"plan_id"`
+    RequestsLimit int         `json:"requests_limit" db:"requests_limit"`
+    LastResetAt   *time.Time  `json:"last_reset_at" db:"last_reset_at"`
+    LastUsedAt    *time.Time  `json:"last_used_at" db:"last_used_at"`
+    TotalRequests int         `json:"total_requests" db:"total_requests"`
 }
 
 // CreateAPIKey создаёт новый ключ в БД

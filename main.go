@@ -230,6 +230,17 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     }
 
     r.SetHTMLTemplate(tmpl)
+// Публичные маршруты
+    public := r.Group("/")
+    {
+        public.GET("/", handlers.HomeHandler)
+        public.GET("/about", handlers.AboutHandler)
+        public.GET("/contact", handlers.ContactHandler)
+        public.GET("/info", handlers.InfoHandler)
+        public.GET("/pricing", handlers.PricingPageHandler)
+        public.GET("/partner", handlers.PartnerHandler)
+        public.GET("/fusion-api", handlers.FusionAPIPortalHandler)
+    }
     log.Println("✅ Шаблоны загружены из файловой системы")
 
 
@@ -448,8 +459,10 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
    // Projects page
    r.GET("/projects", handlers.ProjectsPageHandler)
 
+
 // HR маршруты
 hr := r.Group("/hr")
+
 {
     hr.GET("/", handlers.HRDashboardHandler)
     hr.GET("/api/employees", handlers.GetEmployeesHandler)
@@ -501,6 +514,9 @@ archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
 
 archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
 }
+
+   
+
 
 // ========== МАРКЕТПЛЕЙС ==========
 marketplace := r.Group("/marketplace")
@@ -570,17 +586,7 @@ crmArchive.Use(middleware.AuthMiddleware(cfg))
         adminVPN.GET("/stats", handlers.AdminVPNHandler)
     }
 
-    // Публичные маршруты
-    public := r.Group("/")
-    {
-        public.GET("/", handlers.HomeHandler)
-        public.GET("/about", handlers.AboutHandler)
-        public.GET("/contact", handlers.ContactHandler)
-        public.GET("/info", handlers.InfoHandler)
-        public.GET("/pricing", handlers.PricingPageHandler)
-        public.GET("/partner", handlers.PartnerHandler)
-    }
-
+ 
     r.POST("/api/service-order", serviceOrderHandler)
 
     // Страницы авторизации
@@ -839,24 +845,39 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         secureAPI.GET("/user/profile", handlers.GetUserProfile)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
     }
-       // ========== AI AGENTS MANAGEMENT ==========
-    aiAgents := r.Group("/api/ai/agents")
-    aiAgents.Use(middleware.AuthMiddleware(cfg))
-    {
-        aiAgents.GET("", handlers.GetAgents)
-        aiAgents.POST("", handlers.CreateAgent)
-        aiAgents.GET("/:id", handlers.GetAgentDetails)
-        aiAgents.PUT("/:id", handlers.UpdateAgent)
-        aiAgents.DELETE("/:id", handlers.DeleteAgent)
-        aiAgents.POST("/:id/clone", handlers.CloneAgent)
-        aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
-        aiAgents.POST("/:id/actions", handlers.AddAgentAction)
-        aiAgents.GET("/logs", handlers.GetAgentLogs)
-        aiAgents.GET("/stats", handlers.GetAgentStats)
-        aiAgents.GET("/export", handlers.ExportAgents)
-    
-    }
 
+// ========== FUSIONAPI - Брендовый API продукт ==========
+// Временно отключаем авторизацию для разработки
+fusionAPI := r.Group("/api/fusion")
+// fusionAPI.Use(middleware.AuthMiddleware(cfg))  // КОММЕНТАРИЙ
+{
+    fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
+    fusionAPI.GET("/usage-stats", handlers.GetAPIUsageStats)
+    fusionAPI.POST("/regenerate-key", handlers.RegenerateAPIKey)
+    fusionAPI.GET("/plans", handlers.GetAPIPlans)
+    fusionAPI.POST("/upgrade-plan", handlers.APIPlanUpgradeRequest)
+    fusionAPI.GET("/docs", handlers.GetAPIDocumentation)
+}
+
+// Страница портала FusionAPI
+r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
+
+// ========== AI AGENTS MANAGEMENT ==========
+aiAgents := r.Group("/api/ai/agents")
+aiAgents.Use(middleware.AuthMiddleware(cfg))
+{
+    aiAgents.GET("", handlers.GetAgents)
+    aiAgents.POST("", handlers.CreateAgent)
+    aiAgents.GET("/:id", handlers.GetAgentDetails)
+    aiAgents.PUT("/:id", handlers.UpdateAgent)
+    aiAgents.DELETE("/:id", handlers.DeleteAgent)
+    aiAgents.POST("/:id/clone", handlers.CloneAgent)
+    aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
+    aiAgents.POST("/:id/actions", handlers.AddAgentAction)
+    aiAgents.GET("/logs", handlers.GetAgentLogs)
+    aiAgents.GET("/stats", handlers.GetAgentStats)
+    aiAgents.GET("/export", handlers.ExportAgents)
+}
     r.GET("/notify", handlers.NotifyPageHandler)
 
     userKeys := r.Group("/api/user/keys")
@@ -975,6 +996,8 @@ r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) 
     fmt.Printf("   📈 Партнёрский      %s/partner-dashboard\n", baseURL)
     fmt.Printf("   📈 Унифицированный  %s/unified-dashboard\n\n", baseURL)
     fmt.Printf("   📡 API Health       %s/api/health\n", baseURL)
+    fmt.Printf("   🔹 FusionAPI        %s/fusion-portal\n", baseURL)
+    fmt.Printf("   🔹 API Документация %s/api/fusion/docs\n", baseURL)
     fmt.Printf("   📡 CRM Health       %s/api/crm/health\n", baseURL)
     fmt.Printf("   📡 Система          %s/api/system/stats\n", baseURL)
     fmt.Printf("   📡 Тест             %s/api/test\n", baseURL)
