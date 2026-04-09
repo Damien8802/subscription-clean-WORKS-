@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     
     <!-- Custom CSS -->
-    <style>
+      <style>
         :root {
             --sidebar-width: 280px;
         }
@@ -129,8 +129,15 @@
         .action-icon {
             font-size: 2rem;
             margin-bottom: 10px;
-            color: #667eea;
         }
+        
+        /* Цветные иконки в action-card */
+        .action-card:nth-child(1) .action-icon { color: #a78bfa; }
+        .action-card:nth-child(2) .action-icon { color: #8b5cf6; }
+        .action-card:nth-child(3) .action-icon { color: #3b82f6; }
+        .action-card:nth-child(4) .action-icon { color: #f59e0b; }
+        .action-card:nth-child(5) .action-icon { color: #06b6d4; }
+        .action-card:nth-child(6) .action-icon { color: #fbbf24; }
         
         .action-title {
             font-weight: 600;
@@ -140,6 +147,39 @@
         .action-desc {
             font-size: 0.8rem;
             color: #888;
+        }
+        
+        /* ========== ЦВЕТНЫЕ ИКОНКИ BOOTSTRAP (BI) В ЛЕВОМ МЕНЮ ========== */
+        .sidebar .nav-link .bi {
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        /* Цвета для иконок */
+        .sidebar .bi-house-door { color: #10b981 !important; }
+        .sidebar .bi-speedometer2 { color: #3b82f6 !important; }
+        .sidebar .bi-credit-card { color: #f59e0b !important; }
+        .sidebar .bi-graph-up { color: #8b5cf6 !important; }
+        .sidebar .bi-tag { color: #06b6d4 !important; }
+        .sidebar .bi-shield-lock { color: #ec4899 !important; }
+        .sidebar .bi-gift { color: #fbbf24 !important; }
+        .sidebar .bi-people { color: #34d399 !important; }
+        .sidebar .bi-person-circle { color: #a78bfa !important; }
+        .sidebar .bi-shield-shaded { color: #06b6d4 !important; }
+        .sidebar .bi-fingerprint { color: #8b5cf6 !important; }
+        .sidebar .bi-archive { color: #f59e0b !important; }
+        .sidebar .bi-shop { color: #ec4899 !important; }
+        .sidebar .bi-box-seam { color: #f59e0b !important; }
+        .sidebar .bi-truck { color: #06b6d4 !important; }
+        .sidebar .bi-shield-lock-fill { color: #fbbf24 !important; }
+        .sidebar .bi-grid { color: #6b7280 !important; }
+        .sidebar .bi-bolt { color: #a78bfa !important; }
+        
+        /* Hover эффект для иконок меню */
+        .sidebar .nav-link:hover .bi {
+            transform: scale(1.15) !important;
+            filter: drop-shadow(0 0 3px currentColor) !important;
         }
         
         .key-card {
@@ -259,14 +299,7 @@
                         Дашборд
                     </a>
                 </li>
-                <li class="nav-item mb-2">
-                    <a class="nav-link text-light d-flex align-items-center" href="/ai-agents">
-                        <i class="bi bi-robot me-3"></i>
-                        ИИ-агенты
-                        <span class="badge bg-warning text-dark ms-2">New</span>
-                    </a>
-                </li>
-                <li class="nav-item mb-2">
+                               <li class="nav-item mb-2">
                     <a class="nav-link text-light d-flex align-items-center" href="/my-subscriptions">
                         <i class="bi bi-wallet2 me-3"></i>
                         Мои подписки
@@ -500,14 +533,11 @@
                     <div class="action-desc">Единый вход для всех сервисов</div>
                 </a>
                 
-                <a href="/api-keys" class="action-card text-decoration-none">
-                    <div class="action-icon">
-                        <i class="bi bi-key"></i>
-                    </div>
-                    <div class="action-title">API ключи</div>
-                    <div class="action-desc">Управление API ключами</div>
-                </a>
-                
+               <a href="/fusion-portal" class="action-card text-decoration-none">
+    <div class="action-icon">⚡</div>
+    <div class="action-title">FusionAPI</div>
+    <div class="action-desc">Управление API ключами и AI агентами</div>
+</a>
                 <a href="/support" class="action-card text-decoration-none">
                     <div class="action-icon">
                         <i class="bi bi-headset"></i>

@@ -28,6 +28,11 @@ type APIKey struct {
     LastResetAt   *time.Time  `json:"last_reset_at" db:"last_reset_at"`
     LastUsedAt    *time.Time  `json:"last_used_at" db:"last_used_at"`
     TotalRequests int         `json:"total_requests" db:"total_requests"`
+// AI Agents поля
+AIRequestsUsed  int `json:"ai_requests_used" db:"ai_requests_used"`
+AIRequestsLimit int `json:"ai_requests_limit" db:"ai_requests_limit"`
+AgentsLimit     int `json:"agents_limit" db:"agents_limit"`
+AgentsCreated   int `json:"agents_created" db:"agents_created"`
 }
 
 // CreateAPIKey создаёт новый ключ в БД

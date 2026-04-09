@@ -9,6 +9,10 @@ import (
     "net/http"
     "strings"
     "time"
+    "io"
+    "net"
+    "strconv"
+
 
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
@@ -112,6 +116,9 @@ func main() {
     }
     
     handlers.InitVPNWithDB(database.Pool)
+    // Инициализация Stealth VPN сервиса
+    handlers.InitStealthVPN(database.Pool)
+    log.Println("✅ Stealth VPN сервис инициализирован")
 
     handlers.InitAuthHandler(cfg)
     handlers.InitNotifier(cfg)
@@ -223,6 +230,17 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     }
 
     r.SetHTMLTemplate(tmpl)
+// Публичные маршруты
+    public := r.Group("/")
+    {
+        public.GET("/", handlers.HomeHandler)
+        public.GET("/about", handlers.AboutHandler)
+        public.GET("/contact", handlers.ContactHandler)
+        public.GET("/info", handlers.InfoHandler)
+        public.GET("/pricing", handlers.PricingPageHandler)
+        public.GET("/partner", handlers.PartnerHandler)
+        public.GET("/fusion-api", handlers.FusionAPIPortalHandler)
+    }
     log.Println("✅ Шаблоны загружены из файловой системы")
 
 
@@ -328,9 +346,10 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.POST("/api/journal-entries/:id/post", handlers.PostJournalEntry)
     r.DELETE("/api/journal-entries/:id", handlers.DeleteJournalEntry)
 
-r.GET("/api/plans", handlers.GetPlans)
-r.GET("/api/tariffs", handlers.GetTariffs)
+    r.GET("/api/admin/create-inventory-tables", handlers.CreateInventoryTables)
+    r.GET("/api/current-user", handlers.GetCurrentUserID)
 
+    r.GET("/api/admin/create-vpn-tables", handlers.CreateVPNTables)
 
    r.GET("/api/backup", handlers.CreateBackup)
    r.POST("/api/restore", handlers.RestoreBackup)
@@ -340,6 +359,11 @@ r.GET("/api/tariffs", handlers.GetTariffs)
             "title": "Поставщики | SaaSPro",
         })
     })
+   r.GET("/inventory/products", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "inventory_products.html", gin.H{
+        "title": "Товары - SaaSPro",
+    })
+})
 
     // Страница закупок
     r.GET("/purchases", func(c *gin.Context) {
@@ -435,8 +459,10 @@ r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
    // Projects page
    r.GET("/projects", handlers.ProjectsPageHandler)
 
+
 // HR маршруты
 hr := r.Group("/hr")
+
 {
     hr.GET("/", handlers.HRDashboardHandler)
     hr.GET("/api/employees", handlers.GetEmployeesHandler)
@@ -489,6 +515,9 @@ archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
 archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
 }
 
+   
+
+
 // ========== МАРКЕТПЛЕЙС ==========
 marketplace := r.Group("/marketplace")
 marketplace.Use(middleware.AuthMiddleware(cfg))
@@ -529,6 +558,26 @@ crmArchive.Use(middleware.AuthMiddleware(cfg))
     r.GET("/api/vpn/stats", handlers.GetVPNStats)
     r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
 
+    // ========== STEALTH VPN (НЕВИДИМЫЙ VPN) ==========
+    // Stealth VPN API - не конфликтует с существующими VPN роутами
+    stealthVPN := r.Group("/api/vpn/stealth")
+    stealthVPN.Use(middleware.AuthMiddleware(cfg))
+    {
+        // Получить VLESS конфигурацию
+        stealthVPN.GET("/config/vless", handlers.GetVLessConfigHandler)
+        
+        // Умный роутинг
+        stealthVPN.GET("/routing", handlers.GetSmartRulesHandler)
+        stealthVPN.POST("/routing", handlers.AddSmartRuleHandler)
+        stealthVPN.DELETE("/routing/:id", handlers.DeleteSmartRuleHandler)
+        
+        // Получить stealth тарифы
+        stealthVPN.GET("/plans", handlers.GetStealthPlansHandler)
+    }
+    
+    // Страница Stealth VPN
+    r.GET("/vpn/stealth", handlers.StealthVPNPageHandler)
+
     // Админ маршруты для VPN
     adminVPN := r.Group("/admin/vpn")
     adminVPN.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
@@ -537,17 +586,7 @@ crmArchive.Use(middleware.AuthMiddleware(cfg))
         adminVPN.GET("/stats", handlers.AdminVPNHandler)
     }
 
-    // Публичные маршруты
-    public := r.Group("/")
-    {
-        public.GET("/", handlers.HomeHandler)
-        public.GET("/about", handlers.AboutHandler)
-        public.GET("/contact", handlers.ContactHandler)
-        public.GET("/info", handlers.InfoHandler)
-        public.GET("/pricing", handlers.PricingPageHandler)
-        public.GET("/partner", handlers.PartnerHandler)
-    }
-
+ 
     r.POST("/api/service-order", serviceOrderHandler)
 
     // Страницы авторизации
@@ -783,14 +822,6 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
         api.POST("/ai/consultant", handlers.AIConsultantHandler)
 
-        api.GET("/ai/agents", handlers.GetAgents)
-        api.POST("/ai/agents", handlers.CreateAgent)
-        api.PUT("/ai/agents/:id", handlers.UpdateAgent)
-        api.DELETE("/ai/agents/:id", handlers.DeleteAgent)
-        api.POST("/ai/agents/:id/actions", handlers.AddAgentAction)
-        api.GET("/ai/agents/logs", handlers.GetAgentLogs)
-        api.GET("/ai/agents/stats", handlers.GetAgentStats)
-
         api.GET("/analytics/ltv", handlers.GetLTVPredictions)
         api.GET("/analytics/ltv/:id", handlers.GetCustomerLTV)
         api.GET("/analytics/insights", handlers.GetInsights)
@@ -798,6 +829,16 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/analytics/cohorts/run", handlers.RunCohortAnalysis)
     }
 
+      // ========== API KEYS MANAGEMENT ==========
+    apiKeysGroup := r.Group("/api/keys")
+    apiKeysGroup.Use(middleware.AuthMiddleware(cfg))
+    {
+        apiKeysGroup.POST("/generate", handlers.GenerateAPIKey)
+        apiKeysGroup.GET("", handlers.GetAPIKeys)          // ← без Handler
+        apiKeysGroup.DELETE("/:id", handlers.RevokeAPIKey)
+        apiKeysGroup.GET("/:id/stats", handlers.GetAPIKeyStats)
+        apiKeysGroup.GET("/:id/daily-stats", handlers.GetAPIKeyDailyStats)
+    }
     secureAPI := r.Group("/api")
     secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
@@ -805,6 +846,49 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
     }
 
+// ========== FUSIONAPI - Брендовый API продукт с AI ==========
+fusionAPI := r.Group("/api/fusion")
+// fusionAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    // API ключи
+    fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
+    fusionAPI.GET("/usage-stats", handlers.GetAPIUsageStats)
+    fusionAPI.POST("/regenerate-key", handlers.RegenerateAPIKey)
+    fusionAPI.GET("/plans", handlers.GetAPIPlans)
+    fusionAPI.POST("/upgrade-plan", handlers.APIPlanUpgradeRequest)
+    fusionAPI.GET("/docs", handlers.GetAPIDocumentation)
+    
+    // AI Агенты (новые функции для FusionAPI)
+    fusionAPI.GET("/agents", handlers.GetMyAgents)
+    fusionAPI.POST("/agents", handlers.CreateFusionAgent)
+    fusionAPI.PUT("/agents/:id", handlers.UpdateFusionAgent)
+    fusionAPI.DELETE("/agents/:id", handlers.DeleteFusionAgent)
+    fusionAPI.POST("/agents/:id/chat", handlers.ChatWithFusionAgent)
+    
+    // AI Аналитика
+    fusionAPI.GET("/analytics/ai", handlers.GetFusionAIAnalytics)
+}
+// Страница портала FusionAPI
+r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
+// Страница портала FusionAPI
+r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
+
+// ========== AI AGENTS MANAGEMENT ==========
+aiAgents := r.Group("/api/ai/agents")
+aiAgents.Use(middleware.AuthMiddleware(cfg))
+{
+    aiAgents.GET("", handlers.GetAgents)
+    aiAgents.POST("", handlers.CreateAgent)
+    aiAgents.GET("/:id", handlers.GetAgentDetails)
+    aiAgents.PUT("/:id", handlers.UpdateAgent)
+    aiAgents.DELETE("/:id", handlers.DeleteAgent)
+    aiAgents.POST("/:id/clone", handlers.CloneAgent)
+    aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
+    aiAgents.POST("/:id/actions", handlers.AddAgentAction)
+    aiAgents.GET("/logs", handlers.GetAgentLogs)
+    aiAgents.GET("/stats", handlers.GetAgentStats)
+    aiAgents.GET("/export", handlers.ExportAgents)
+}
     r.GET("/notify", handlers.NotifyPageHandler)
 
     userKeys := r.Group("/api/user/keys")
@@ -813,10 +897,17 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
+       // Публичное API с защитой через API ключи
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
-        // Зарезервировано
+        v1.GET("/health", handlers.HealthHandler)
+        v1.POST("/ai/ask", handlers.AIAskHandler)
+        v1.POST("/ai/consultant", handlers.AIConsultantHandler)
+        v1.GET("/crm/customers", handlers.GetCustomers)
+        v1.GET("/crm/deals", handlers.GetDeals)
+        v1.GET("/vpn/status", handlers.GetVPNStats)
+        v1.GET("/vpn/plans", handlers.GetStealthPlansHandler)
     }
 
   adminAPI := r.Group("/api/admin")
@@ -872,12 +963,6 @@ r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) 
     })
 })
 
-r.NoRoute(func(c *gin.Context) {
-    c.HTML(http.StatusNotFound, "404.html", gin.H{
-        "Title":   "Страница не найдена - SaaSPro",
-        "Version": "3.0",
-    })
-})
 
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
@@ -922,6 +1007,8 @@ r.NoRoute(func(c *gin.Context) {
     fmt.Printf("   📈 Партнёрский      %s/partner-dashboard\n", baseURL)
     fmt.Printf("   📈 Унифицированный  %s/unified-dashboard\n\n", baseURL)
     fmt.Printf("   📡 API Health       %s/api/health\n", baseURL)
+    fmt.Printf("   🔹 FusionAPI        %s/fusion-portal\n", baseURL)
+    fmt.Printf("   🔹 API Документация %s/api/fusion/docs\n", baseURL)
     fmt.Printf("   📡 CRM Health       %s/api/crm/health\n", baseURL)
     fmt.Printf("   📡 Система          %s/api/system/stats\n", baseURL)
     fmt.Printf("   📡 Тест             %s/api/test\n", baseURL)
@@ -982,22 +1069,68 @@ r.GET("/analytics-center", func(c *gin.Context) {
         "title": "Analytics Center | SaaSPro",
     })
 })
-
-   r.Run(port)
+	r.Run(port)
 }
 
+}  // <-- ЭТО ЗАКРЫВАЕТ ФУНКЦИЮ main!
 
+// ========== ВСЕ ФУНКЦИИ ПОСЛЕ main ==========
 
+// SOCKS5 прокси сервер
+func startSOCKS5Proxy(addr string) error {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
 
+	log.Printf("✅ SOCKS5 прокси запущен на %s", addr)
 
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Printf("SOCKS5 accept error: %v", err)
+			continue
+		}
+		go handleSocks5Connection(conn)
+	}
+}
 
+func handleSocks5Connection(client net.Conn) {
+	defer client.Close()
 
+	buf := make([]byte, 256)
+	_, err := client.Read(buf)
+	if err != nil {
+		return
+	}
 
+	client.Write([]byte{0x05, 0x00})
 
+	_, err = client.Read(buf)
+	if err != nil {
+		return
+	}
 
+	var host string
+	var port int
 
+	if buf[3] == 0x03 {
+		domainLen := int(buf[4])
+		host = string(buf[5 : 5+domainLen])
+		port = int(buf[5+domainLen])<<8 | int(buf[6+domainLen])
+	}
 
+	log.Printf("SOCKS5: %s -> %s:%d", client.RemoteAddr(), host, port)
 
+	target, err := net.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
+	if err != nil {
+		client.Write([]byte{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		return
+	}
+	defer target.Close()
 
+	client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 
+	go func() { io.Copy(target, client) }()
+	io.Copy(client, target)
 }

@@ -13,9 +13,45 @@
             padding: 40px 20px;
         }
         .container { max-width: 1200px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 50px; }
+        .header { text-align: center; margin-bottom: 30px; }
         .logo { font-size: 64px; font-weight: 800; color: white; margin-bottom: 16px; }
         .tagline { color: rgba(255,255,255,0.9); font-size: 18px; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .tab-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
         .card {
             background: white;
             border-radius: 24px;
@@ -24,6 +60,8 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         .card h2 { color: #1e293b; margin-bottom: 20px; }
+        .card h3 { color: #1e293b; margin: 20px 0 10px 0; }
+        
         .key-display {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -48,6 +86,7 @@
             cursor: pointer;
             border: none;
             font-size: 14px;
+            transition: all 0.3s;
         }
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -55,6 +94,10 @@
         }
         .btn-primary:hover { transform: scale(1.02); opacity: 0.9; }
         .btn-secondary { background: #f1f5f9; color: #475569; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -74,6 +117,7 @@
             margin-bottom: 8px;
         }
         .stat-label { color: #64748b; font-size: 14px; }
+        
         .plans-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -103,6 +147,78 @@
         .plan-price { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
         .plan-features { list-style: none; margin: 20px 0; }
         .plan-features li { padding: 8px 0; color: #475569; }
+        
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .agent-card {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        .agent-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .agent-name { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .agent-role { font-size: 14px; color: #667eea; margin-bottom: 12px; }
+        .agent-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .status-active { background: #10b981; color: white; }
+        .status-inactive { background: #ef4444; color: white; }
+        .agent-instructions {
+            font-size: 13px;
+            color: #64748b;
+            margin: 12px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        .agent-actions { display: flex; gap: 10px; margin-top: 15px; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-bottom: 20px; }
+        .modal-content input, .modal-content textarea, .modal-content select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        .modal-content textarea { min-height: 100px; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        
         .docs-section {
             background: white;
             border-radius: 24px;
@@ -139,6 +255,7 @@
         @media (max-width: 1000px) {
             .plans-grid { grid-template-columns: repeat(2, 1fr); }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .agents-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
             .plans-grid { grid-template-columns: 1fr; }
@@ -153,53 +270,143 @@
             <div class="tagline">Единый API для всех сервисов вашего бизнеса</div>
         </div>
 
-        <div class="card">
-            <h2>🔑 Ваш API ключ</h2>
-            <p style="color: #64748b; margin-bottom: 20px;">Используйте этот ключ для доступа к FusionAPI</p>
-            <div class="key-display">
-                <code class="key-value" id="apiKeyValue">Загрузка...</code>
-                <div style="display: flex; gap: 12px;">
-                    <button class="btn btn-secondary" onclick="copyAPIKey()">📋 Копировать</button>
-                    <button class="btn btn-primary" onclick="regenerateKey()">🔄 Новый ключ</button>
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('api')">🔑 API Ключи</button>
+            <button class="tab-btn" onclick="showTab('agents')">🤖 AI Агенты</button>
+            <button class="tab-btn" onclick="showTab('analytics')">📊 Аналитика</button>
+            <button class="tab-btn" onclick="showTab('docs')">📚 Документация</button>
+        </div>
+
+        <!-- Tab: API Keys -->
+        <div id="api-tab" class="tab-content active">
+            <div class="card">
+                <h2>🔑 Ваш API ключ</h2>
+                <p style="color: #64748b; margin-bottom: 20px;">Используйте этот ключ для доступа к FusionAPI</p>
+                <div class="key-display">
+                    <code class="key-value" id="apiKeyValue">Загрузка...</code>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn btn-secondary" onclick="copyAPIKey()">📋 Копировать</button>
+                        <button class="btn btn-primary" onclick="regenerateKey()">🔄 Новый ключ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="requestsUsed">0</div>
+                    <div class="stat-label">Использовано запросов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="requestsLimit">1000</div>
+                    <div class="stat-label">Лимит в месяц</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="remainingPercent">0%</div>
+                    <div class="stat-label">Осталось</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="planName">Free</div>
+                    <div class="stat-label">Тариф</div>
+                </div>
+            </div>
+
+            <h2 style="color: white; margin-bottom: 24px;">📊 Выберите тариф</h2>
+            <div class="plans-grid" id="plansGrid"></div>
+        </div>
+
+        <!-- Tab: AI Agents -->
+        <div id="agents-tab" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🤖 Мои AI Агенты</h2>
+                    <button class="btn btn-primary" onclick="openCreateAgentModal()">+ Создать агента</button>
+                </div>
+                <div id="agentsList" class="agents-grid">
+                    <p style="color: #64748b; text-align: center; grid-column: 1/-1;">Загрузка агентов...</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 AI Статистика</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="aiRequestsUsed">0</div>
+                        <div class="stat-label">AI запросов использовано</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="aiRequestsLimit">100</div>
+                        <div class="stat-label">Лимит AI запросов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="agentsCount">0</div>
+                        <div class="stat-label">Создано агентов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="agentsLimit">1</div>
+                        <div class="stat-label">Лимит агентов</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="requestsUsed">0</div>
-                <div class="stat-label">Использовано запросов</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="requestsLimit">1000</div>
-                <div class="stat-label">Лимит в месяц</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="remainingPercent">0%</div>
-                <div class="stat-label">Осталось</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="planName">Free</div>
-                <div class="stat-label">Тариф</div>
+        <!-- Tab: Analytics -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="card">
+                <h2>📊 Детальная аналитика</h2>
+                <div id="analyticsContent">
+                    <p style="color: #64748b;">Загрузка аналитики...</p>
+                </div>
             </div>
         </div>
 
-        <h2 style="color: white; margin-bottom: 24px;">📊 Выберите тариф</h2>
-        <div class="plans-grid" id="plansGrid"></div>
-
-        <div class="docs-section">
-            <h2>📚 Документация API</h2>
-            <h3>Аутентификация</h3>
-            <div class="code-block">
-                curl -X GET https://fusionapi.ru/v1/crm/customers \<br>
-                &nbsp;&nbsp;-H "X-API-Key: YOUR_API_KEY"
+        <!-- Tab: Documentation -->
+        <div id="docs-tab" class="tab-content">
+            <div class="docs-section">
+                <h2>📚 Документация API</h2>
+                <h3>Аутентификация</h3>
+                <div class="code-block">
+                    curl -X GET https://fusionapi.ru/v1/crm/customers \<br>
+                    &nbsp;&nbsp;-H "X-API-Key: YOUR_API_KEY"
+                </div>
+                <h3>API Эндпоинты</h3>
+                <div class="code-block">
+                    GET  /api/v1/crm/customers - список клиентов<br>
+                    POST /api/v1/crm/deals - создать сделку<br>
+                    GET  /api/v1/fincore/entries - бухгалтерские проводки<br>
+                    GET  /api/v1/teamsphere/tasks - задачи TeamSphere
+                </div>
+                <h3>🤖 AI Agents Эндпоинты</h3>
+                <div class="code-block">
+                    GET    /api/fusion/agents - список агентов<br>
+                    POST   /api/fusion/agents - создать агента<br>
+                    PUT    /api/fusion/agents/:id - обновить агента<br>
+                    DELETE /api/fusion/agents/:id - удалить агента<br>
+                    POST   /api/fusion/agents/:id/chat - чат с агентом
+                </div>
             </div>
-            <h3>Эндпоинты</h3>
-            <div class="code-block">
-                GET  /api/v1/crm/customers - список клиентов<br>
-                POST /api/v1/crm/deals - создать сделку<br>
-                GET  /api/v1/fincore/entries - бухгалтерские проводки<br>
-                GET  /api/v1/teamsphere/tasks - задачи TeamSphere
+        </div>
+    </div>
+
+    <!-- Modal для создания агента -->
+    <div id="agentModal" class="modal">
+        <div class="modal-content">
+            <h3>🤖 Создать AI агента</h3>
+            <input type="text" id="agentName" placeholder="Название агента" required>
+            <select id="agentRole">
+                <option value="sales">📈 Sales Agent</option>
+                <option value="support">🎧 Support Agent</option>
+                <option value="analytics">📊 Analytics Agent</option>
+                <option value="custom">⚙️ Custom Agent</option>
+            </select>
+            <textarea id="agentInstructions" placeholder="Инструкции для агента (что он должен делать)..."></textarea>
+            <select id="agentModel">
+                <option value="yandex-gpt-lite">Yandex GPT Lite</option>
+                <option value="yandex-gpt">Yandex GPT Pro</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeAgentModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="createAgent()">Создать</button>
             </div>
         </div>
     </div>
@@ -207,12 +414,33 @@
     <script>
         let currentPlanCode = 'free';
         let fullAPIKey = null;
+        let currentTab = 'api';
         
+        // Заголовок для режима разработчика
+        const DEV_HEADERS = {
+            'X-Developer-Access': 'fusion-dev-2024'
+        };
+
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tab === 'agents') {
+                loadAgents();
+                loadAIAnalytics();
+            }
+            if (tab === 'analytics') {
+                loadAnalytics();
+            }
+        }
+
         async function loadAPIKey() {
             try {
-                const res = await fetch('/api/fusion/my-key');
+                const res = await fetch('/api/fusion/my-key', { headers: DEV_HEADERS });
                 const data = await res.json();
-                
                 if (data.is_first_time && data.full_key) {
                     fullAPIKey = data.full_key;
                     document.getElementById('apiKeyValue').textContent = data.key;
@@ -221,30 +449,26 @@
                     document.getElementById('apiKeyValue').textContent = data.key;
                     fullAPIKey = null;
                 }
-                
                 currentPlanCode = data.plan_code || 'free';
             } catch(err) {
-                console.error('Error:', err);
                 document.getElementById('apiKeyValue').textContent = 'Ошибка загрузки';
             }
         }
-        
+
         async function loadUsageStats() {
             try {
-                const res = await fetch('/api/fusion/usage-stats');
+                const res = await fetch('/api/fusion/usage-stats', { headers: DEV_HEADERS });
                 const data = await res.json();
                 document.getElementById('requestsUsed').textContent = data.requests_used || 0;
                 document.getElementById('requestsLimit').textContent = data.requests_limit || 1000;
                 document.getElementById('remainingPercent').textContent = Math.round(data.remaining_percent || 0) + '%';
                 document.getElementById('planName').textContent = data.plan_name || 'Free';
-            } catch(err) {
-                console.error('Error:', err);
-            }
+            } catch(err) {}
         }
-        
+
         async function loadPlans() {
             try {
-                const res = await fetch('/api/fusion/plans');
+                const res = await fetch('/api/fusion/plans', { headers: DEV_HEADERS });
                 const plans = await res.json();
                 const grid = document.getElementById('plansGrid');
                 grid.innerHTML = plans.map(p => `
@@ -255,20 +479,182 @@
                         <ul class="plan-features">
                             <li>📊 ${p.requests_limit.toLocaleString()} запросов/мес</li>
                             <li>⚡ ${p.rate_limit} запросов/мин</li>
-                            ${p.has_support ? '<li>🎧 Поддержка</li>' : ''}
+                            <li>🤖 ${p.ai_requests_limit || 100} AI запросов/мес</li>
+                            <li>🎯 ${p.agents_limit || 1} AI агентов</li>
+                            ${p.has_support ? '<li>🎧 Приоритетная поддержка</li>' : ''}
                         </ul>
-                        <button class="btn ${p.code === currentPlanCode ? 'btn-secondary' : 'btn-primary'}" 
+                        <button class="btn ${p.code === currentPlanCode ? 'btn-secondary' : 'btn-primary'}"
                                 onclick="upgradePlan('${p.code}')"
                                 ${p.code === currentPlanCode ? 'disabled' : ''}>
                             ${p.code === currentPlanCode ? '✓ Текущий' : 'Выбрать'}
                         </button>
                     </div>
                 `).join('');
+            } catch(err) {}
+        }
+
+        async function loadAgents() {
+            try {
+                const res = await fetch('/api/fusion/agents', { headers: DEV_HEADERS });
+                const data = await res.json();
+                const container = document.getElementById('agentsList');
+                if (!data.agents || data.agents.length === 0) {
+                    container.innerHTML = '<p style="color: #64748b; text-align: center; grid-column: 1/-1;">🤖 У вас пока нет AI агентов. Создайте первого!</p>';
+                    return;
+                }
+                container.innerHTML = data.agents.map(a => `
+                    <div class="agent-card">
+                        <div class="agent-name">${escapeHtml(a.name)}</div>
+                        <div class="agent-role">${getRoleIcon(a.role)} ${a.role}</div>
+                        <span class="agent-status ${a.is_active ? 'status-active' : 'status-inactive'}">
+                            ${a.is_active ? '● Активен' : '○ Неактивен'}
+                        </span>
+                        <div class="agent-instructions">📝 ${escapeHtml(a.instructions || 'Нет инструкций')}</div>
+                        <div class="agent-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="chatWithAgent('${a.id}', '${a.name}')">💬 Чат</button>
+                            <button class="btn btn-secondary btn-sm" onclick="editAgent('${a.id}')">✏️ Ред.</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteAgent('${a.id}')">🗑️ Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
             } catch(err) {
                 console.error('Error:', err);
+                document.getElementById('agentsList').innerHTML = '<p style="color: red;">Ошибка загрузки агентов</p>';
             }
         }
-        
+
+        async function loadAIAnalytics() {
+            try {
+                const res = await fetch('/api/fusion/analytics/ai', { headers: DEV_HEADERS });
+                const data = await res.json();
+                document.getElementById('aiRequestsUsed').textContent = data.ai_requests_used || 0;
+                document.getElementById('aiRequestsLimit').textContent = data.ai_requests_limit || 100;
+                document.getElementById('agentsCount').textContent = data.agents_created || 0;
+                document.getElementById('agentsLimit').textContent = data.agents_limit || 1;
+            } catch(err) {}
+        }
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch('/api/fusion/analytics/ai', { headers: DEV_HEADERS });
+                const data = await res.json();
+                document.getElementById('analyticsContent').innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${data.ai_requests_used || 0}/${data.ai_requests_limit || 100}</div>
+                            <div class="stat-label">AI запросы</div>
+                            <progress value="${data.ai_requests_used || 0}" max="${data.ai_requests_limit || 100}" style="width:100%; height:10px; border-radius:5px;"></progress>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.agents_created || 0}/${data.agents_limit || 1}</div>
+                            <div class="stat-label">AI агенты</div>
+                            <progress value="${data.agents_created || 0}" max="${data.agents_limit || 1}" style="width:100%; height:10px; border-radius:5px;"></progress>
+                        </div>
+                    </div>
+                    <h3>📈 Рекомендации</h3>
+                    <ul style="color: #475569;">
+                        ${(data.ai_requests_used || 0) > (data.ai_requests_limit || 100) * 0.8 ? '<li>⚠️ Вы接近 лимита AI запросов. Рассмотрите апгрейд тарифа.</li>' : ''}
+                        ${(data.agents_created || 0) >= (data.agents_limit || 1) ? '<li>⚠️ Вы достигли лимита агентов. Апгрейдните тариф для создания большего числа агентов.</li>' : '<li>✅ У вас есть место для создания новых агентов.</li>'}
+                    </ul>
+                `;
+            } catch(err) {}
+        }
+
+        function getRoleIcon(role) {
+            const icons = {
+                'sales': '📈',
+                'support': '🎧',
+                'analytics': '📊',
+                'custom': '⚙️'
+            };
+            return icons[role] || '🤖';
+        }
+
+        function openCreateAgentModal() {
+            document.getElementById('agentModal').style.display = 'flex';
+            document.getElementById('agentName').value = '';
+            document.getElementById('agentInstructions').value = '';
+        }
+
+        function closeAgentModal() {
+            document.getElementById('agentModal').style.display = 'none';
+        }
+
+        async function createAgent() {
+            const name = document.getElementById('agentName').value;
+            const role = document.getElementById('agentRole').value;
+            const instructions = document.getElementById('agentInstructions').value;
+            const model = document.getElementById('agentModel').value;
+            
+            if (!name) {
+                showNotification('Введите название агента', 'warning');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/fusion/agents', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...DEV_HEADERS
+                    },
+                    body: JSON.stringify({ name, role, instructions, model, temperature: 0.7 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('Агент создан!', 'success');
+                    closeAgentModal();
+                    loadAgents();
+                    loadAIAnalytics();
+                } else {
+                    showNotification(data.error || 'Ошибка создания', 'error');
+                }
+            } catch(err) {
+                showNotification('Ошибка при создании агента', 'error');
+            }
+        }
+
+        async function deleteAgent(id) {
+            if (confirm('Удалить этого агента?')) {
+                const res = await fetch(`/api/fusion/agents/${id}`, { 
+                    method: 'DELETE',
+                    headers: DEV_HEADERS
+                });
+                if (res.ok) {
+                    showNotification('Агент удален', 'success');
+                    loadAgents();
+                    loadAIAnalytics();
+                } else {
+                    showNotification('Ошибка удаления', 'error');
+                }
+            }
+        }
+
+        async function chatWithAgent(id, name) {
+            const message = prompt(`💬 Чат с агентом "${name}"\n\nВведите ваше сообщение:`);
+            if (message) {
+                try {
+                    const res = await fetch(`/api/fusion/agents/${id}/chat`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...DEV_HEADERS
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    const data = await res.json();
+                    alert(`🤖 ${name}:\n\n${data.response}`);
+                    loadAIAnalytics();
+                } catch(err) {
+                    alert('Ошибка чата');
+                }
+            }
+        }
+
+        function editAgent(id) {
+            showNotification('Редактирование агента в разработке', 'warning');
+        }
+
         function copyAPIKey() {
             if (fullAPIKey) {
                 navigator.clipboard.writeText(fullAPIKey);
@@ -283,31 +669,35 @@
                 }
             }
         }
-        
+
         async function regenerateKey() {
             if (confirm('Создание нового ключа отзовёт старый. Продолжить?')) {
                 try {
-                    const res = await fetch('/api/fusion/regenerate-key', { method: 'POST' });
+                    const res = await fetch('/api/fusion/regenerate-key', { 
+                        method: 'POST',
+                        headers: DEV_HEADERS
+                    });
                     const data = await res.json();
-                    
                     fullAPIKey = data.full_key || data.key;
                     document.getElementById('apiKeyValue').textContent = data.key;
-                    
-                    showNotification('🔑 Новый API ключ создан! Сохраните его, он показывается только один раз!', 'success');
+                    showNotification('🔑 Новый API ключ создан!', 'success');
                     loadUsageStats();
                 } catch (err) {
                     showNotification('Ошибка при создании ключа', 'error');
                 }
             }
         }
-        
+
         async function upgradePlan(code) {
             if(code === currentPlanCode) return;
             if(confirm(`Перейти на тариф ${code.toUpperCase()}?`)) {
                 try {
                     const res = await fetch('/api/fusion/upgrade-plan', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...DEV_HEADERS
+                        },
                         body: JSON.stringify({ plan_code: code })
                     });
                     const data = await res.json();
@@ -315,6 +705,7 @@
                         showNotification(`Тариф обновлён до ${data.plan_name}!`, 'success');
                         loadUsageStats();
                         loadPlans();
+                        loadAIAnalytics();
                         currentPlanCode = code;
                     } else {
                         showNotification(data.error || 'Ошибка обновления тарифа', 'error');
@@ -324,7 +715,17 @@
                 }
             }
         }
-        
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
         function showNotification(message, type) {
             const notification = document.createElement('div');
             notification.textContent = message;
@@ -332,11 +733,18 @@
             document.body.appendChild(notification);
             setTimeout(() => notification.remove(), 3000);
         }
-        
+
+        // Инициализация
         loadAPIKey();
         loadUsageStats();
         loadPlans();
         setInterval(loadUsageStats, 30000);
+        
+        // Закрытие модального окна по клику вне
+        window.onclick = function(event) {
+            const modal = document.getElementById('agentModal');
+            if (event.target === modal) closeAgentModal();
+        }
     </script>
 </body>
 </html>

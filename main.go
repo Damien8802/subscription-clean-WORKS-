@@ -846,21 +846,31 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
     }
 
-// ========== FUSIONAPI - Брендовый API продукт ==========
-// Временно отключаем авторизацию для разработки
+// ========== FUSIONAPI - Брендовый API продукт с AI ==========
 fusionAPI := r.Group("/api/fusion")
-// fusionAPI.Use(middleware.AuthMiddleware(cfg))  // КОММЕНТАРИЙ
+// fusionAPI.Use(middleware.AuthMiddleware(cfg))
 {
+    // API ключи
     fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
     fusionAPI.GET("/usage-stats", handlers.GetAPIUsageStats)
     fusionAPI.POST("/regenerate-key", handlers.RegenerateAPIKey)
     fusionAPI.GET("/plans", handlers.GetAPIPlans)
     fusionAPI.POST("/upgrade-plan", handlers.APIPlanUpgradeRequest)
     fusionAPI.GET("/docs", handlers.GetAPIDocumentation)
+    
+    // AI Агенты (новые функции для FusionAPI)
+    fusionAPI.GET("/agents", handlers.GetMyAgents)
+    fusionAPI.POST("/agents", handlers.CreateFusionAgent)
+    fusionAPI.PUT("/agents/:id", handlers.UpdateFusionAgent)
+    fusionAPI.DELETE("/agents/:id", handlers.DeleteFusionAgent)
+    fusionAPI.POST("/agents/:id/chat", handlers.ChatWithFusionAgent)
+    
+    // AI Аналитика
+    fusionAPI.GET("/analytics/ai", handlers.GetFusionAIAnalytics)
 }
-
 // Страница портала FusionAPI
 r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
+// Страница портала FusionAPI
 
 // ========== AI AGENTS MANAGEMENT ==========
 aiAgents := r.Group("/api/ai/agents")
