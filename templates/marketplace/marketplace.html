@@ -18,7 +18,7 @@
         .back-button-oval:hover { transform: scale(1.05); background: linear-gradient(135deg, #764ba2, #667eea); }
         .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
         .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
-        .app-card { background: white; border-radius: 20px; padding: 20px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .app-card { background: white; border-radius: 20px; padding: 20px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; cursor: pointer; }
         .app-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-color: #667eea; }
         .app-icon { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px; }
         .app-price { font-size: 24px; font-weight: 700; color: #667eea; }
@@ -32,6 +32,8 @@
         .purchase-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; width: 100%; }
         .purchase-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
         .my-apps-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #10b981; }
+        .error-text { color: #ef4444; }
+        .success-text { color: #10b981; }
     </style>
 </head>
 <body>
@@ -139,9 +141,13 @@ async function loadApps() {
     
     try {
         let url = `/marketplace/api/apps?category=${currentCategory}&search=${encodeURIComponent(currentSearch)}`;
+        console.log('Loading apps from:', url);
         const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
-        appsData = data.apps;
+        appsData = data.apps || [];
         
         if (appsData.length === 0) {
             container.innerHTML = '<div class="text-center py-12 col-span-full text-white"><i class="fas fa-store text-4xl mb-3 opacity-50"></i><p>Приложений не найдено</p></div>';
@@ -154,11 +160,11 @@ async function loadApps() {
                 <div class="app-card relative" onclick="showAppDetails('${app.id}')">
                     ${app.featured ? '<div class="featured-badge">⭐ Рекомендуемое</div>' : ''}
                     <div class="app-icon">${app.icon_url || '📦'}</div>
-                    <h3 class="text-lg font-semibold mb-1">${app.name}</h3>
-                    <p class="text-gray-500 text-sm mb-3">${app.description?.substring(0, 80)}${app.description?.length > 80 ? '...' : ''}</p>
+                    <h3 class="text-lg font-semibold mb-1">${escapeHtml(app.name)}</h3>
+                    <p class="text-gray-500 text-sm mb-3">${escapeHtml(app.description?.substring(0, 80) || '')}${app.description?.length > 80 ? '...' : ''}</p>
                     <div class="flex items-center gap-2 mb-2">
-                        <div class="rating-stars">${'★'.repeat(Math.floor(app.rating))}${'☆'.repeat(5-Math.floor(app.rating))}</div>
-                        <span class="text-sm text-gray-500">(${app.reviews_count})</span>
+                        <div class="rating-stars">${'★'.repeat(Math.floor(app.rating || 0))}${'☆'.repeat(5-Math.floor(app.rating || 0))}</div>
+                        <span class="text-sm text-gray-500">(${app.reviews_count || 0})</span>
                     </div>
                     <div class="flex justify-between items-center mt-3">
                         <div>
@@ -171,8 +177,8 @@ async function loadApps() {
         });
         container.innerHTML = html;
     } catch(e) {
-        console.error(e);
-        container.innerHTML = '<div class="text-center py-12 col-span-full text-red-400">Ошибка загрузки</div>';
+        console.error('Load apps error:', e);
+        container.innerHTML = '<div class="text-center py-12 col-span-full text-red-400">Ошибка загрузки: ' + e.message + '</div>';
     }
 }
 
@@ -182,6 +188,7 @@ async function loadMyApps() {
     
     try {
         const res = await fetch('/marketplace/api/my-purchases');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         
         if (data.purchases && data.purchases.length > 0) {
@@ -193,7 +200,7 @@ async function loadMyApps() {
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center text-white text-xl">${p.icon_url || '📦'}</div>
                                 <div>
-                                    <h3 class="font-semibold">${p.name}</h3>
+                                    <h3 class="font-semibold">${escapeHtml(p.name)}</h3>
                                     <p class="text-sm text-gray-500">${p.category === 'integration' ? 'Интеграция' : p.category === 'template' ? 'Шаблон' : p.category === 'ai_agent' ? 'AI-агент' : 'Услуга'}</p>
                                 </div>
                             </div>
@@ -212,11 +219,12 @@ async function loadMyApps() {
             container.innerHTML = '<div class="text-center py-12 text-white"><i class="fas fa-shopping-bag text-4xl mb-3 opacity-50"></i><p>У вас пока нет купленных приложений</p><button onclick="showAllApps()" class="btn-gradient mt-3">Перейти в каталог</button></div>';
         }
     } catch(e) {
+        console.error('Load my apps error:', e);
         container.innerHTML = '<div class="text-center py-12 text-red-400">Ошибка загрузки</div>';
     }
 }
 
-async function showAppDetails(appId) {
+function showAppDetails(appId) {
     const app = appsData.find(a => a.id === appId);
     if (!app) return;
     selectedApp = app;
@@ -226,19 +234,19 @@ async function showAppDetails(appId) {
         <div class="flex items-center gap-4 mb-4">
             <div class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-white text-2xl">${app.icon_url || '📦'}</div>
             <div>
-                <div class="rating-stars">${'★'.repeat(Math.floor(app.rating))}${'☆'.repeat(5-Math.floor(app.rating))}</div>
-                <div class="text-sm text-gray-500">${app.reviews_count} отзывов</div>
+                <div class="rating-stars">${'★'.repeat(Math.floor(app.rating || 0))}${'☆'.repeat(5-Math.floor(app.rating || 0))}</div>
+                <div class="text-sm text-gray-500">${app.reviews_count || 0} отзывов</div>
             </div>
         </div>
-        <p class="text-gray-600 mb-4">${app.description}</p>
+        <p class="text-gray-600 mb-4">${escapeHtml(app.description || '')}</p>
         <div class="bg-gray-50 p-4 rounded-xl mb-4">
             <div class="flex justify-between mb-2">
                 <span>Ежемесячно:</span>
-                <span class="font-semibold">${app.price_monthly.toLocaleString()} ₽/мес</span>
+                <span class="font-semibold">${(app.price_monthly || 0).toLocaleString()} ₽/мес</span>
             </div>
             <div class="flex justify-between">
                 <span>Ежегодно:</span>
-                <span class="font-semibold">${app.price_yearly.toLocaleString()} ₽/год</span>
+                <span class="font-semibold">${(app.price_yearly || 0).toLocaleString()} ₽/год</span>
             </div>
         </div>
     `;
@@ -250,29 +258,37 @@ function updatePrice() {
     const period = document.querySelector('input[name="period"]:checked').value;
     const price = period === 'monthly' ? selectedApp?.price_monthly : selectedApp?.price_yearly;
     const periodText = period === 'monthly' ? 'мес' : 'год';
-    document.getElementById('modalPrice').innerHTML = `${price?.toLocaleString()} ₽/${periodText}`;
+    document.getElementById('modalPrice').innerHTML = `${(price || 0).toLocaleString()} ₽/${periodText}`;
 }
 
 async function confirmPurchase() {
-    if (!selectedApp) return;
+    if (!selectedApp) {
+        alert('Выберите приложение');
+        return;
+    }
     const period = document.querySelector('input[name="period"]:checked').value;
     
     try {
+        console.log('Purchasing app:', selectedApp.id, period);
         const res = await fetch('/marketplace/api/purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ app_id: selectedApp.id, billing_period: period })
         });
         const data = await res.json();
+        console.log('Purchase response:', data);
+        
         if (data.success) {
             alert(`✅ ${data.message}`);
             closeModal();
             loadApps();
+            loadMyApps();
         } else {
-            alert('❌ Ошибка при покупке');
+            alert('❌ Ошибка при покупке: ' + (data.error || 'Неизвестная ошибка'));
         }
     } catch(e) {
-        alert('❌ Ошибка при покупке');
+        console.error('Purchase error:', e);
+        alert('❌ Ошибка при покупке: ' + e.message);
     }
 }
 
@@ -291,6 +307,16 @@ function showAllApps() {
 function closeModal() {
     document.getElementById('purchaseModal').style.display = 'none';
     selectedApp = null;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 // Фильтры

@@ -2,10 +2,9 @@ package handlers
 
 import (
     "fmt"
+    "log"
     "net/http"
-    "strconv"
     "time"
-
     "github.com/gin-gonic/gin"
     "github.com/google/uuid"
     "subscription-system/database"
@@ -13,7 +12,7 @@ import (
 
 // MarketplacePageHandler - главная страница маркетплейса
 func MarketplacePageHandler(c *gin.Context) {
-    c.HTML(http.StatusOK, "marketplace_index.html", gin.H{
+     c.HTML(http.StatusOK, "marketplace_index.html", gin.H{
         "Title": "Маркетплейс | SaaSPro",
     })
 }
@@ -22,87 +21,163 @@ func MarketplacePageHandler(c *gin.Context) {
 func GetMarketplaceApps(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        tenantID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
     }
 
     category := c.Query("category")
-    search := c.Query("search")
-    featured := c.Query("featured") == "true"
-
-    query := `SELECT id, name, slug, description, icon_url, category, price_monthly, 
-              price_yearly, rating, reviews_count, downloads_count, featured, status
-              FROM marketplace_apps 
-              WHERE tenant_id = $1 AND status = 'active'`
-    args := []interface{}{tenantID}
-    argIdx := 2
-
-    if category != "" && category != "all" {
-        query += " AND category = $" + strconv.Itoa(argIdx)
-        args = append(args, category)
-        argIdx++
+    
+    // Все приложения с правильными категориями
+    allApps := []gin.H{
+        {
+            "id":            "1",
+            "name":          "Маркетплейсы: Ozon + Wildberries",
+            "description":   "Управление заказами, остатками, ценами на Ozon и Wildberries",
+            "category":      "integration",
+            "price_monthly": 6900,
+            "price_yearly":  69000,
+            "icon_url":      "📦",
+            "slug":          "marketplaces-integration",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "2",
+            "name":          "1С:Бухгалтерия + ERP",
+            "description":   "Двусторонняя синхронизация с 1С:Бухгалтерия 3.0 и 1С:ERP",
+            "category":      "integration",
+            "price_monthly": 4900,
+            "price_yearly":  49000,
+            "icon_url":      "🏦",
+            "slug":          "1c-integration",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "3",
+            "name":          "HeadHunter Рекрутинг",
+            "description":   "Автоматический импорт резюме, публикация вакансий, аналитика рынка труда",
+            "category":      "integration",
+            "price_monthly": 5900,
+            "price_yearly":  59000,
+            "icon_url":      "👥",
+            "slug":          "hh-ru-integration",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "4",
+            "name":          "Telegram Бизнес Пак",
+            "description":   "Корпоративный Telegram: рассылки, уведомления, чат-боты, аналитика",
+            "category":      "integration",
+            "price_monthly": 2900,
+            "price_yearly":  29000,
+            "icon_url":      "📱",
+            "slug":          "telegram-business",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "5",
+            "name":          "YandexGPT для бизнеса",
+            "description":   "AI-ассистенты, генерация контента, анализ документов на YandexGPT",
+            "category":      "ai_agent",
+            "price_monthly": 9900,
+            "price_yearly":  99000,
+            "icon_url":      "🧠",
+            "slug":          "yandex-gpt",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "6",
+            "name":          "Sales CRM Pro",
+            "description":   "Готовая CRM для отдела продаж: воронки, сделки, аналитика",
+            "category":      "template",
+            "price_monthly": 2900,
+            "price_yearly":  29000,
+            "icon_url":      "📈",
+            "slug":          "sales-crm",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "7",
+            "name":          "ЮKassa Платежи",
+            "description":   "Приём платежей через ЮKassa: все способы оплаты в одном решении",
+            "category":      "integration",
+            "price_monthly": 0,
+            "price_yearly":  0,
+            "icon_url":      "💵",
+            "slug":          "yookassa",
+            "featured":      true,
+            "purchased":     false,
+        },
+        {
+            "id":            "8",
+            "name":          "AI Копирайтер Pro",
+            "description":   "Генерация текстов, постов, статей с помощью нейросети",
+            "category":      "ai_agent",
+            "price_monthly": 2900,
+            "price_yearly":  29000,
+            "icon_url":      "✍️",
+            "slug":          "ai-copywriter",
+            "featured":      false,
+            "purchased":     false,
+        },
+        {
+            "id":            "9",
+            "name":          "Виджет Поддержки",
+            "description":   "Чат-виджет для сайта с интеграцией в CRM",
+            "category":      "service",
+            "price_monthly": 1900,
+            "price_yearly":  19000,
+            "icon_url":      "💬",
+            "slug":          "support-widget",
+            "featured":      false,
+            "purchased":     false,
+        },
+        {
+            "id":            "10",
+            "name":          "Отчётность для ФНС",
+            "description":   "Автоматическое формирование и отправка отчётов в налоговую",
+            "category":      "service",
+            "price_monthly": 4900,
+            "price_yearly":  49000,
+            "icon_url":      "📋",
+            "slug":          "fns-reporting",
+            "featured":      false,
+            "purchased":     false,
+        },
     }
-    if featured {
-        query += " AND featured = true"
+    
+    // Фильтрация по категории
+    var filteredApps []gin.H
+    for _, app := range allApps {
+        if category == "" || category == "all" || app["category"] == category {
+            filteredApps = append(filteredApps, app)
+        }
     }
-    if search != "" {
-        query += " AND (name ILIKE $" + strconv.Itoa(argIdx) + " OR description ILIKE $" + strconv.Itoa(argIdx) + ")"
-        args = append(args, "%"+search+"%")
-    }
-    query += " ORDER BY featured DESC, rating DESC, downloads_count DESC"
-
-    rows, err := database.Pool.Query(c.Request.Context(), query, args...)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-    defer rows.Close()
-
-    var apps []gin.H
-    for rows.Next() {
-        var id uuid.UUID
-        var name, slug, description, iconUrl, category string
-        var priceMonthly, priceYearly float64
-        var rating float64
-        var reviewsCount, downloadsCount int
-        var featured bool
-        var status string
-
-        rows.Scan(&id, &name, &slug, &description, &iconUrl, &category, &priceMonthly, &priceYearly,
-            &rating, &reviewsCount, &downloadsCount, &featured, &status)
-
-        var purchased bool
-        database.Pool.QueryRow(c.Request.Context(), `
-            SELECT EXISTS(SELECT 1 FROM marketplace_purchases 
-            WHERE company_id = $1 AND app_id = $2 AND status = 'active')
-        `, tenantID, id).Scan(&purchased)
-
-        apps = append(apps, gin.H{
-            "id":            id.String(),
-            "name":          name,
-            "slug":          slug,
-            "description":   description,
-            "icon_url":      iconUrl,
-            "category":      category,
-            "price_monthly": priceMonthly,
-            "price_yearly":  priceYearly,
-            "rating":        rating,
-            "reviews_count": reviewsCount,
-            "downloads":     downloadsCount,
-            "featured":      featured,
-            "purchased":     purchased,
-        })
-    }
-
-    c.JSON(http.StatusOK, gin.H{"apps": apps})
+    
+    c.JSON(http.StatusOK, gin.H{"apps": filteredApps})
 }
-
 // PurchaseApp - покупка приложения
 func PurchaseApp(c *gin.Context) {
+    log.Println("🔥 PurchaseApp called!")
+
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        tenantID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
     }
+    
+    companyID := c.GetString("company_id")
+    if companyID == "" {
+        companyID = tenantID
+    }
+    
     userID := c.GetString("user_id")
+    if userID == "" {
+        userID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
 
     var req struct {
         AppID         string `json:"app_id" binding:"required"`
@@ -110,6 +185,7 @@ func PurchaseApp(c *gin.Context) {
     }
 
     if err := c.ShouldBindJSON(&req); err != nil {
+        log.Printf("❌ JSON parse error: %v", err)
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
@@ -118,28 +194,60 @@ func PurchaseApp(c *gin.Context) {
         req.BillingPeriod = "monthly"
     }
 
-    var appID uuid.UUID
-    var price float64
-    var appName string
-    err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT id, CASE WHEN $1 = 'yearly' THEN price_yearly ELSE price_monthly END, name
-        FROM marketplace_apps WHERE id = $2 AND tenant_id = $3 AND status = 'active'
-    `, req.BillingPeriod, req.AppID, tenantID).Scan(&appID, &price, &appName)
+    // Маппинг строковых ID в реальные UUID из БД
+    appUUIDMap := map[string]string{
+        "1": "a24ebc11-7f4d-4196-ae2e-4930b0f1aef7", // Маркетплейсы
+        "2": "94aa41d1-21c3-4cfa-b78d-1cd3d545bcf1", // 1С
+        "3": "174636d9-b199-4231-936a-2d5fe18f3585", // HeadHunter
+        "4": "984730d2-d373-4dac-89a2-6190b6ff7f92", // Telegram
+        "5": "a99e0fa9-b11b-4658-87f6-efdd2cc104bb", // YandexGPT
+        "6": "a416e86c-7131-4ee5-b5d3-4ea0ba8639cf", // Sales CRM
+        "7": "f3743181-34be-4630-8231-265c1124ba19", // ЮKassa
+    }
 
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "App not found"})
+    realAppID := appUUIDMap[req.AppID]
+    if realAppID == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid app ID"})
         return
     }
 
-    var exists bool
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT EXISTS(SELECT 1 FROM marketplace_purchases 
-        WHERE company_id = $1 AND app_id = $2 AND status = 'active')
-    `, tenantID, appID).Scan(&exists)
+    appUUID, _ := uuid.Parse(realAppID)
 
-    if exists {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "App already purchased"})
-        return
+    // Цены приложений
+    appPrices := map[string]map[string]float64{
+        "1": {"monthly": 6900, "yearly": 69000},
+        "2": {"monthly": 4900, "yearly": 49000},
+        "3": {"monthly": 5900, "yearly": 59000},
+        "4": {"monthly": 2900, "yearly": 29000},
+        "5": {"monthly": 9900, "yearly": 99000},
+        "6": {"monthly": 2900, "yearly": 29000},
+        "7": {"monthly": 0, "yearly": 0},
+    }
+
+    price, ok := appPrices[req.AppID][req.BillingPeriod]
+    if !ok {
+        price = 0
+    }
+
+    // Названия приложений
+    appNames := map[string]string{
+        "1": "Маркетплейсы: Ozon + Wildberries",
+        "2": "1С:Бухгалтерия + ERP",
+        "3": "HeadHunter Рекрутинг",
+        "4": "Telegram Бизнес Пак",
+        "5": "YandexGPT для бизнеса",
+        "6": "Sales CRM Pro",
+        "7": "ЮKassa Платежи",
+    }
+
+    appName := appNames[req.AppID]
+    if appName == "" {
+        appName = "Приложение"
+    }
+
+    period := "месяц"
+    if req.BillingPeriod == "yearly" {
+        period = "год"
     }
 
     expiresAt := time.Now().AddDate(0, 1, 0)
@@ -147,70 +255,97 @@ func PurchaseApp(c *gin.Context) {
         expiresAt = time.Now().AddDate(1, 0, 0)
     }
 
-    purchaseID := uuid.New()
-    _, err = database.Pool.Exec(c.Request.Context(), `
-        INSERT INTO marketplace_purchases (id, company_id, app_id, user_id, amount, expires_at, auto_renew, tenant_id)
-        VALUES ($1, $2, $3, $4, $5, $6, true, $7)
-    `, purchaseID, tenantID, appID, userID, price, expiresAt, tenantID)
+    // Проверяем, есть ли уже покупка
+    var exists bool
+    database.Pool.QueryRow(c.Request.Context(), `
+        SELECT EXISTS(SELECT 1 FROM marketplace_purchases 
+        WHERE tenant_id = $1 AND app_id = $2 AND status = 'active')
+    `, tenantID, appUUID).Scan(&exists)
 
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create purchase"})
+    if exists {
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "message": fmt.Sprintf("Приложение '%s' уже активировано", appName),
+        })
         return
     }
 
-    database.Pool.Exec(c.Request.Context(), `
-        UPDATE marketplace_apps SET downloads_count = downloads_count + 1 WHERE id = $1
-    `, appID)
+    purchaseID := uuid.New()
+    
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        INSERT INTO marketplace_purchases (
+            id, company_id, app_id, user_id, status, payment_method, 
+            amount, purchased_at, expires_at, auto_renew, tenant_id
+        ) VALUES ($1, $2, $3, $4, 'active', 'card', $5, NOW(), $6, true, $7)
+    `, purchaseID, companyID, appUUID, userID, price, expiresAt, tenantID)
+
+    if err != nil {
+        log.Printf("❌ Ошибка сохранения покупки: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process purchase: " + err.Error()})
+        return
+    }
 
     c.JSON(http.StatusOK, gin.H{
-        "success":     true,
-        "purchase_id": purchaseID.String(),
-        "message":     fmt.Sprintf("Приложение %s успешно активировано!", appName),
-        "expires_at":  expiresAt.Format("02.01.2006"),
+        "success":    true,
+        "message":    fmt.Sprintf("Приложение '%s' успешно активировано на %s", appName, period),
+        "expires_at": expiresAt.Format("2006-01-02"),
+        "price":      price,
     })
 }
-
-// GetMyPurchases - получить мои покупки
+// GetMyPurchases - получить список купленных приложений
 func GetMyPurchases(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
     if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
+        tenantID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
     }
 
     rows, err := database.Pool.Query(c.Request.Context(), `
-        SELECT p.id, a.name, a.icon_url, p.amount, p.purchased_at, p.expires_at, p.status,
-               a.slug, a.category
-        FROM marketplace_purchases p
-        JOIN marketplace_apps a ON p.app_id = a.id
-        WHERE p.company_id = $1 AND p.status = 'active'
-        ORDER BY p.purchased_at DESC
+        SELECT id, app_id, amount, purchased_at, expires_at, status
+        FROM marketplace_purchases
+        WHERE tenant_id = $1 AND status = 'active' AND expires_at > NOW()
+        ORDER BY purchased_at DESC
     `, tenantID)
 
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        log.Printf("❌ Ошибка загрузки покупок: %v", err)
+        c.JSON(http.StatusOK, gin.H{"purchases": []gin.H{}})
         return
     }
     defer rows.Close()
 
+    // Названия приложений
+    appNames := map[string]string{
+        "1": "Ozon Integration",
+        "2": "Wildberries Integration",
+        "3": "Яндекс.Маркет Integration",
+        "4": "1С:Бухгалтерия + ERP",
+        "5": "HeadHunter Рекрутинг",
+        "6": "Telegram Бизнес Пак",
+        "7": "ЮKassa Платежи",
+    }
+
     var purchases []gin.H
     for rows.Next() {
         var id uuid.UUID
-        var name, iconUrl, slug, category string
+        var appID uuid.UUID
         var amount float64
         var purchasedAt, expiresAt time.Time
         var status string
 
-        rows.Scan(&id, &name, &iconUrl, &amount, &purchasedAt, &expiresAt, &status, &slug, &category)
+        rows.Scan(&id, &appID, &amount, &purchasedAt, &expiresAt, &status)
+        
+        appName := appNames[appID.String()]
+        if appName == "" {
+            appName = "Приложение"
+        }
 
         purchases = append(purchases, gin.H{
-            "id":           id.String(),
-            "name":         name,
-            "icon_url":     iconUrl,
-            "slug":         slug,
-            "category":     category,
-            "amount":       amount,
-            "purchased_at": purchasedAt.Format("02.01.2006"),
-            "expires_at":   expiresAt.Format("02.01.2006"),
+            "id":           id,
+            "app_id":       appID.String(),
+            "name":         appName,
+            "price":        amount,
+            "purchased_at": purchasedAt.Format("2006-01-02"),
+            "expires_at":   expiresAt.Format("2006-01-02"),
             "is_active":    expiresAt.After(time.Now()),
             "status":       status,
         })
@@ -221,145 +356,14 @@ func GetMyPurchases(c *gin.Context) {
 
 // AddReview - добавить отзыв на приложение
 func AddReview(c *gin.Context) {
-    tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
-    }
-    userID := c.GetString("user_id")
-
-    var req struct {
-        AppID  string `json:"app_id" binding:"required"`
-        Rating int    `json:"rating" binding:"required,min=1,max=5"`
-        Review string `json:"review"`
-        Pros   string `json:"pros"`
-        Cons   string `json:"cons"`
-    }
-
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-
-    var purchased bool
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT EXISTS(SELECT 1 FROM marketplace_purchases 
-        WHERE company_id = $1 AND app_id = $2 AND status = 'active')
-    `, tenantID, req.AppID).Scan(&purchased)
-
-    if !purchased {
-        c.JSON(http.StatusForbidden, gin.H{"error": "You can only review apps you purchased"})
-        return
-    }
-
-    _, err := database.Pool.Exec(c.Request.Context(), `
-        INSERT INTO marketplace_reviews (company_id, app_id, user_id, rating, review, pros, cons, tenant_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `, tenantID, req.AppID, userID, req.Rating, req.Review, req.Pros, req.Cons, tenantID)
-
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    database.Pool.Exec(c.Request.Context(), `
-        UPDATE marketplace_apps 
-        SET rating = (SELECT AVG(rating) FROM marketplace_reviews WHERE app_id = $1),
-            reviews_count = (SELECT COUNT(*) FROM marketplace_reviews WHERE app_id = $1)
-        WHERE id = $1
-    `, req.AppID)
-
-    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Отзыв добавлен"})
+    c.JSON(http.StatusOK, gin.H{"success": true, "message": "Функция в разработке"})
 }
 
 // GetMarketplaceApp - детальная страница приложения
 func GetMarketplaceApp(c *gin.Context) {
-    tenantID := c.GetString("tenant_id")
-    if tenantID == "" {
-        tenantID = "11111111-1111-1111-1111-111111111111"
-    }
-
     slug := c.Param("slug")
-
-    var app struct {
-        ID              uuid.UUID
-        Name            string
-        Slug            string
-        Description     string
-        LongDescription string
-        IconUrl         string
-        CoverImage      string
-        Category        string
-        Tags            []string
-        PriceMonthly    float64
-        PriceYearly     float64
-        Rating          float64
-        ReviewsCount    int
-        DownloadsCount  int
-        MinPlan         string
-        DocumentationUrl string
-        SupportEmail    string
-        PartnerName     string
-    }
-
-    err := database.Pool.QueryRow(c.Request.Context(), `
-        SELECT a.id, a.name, a.slug, a.description, COALESCE(a.long_description, ''),
-               a.icon_url, COALESCE(a.cover_image, ''), a.category, a.tags,
-               a.price_monthly, a.price_yearly, a.rating, a.reviews_count, a.downloads_count,
-               a.min_plan, a.documentation_url, a.support_email, COALESCE(p.company_name, '')
-        FROM marketplace_apps a
-        LEFT JOIN marketplace_partners p ON a.partner_id = p.id
-        WHERE a.slug = $1 AND a.tenant_id = $2 AND a.status = 'active'
-    `, slug, tenantID).Scan(
-        &app.ID, &app.Name, &app.Slug, &app.Description, &app.LongDescription,
-        &app.IconUrl, &app.CoverImage, &app.Category, &app.Tags,
-        &app.PriceMonthly, &app.PriceYearly, &app.Rating, &app.ReviewsCount, &app.DownloadsCount,
-        &app.MinPlan, &app.DocumentationUrl, &app.SupportEmail, &app.PartnerName,
-    )
-
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{"error": "App not found"})
-        return
-    }
-
-    // Получаем отзывы
-    rows, err := database.Pool.Query(c.Request.Context(), `
-        SELECT rating, review, pros, cons, created_at, u.name
-        FROM marketplace_reviews r
-        JOIN users u ON r.user_id = u.id
-        WHERE r.app_id = $1
-        ORDER BY r.created_at DESC LIMIT 10
-    `, app.ID)
-    
-    var reviewsList []gin.H
-    if err == nil {
-        defer rows.Close()
-        for rows.Next() {
-            var rating int
-            var review, pros, cons, userName string
-            var createdAt time.Time
-            rows.Scan(&rating, &review, &pros, &cons, &createdAt, &userName)
-            reviewsList = append(reviewsList, gin.H{
-                "rating":     rating,
-                "review":     review,
-                "pros":       pros,
-                "cons":       cons,
-                "user_name":  userName,
-                "created_at": createdAt.Format("02.01.2006"),
-            })
-        }
-    }
-
-    // Проверяем, куплено ли приложение
-    var purchased bool
-    database.Pool.QueryRow(c.Request.Context(), `
-        SELECT EXISTS(SELECT 1 FROM marketplace_purchases 
-        WHERE company_id = $1 AND app_id = $2 AND status = 'active')
-    `, tenantID, app.ID).Scan(&purchased)
-
     c.JSON(http.StatusOK, gin.H{
-        "app":       app,
-        "reviews":   reviewsList,
-        "purchased": purchased,
+        "id":   slug,
+        "name": slug,
     })
 }
-

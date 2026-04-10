@@ -268,6 +268,8 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.GET("/ai-agents", handlers.AIAgentsPage)
     r.GET("/advanced-analytics", handlers.AdvancedAnalyticsPage)
 
+r.GET("/marketplace", handlers.MarketplacePageHandler)
+
     // QR код авторизация
     r.GET("/qr-login", handlers.QRLoginPageHandler)
     r.POST("/api/qr/generate", handlers.GenerateQRCode)
@@ -515,7 +517,59 @@ archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
 archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
 }
 
-   
+ // Банк-клиент
+bankAPI := r.Group("/api/bank")
+bankAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    bankAPI.GET("/accounts", handlers.GetBankAccounts)
+    bankAPI.POST("/connect", handlers.ConnectBankAccount)
+    bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
+    bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
+    bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
+}
+
+// Страница банк-клиента
+r.GET("/bank", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "bank_integration.html", gin.H{
+        "title": "Банк-клиент | SaaSPro",
+    })
+})
+
+// ========== РАСЧЁТ ЗАРПЛАТЫ ==========
+payrollAPI := r.Group("/api/payroll")
+payrollAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    payrollAPI.GET("/employees", handlers.GetEmployeesForPayroll)
+    payrollAPI.POST("/calculate", handlers.CalculatePayroll)
+    payrollAPI.GET("/history", handlers.GetPayrollHistory)
+    payrollAPI.POST("/pay", handlers.ProcessPayrollPayment)
+    payrollAPI.POST("/tax-report", handlers.GenerateTaxReport)
+}
+
+// Страница расчёта зарплаты
+r.GET("/payroll", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "payroll.html", gin.H{
+        "title": "Расчёт зарплаты | SaaSPro",
+    })
+})
+
+// ========== EMAIL-МАРКЕТИНГ ==========
+emailAPI := r.Group("/api/email")
+emailAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    emailAPI.POST("/campaign", handlers.CreateEmailCampaign)
+    emailAPI.GET("/campaigns", handlers.GetEmailCampaigns)
+    emailAPI.POST("/campaign/:id/send", handlers.SendEmailCampaign)
+    emailAPI.GET("/templates", handlers.GetEmailTemplates)
+    emailAPI.POST("/templates", handlers.CreateEmailTemplate)
+}
+
+// Страница email-маркетинга
+r.GET("/email-marketing", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "email_marketing.html", gin.H{
+        "title": "Email-маркетинг | SaaSPro",
+    })
+})
 
 
 // ========== МАРКЕТПЛЕЙС ==========
@@ -529,6 +583,25 @@ marketplace.Use(middleware.AuthMiddleware(cfg))
     marketplace.POST("/api/review", handlers.AddReview)
     marketplace.GET("/api/my-purchases", handlers.GetMyPurchases)
 }
+
+// ========== МАРКЕТПЛЕЙСЫ ==========
+marketplaceAPI := r.Group("/api/marketplace")
+marketplaceAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    marketplaceAPI.POST("/connect", handlers.ConnectMarketplace)
+    marketplaceAPI.GET("/integrations", handlers.GetMarketplaceIntegrationsList)
+    marketplaceAPI.POST("/sync/:id", handlers.SyncMarketplaceOrders)
+    marketplaceAPI.GET("/orders", handlers.GetMarketplaceOrders)
+    marketplaceAPI.POST("/stock", handlers.UpdateMarketplaceStock)
+}
+
+// Страница маркетплейсов (уже есть)
+// r.GET("/marketplace", ...) - уже существует// Страница маркетплейсов
+r.GET("/marketplace-integrations", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "marketplace_integrations.html", gin.H{
+        "title": "Интеграция с маркетплейсами | SaaSPro",
+    })
+})
 // API для архивации из CRM
 crmArchive := r.Group("/api/crm")
 crmArchive.Use(middleware.AuthMiddleware(cfg))

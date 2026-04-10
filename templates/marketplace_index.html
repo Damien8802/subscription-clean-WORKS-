@@ -4,303 +4,370 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Маркетплейс | SaaSPro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .glass-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.3s; }
-        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3); }
-        .gradient-text { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .gradient-bg { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .back-button-oval { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 28px; border-radius: 60px; display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 1000; border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.3s; }
-        .back-button-oval:hover { transform: scale(1.05); background: linear-gradient(135deg, #764ba2, #667eea); }
-        .btn-gradient { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s; }
-        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
-        .app-card { background: white; border-radius: 20px; padding: 20px; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .app-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); border-color: #667eea; }
-        .app-icon { width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px; }
-        .app-price { font-size: 24px; font-weight: 700; color: #667eea; }
-        .featured-badge { position: absolute; top: -10px; right: 20px; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .category-btn { padding: 8px 20px; border-radius: 30px; background: white; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; }
-        .category-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; }
-        .category-btn:hover:not(.active) { background: #f1f5f9; }
-        .rating-stars { color: #fbbf24; }
-        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1001; }
-        .modal-content { background: white; border-radius: 24px; max-width: 600px; width: 90%; padding: 32px; max-height: 80vh; overflow-y: auto; }
-        .purchase-btn { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; width: 100%; }
-        .purchase-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
-        .my-apps-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #10b981; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #0f0f23 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        /* Анимированный фон */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 30%, rgba(102,126,234,0.15) 0%, transparent 60%);
+            animation: float1 20s ease-in-out infinite;
+        }
+        
+        .animated-bg::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 80% 70%, rgba(118,75,162,0.1) 0%, transparent 60%);
+            animation: float2 25s ease-in-out infinite;
+        }
+        
+        @keyframes float1 { 0%,100% { transform: translate(-25%,-25%) scale(1); } 50% { transform: translate(-25%,-25%) scale(1.2); } }
+        @keyframes float2 { 0%,100% { transform: translate(-25%,-25%) scale(1.2); } 50% { transform: translate(-25%,-25%) scale(1); } }
+        
+        .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+        
+        /* Хедер */
+        .page-header { margin-bottom: 40px; }
+        .page-title { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #a78bfa, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .page-subtitle { color: rgba(255,255,255,0.5); font-size: 16px; }
+        
+        /* Карточки */
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 28px;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            border-color: rgba(102,126,234,0.6);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.1);
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #a78bfa;
+        }
+        
+        /* Кнопки */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        
+        /* Категории */
+        .filters { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
+        .filter-btn { 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.2); 
+            padding: 10px 24px; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        .filter-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); border-color: transparent; }
+        
+        .search { 
+            display: block; 
+            width: 320px; 
+            margin: 0 auto 30px; 
+            padding: 12px 20px; 
+            border-radius: 40px; 
+            border: 1px solid rgba(255,255,255,0.2); 
+            background: rgba(0,0,0,0.3);
+            color: white;
+            text-align: center;
+        }
+        .search::placeholder { color: rgba(255,255,255,0.5); }
+        .search:focus { outline: none; border-color: #667eea; }
+        
+        /* Сетка приложений */
+        .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+        
+        .app-card { 
+            background: rgba(255,255,255,0.05); 
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px; 
+            padding: 24px; 
+            position: relative; 
+            transition: all 0.3s;
+        }
+        .app-card:hover { transform: translateY(-4px); border-color: rgba(102,126,234,0.5); }
+        
+        .featured { 
+            position: absolute; 
+            top: -12px; 
+            right: 20px; 
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white; 
+            padding: 4px 16px; 
+            border-radius: 30px; 
+            font-size: 12px; 
+            font-weight: 600;
+        }
+        
+        .app-icon { font-size: 48px; margin-bottom: 16px; }
+        .app-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: white; }
+        .app-desc { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 16px; line-height: 1.4; }
+        .price { font-size: 24px; font-weight: 700; color: #a78bfa; margin-bottom: 16px; }
+        .price small { font-size: 12px; color: rgba(255,255,255,0.5); }
+        
+        .btn-buy { 
+            background: linear-gradient(135deg, #10b981, #059669); 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%; 
+            transition: all 0.3s;
+        }
+        .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
+        
+        /* Модальное окно */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            backdrop-filter: blur(10px);
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+        }
+        .modal-content { 
+            background: linear-gradient(135deg, #1a1a2e, #0f0f23);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 24px; 
+            padding: 32px; 
+            max-width: 400px; 
+            width: 90%; 
+        }
+        .modal-content h3 { color: white; margin-bottom: 16px; }
+        .modal-content p { color: rgba(255,255,255,0.7); margin-bottom: 20px; }
+        .modal-content select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 15px 0; 
+            border-radius: 12px; 
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        /* Кнопка назад */
+        .back-button-oval { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            background: rgba(102,126,234,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102,126,234,0.3);
+            color: white; 
+            padding: 12px 28px; 
+            border-radius: 60px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            cursor: pointer; 
+            z-index: 100; 
+            transition: all 0.3s;
+        }
+        .back-button-oval:hover { background: rgba(102,126,234,0.4); transform: scale(1.05); }
+        
+        @media (max-width: 768px) {
+            .apps-grid { grid-template-columns: 1fr; }
+            .page-title { font-size: 28px; }
+            .filters { gap: 8px; }
+            .filter-btn { padding: 6px 16px; font-size: 12px; }
+        }
     </style>
 </head>
 <body>
+<div class="animated-bg"></div>
 
-<div class="container mx-auto px-6 py-8 max-w-7xl">
-    <!-- Шапка -->
-    <div class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-4xl font-bold mb-2" style="color: white;">📦 Маркетплейс SaaSPro</h1>
-            <p style="color: rgba(255,255,255,0.9);">Расширьте возможности вашей платформы с помощью приложений и интеграций от партнёров</p>
-        </div>
-        <div class="flex gap-3">
-            <button onclick="showMyApps()" class="btn-gradient flex items-center gap-2">
-                <i class="fas fa-shopping-bag"></i> Мои приложения
-            </button>
-            <button onclick="location.href='/dashboard-improved'" class="btn-gradient flex items-center gap-2">
-                <i class="fas fa-chart-line"></i> Главный дашборд
-            </button>
-        </div>
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title"><i class="bi bi-shop"></i> Маркетплейс SaaSPro</h1>
+        <p class="page-subtitle">Расширьте возможности вашей платформы с помощью приложений и интеграций</p>
     </div>
 
-    <!-- Поиск и категории -->
-    <div class="glass-card p-6 mb-8">
-        <div class="flex flex-wrap justify-between items-center gap-4">
-            <div class="flex flex-wrap gap-2" id="categoriesList">
-                <button class="category-btn active" data-category="all">Все</button>
-                <button class="category-btn" data-category="integration">🔌 Интеграции</button>
-                <button class="category-btn" data-category="template">📄 Шаблоны</button>
-                <button class="category-btn" data-category="ai_agent">🤖 AI-агенты</button>
-                <button class="category-btn" data-category="service">🛠️ Услуги</button>
-            </div>
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" id="searchInput" placeholder="Поиск приложений..." class="pl-10 pr-4 py-2 border rounded-xl w-80 bg-white">
-            </div>
-        </div>
+    <div class="filters" id="filters">
+        <button class="filter-btn active" data-cat="all">Все</button>
+        <button class="filter-btn" data-cat="integration">🔌 Интеграции</button>
+        <button class="filter-btn" data-cat="template">📄 Шаблоны</button>
+        <button class="filter-btn" data-cat="ai_agent">🤖 AI-агенты</button>
+        <button class="filter-btn" data-cat="service">🛠️ Услуги</button>
     </div>
 
-    <!-- Список приложений -->
-    <div id="appsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div class="text-center py-12 col-span-full text-white">
-            <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
-            <p>Загрузка приложений...</p>
-        </div>
-    </div>
+    <input type="text" id="search" class="search" placeholder="Поиск приложений...">
 
-    <!-- Мои приложения (скрыто по умолчанию) -->
-    <div id="myAppsContainer" class="hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-white">📱 Мои приложения</h2>
-            <button onclick="showAllApps()" class="text-white hover:underline">← Вернуться в каталог</button>
-        </div>
-        <div id="myAppsList" class="space-y-4">
-            <div class="text-center py-12 text-white">
-                <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
-                <p>Загрузка...</p>
-            </div>
-        </div>
+    <div id="apps" class="apps-grid"></div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">Подтверждение покупки</h3>
+        <p id="modalDesc"></p>
+        <select id="period">
+            <option value="monthly">Ежемесячно</option>
+            <option value="yearly">Ежегодно (скидка 20%)</option>
+        </select>
+        <div id="modalPrice" style="font-size:24px; font-weight:bold; margin:15px 0;"></div>
+        <button id="confirmBtn" class="btn-buy" style="width:100%;">Подтвердить</button>
+        <button onclick="closeModal()" style="width:100%; margin-top:10px; padding:10px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:12px; cursor:pointer; color:white;">Отмена</button>
     </div>
 </div>
 
-<!-- Овальная кнопка назад -->
-<button onclick="location.href='/dashboard-improved'" class="back-button-oval">
-    <i class="fas fa-arrow-left"></i>
-    <span>На главный дашборд</span>
+<button class="back-button-oval" onclick="location.href='/dashboard-improved'">
+    <i class="bi bi-arrow-left"></i> На главную
 </button>
 
-<!-- Модальное окно покупки -->
-<div id="purchaseModal" class="modal">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold gradient-text" id="modalAppName">Подтверждение покупки</h2>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
-        </div>
-        <div id="modalAppDetails"></div>
-        <div class="mt-6">
-            <label class="block text-sm font-medium mb-2">Период оплаты</label>
-            <div class="flex gap-4 mb-4">
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="period" value="monthly" checked onchange="updatePrice()">
-                    <span>Ежемесячно</span>
-                </label>
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="period" value="yearly" onchange="updatePrice()">
-                    <span>Ежегодно (экономия 20%)</span>
-                </label>
-            </div>
-            <div class="text-2xl font-bold gradient-text mb-4" id="modalPrice">0 ₽/мес</div>
-            <button onclick="confirmPurchase()" class="purchase-btn">
-                <i class="fas fa-shopping-cart mr-2"></i> Подтвердить покупку
-            </button>
-        </div>
-    </div>
-</div>
+<script>
+  const apps = [
+    { id: "1", name: "Ozon + Wildberries", desc: "Управление заказами, остатками, ценами на Ozon и Wildberries", cat: "integration", price: 6900, price_yearly: 69000, icon: "📦", featured: true },
+    { id: "2", name: "Яндекс.Маркет", desc: "Интеграция с Яндекс.Маркет: управление ценами, остатками, заказами", cat: "integration", price: 2990, price_yearly: 29900, icon: "💙", featured: true },
+    { id: "3", name: "1С:Бухгалтерия + ERP", desc: "Двусторонняя синхронизация с 1С:Бухгалтерия 3.0 и 1С:ERP", cat: "integration", price: 4900, price_yearly: 49000, icon: "🏦", featured: false },
+    { id: "4", name: "HeadHunter Рекрутинг", desc: "Автоматический импорт резюме, публикация вакансий, аналитика рынка труда", cat: "integration", price: 5900, price_yearly: 59000, icon: "👥", featured: false },
+    { id: "5", name: "Telegram Бизнес Пак", desc: "Корпоративный Telegram: рассылки, уведомления, чат-боты, аналитика", cat: "integration", price: 2900, price_yearly: 29000, icon: "📱", featured: false },
+    { id: "6", name: "YandexGPT для бизнеса", desc: "AI-ассистенты, генерация контента, анализ документов на YandexGPT", cat: "ai_agent", price: 9900, price_yearly: 99000, icon: "🧠", featured: true },
+    { id: "7", name: "Sales CRM Pro", desc: "Готовая CRM для отдела продаж: воронки, сделки, аналитика", cat: "template", price: 2900, price_yearly: 29000, icon: "📈", featured: false },
+    { id: "8", name: "ЮKassa Платежи", desc: "Приём платежей через ЮKassa: все способы оплаты в одном решении", cat: "integration", price: 0, price_yearly: 0, icon: "💵", featured: false },
+    { id: "9", name: "AI Копирайтер Pro", desc: "Генерация текстов, постов, статей с помощью нейросети", cat: "ai_agent", price: 2900, price_yearly: 29000, icon: "✍️", featured: false },
+    { id: "10", name: "Виджет Поддержки", desc: "Чат-виджет для сайта с интеграцией в CRM", cat: "service", price: 1900, price_yearly: 19000, icon: "💬", featured: false },
+    { id: "11", name: "Отчётность для ФНС", desc: "Автоматическое формирование и отправка отчётов в налоговую", cat: "service", price: 4900, price_yearly: 49000, icon: "📋", featured: false }
+];
 
-<script>    let currentCategory = 'all';
+    let currentCat = 'all';
     let currentSearch = '';
-    let appsData = [];
+    let selectedApp = null;
 
-    async function loadApps() {
-        const container = document.getElementById('appsContainer');
-        container.innerHTML = '<div class="text-center py-12 col-span-full text-white"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Загрузка...</p></div>';
+    function render() {
+        let filtered = apps;
+        if (currentCat !== 'all') filtered = filtered.filter(a => a.cat === currentCat);
+        if (currentSearch) filtered = filtered.filter(a => a.name.toLowerCase().includes(currentSearch.toLowerCase()));
         
-        try {
-            let url = `/marketplace/api/apps?category=${currentCategory}&search=${encodeURIComponent(currentSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            appsData = data.apps;
-            
-            if (!appsData || appsData.length === 0) {
-                container.innerHTML = '<div class="text-center py-12 col-span-full text-white"><i class="fas fa-store text-4xl mb-3 opacity-50"></i><p>Приложений не найдено</p></div>';
-                return;
-            }
-            
-            let html = '';
-            appsData.forEach(app => {
-                html += `
-                    <div class="app-card relative" onclick="showPurchaseModal('${app.id}')" style="cursor: pointer;">
-                        ${app.featured ? '<div class="featured-badge">⭐ Рекомендуемое</div>' : ''}
-                        <div class="app-icon">${app.icon_url || '📦'}</div>
-                        <h3 class="text-lg font-semibold mb-1">${app.name}</h3>
-                        <p class="text-gray-500 text-sm mb-3">${app.description?.substring(0, 80)}${app.description?.length > 80 ? '...' : ''}</p>
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="rating-stars">${'★'.repeat(Math.floor(app.rating || 0))}${'☆'.repeat(5-Math.floor(app.rating || 0))}</div>
-                            <span class="text-sm text-gray-500">(${app.reviews_count || 0})</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-3">
-                            <div>
-                                ${app.price_monthly > 0 ? `<span class="app-price">${app.price_monthly.toLocaleString()} ₽</span><span class="text-sm text-gray-500">/мес</span>` : '<span class="text-green-600 font-semibold">Бесплатно</span>'}
-                            </div>
-                            ${app.purchased ? '<span class="text-green-600 text-sm"><i class="fas fa-check-circle"></i> Активировано</span>' : '<span class="text-blue-500 text-sm">Купить →</span>'}
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        } catch(e) {
-            console.error(e);
-            container.innerHTML = '<div class="text-center py-12 col-span-full text-red-400">Ошибка загрузки приложений</div>';
+        const container = document.getElementById('apps');
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.6); padding:60px;">Нет приложений</div>';
+            return;
         }
-    }
-
-    async function loadMyApps() {
-        try {
-            const res = await fetch('/marketplace/api/my-purchases');
-            const data = await res.json();
-            const container = document.getElementById('myAppsList');
-            
-            if (data.purchases && data.purchases.length > 0) {
-                let html = '';
-                data.purchases.forEach(p => {
-                    html += `
-                        <div class="my-apps-card">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <h3 class="font-semibold">${p.name}</h3>
-                                    <p class="text-sm text-gray-500">${p.category}</p>
-                                    <p class="text-xs text-gray-400">Действует до: ${p.expires_at}</p>
-                                </div>
-                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Активно</span>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-            } else {
-                container.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">У вас пока нет купленных приложений</p><button onclick="showAllApps()" class="btn-gradient mt-3">Перейти в каталог</button></div>';
-            }
-        } catch(e) {
-            console.error(e);
-        }
-    }
-
-    let selectedAppId = null;
-    let selectedAppName = '';
-    let selectedAppPriceMonthly = 0;
-    let selectedAppPriceYearly = 0;
-
-    function showPurchaseModal(appId) {
-        const app = appsData.find(a => a.id === appId);
-        if (!app || app.purchased) return;
         
-        selectedAppId = app.id;
-        selectedAppName = app.name;
-        selectedAppPriceMonthly = app.price_monthly;
-        selectedAppPriceYearly = app.price_yearly;
-        
-        document.getElementById('modalAppName').innerText = app.name;
-        document.getElementById('modalAppDetails').innerHTML = `
-            <div class="flex items-center gap-4 mb-4">
-                <div class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-white text-2xl">${app.icon_url || '📦'}</div>
-                <div>
-                    <div class="rating-stars">${'★'.repeat(Math.floor(app.rating || 0))}${'☆'.repeat(5-Math.floor(app.rating || 0))}</div>
-                    <div class="text-sm text-gray-500">${app.reviews_count || 0} отзывов</div>
-                </div>
+        container.innerHTML = filtered.map(app => `
+            <div class="app-card">
+                ${app.featured ? '<div class="featured">⭐ Рекомендуемое</div>' : ''}
+                <div class="app-icon">${app.icon}</div>
+                <div class="app-name">${app.name}</div>
+                <div class="app-desc">${app.desc}</div>
+                <div class="price">${app.price === 0 ? 'Бесплатно' : app.price.toLocaleString() + ' ₽'}<small>/мес</small></div>
+                <button class="btn-buy" onclick="showModal('${app.id}')">Купить</button>
             </div>
-            <p class="text-gray-600 mb-4">${app.description}</p>
-        `;
+        `).join('');
+    }
+
+    function showModal(id) {
+        selectedApp = apps.find(a => a.id === id);
+        if (!selectedApp) return;
+        document.getElementById('modalTitle').innerText = selectedApp.name;
+        document.getElementById('modalDesc').innerText = selectedApp.desc;
         updatePrice();
-        document.getElementById('purchaseModal').style.display = 'flex';
+        document.getElementById('modal').style.display = 'flex';
     }
 
     function updatePrice() {
-        const period = document.querySelector('input[name="period"]:checked').value;
-        const price = period === 'monthly' ? selectedAppPriceMonthly : selectedAppPriceYearly;
-        const periodText = period === 'monthly' ? 'мес' : 'год';
-        document.getElementById('modalPrice').innerHTML = `${price.toLocaleString()} ₽/${periodText}`;
+        if (!selectedApp) return;
+        const period = document.getElementById('period').value;
+        const price = period === 'monthly' ? selectedApp.price : selectedApp.price_yearly;
+        document.getElementById('modalPrice').innerHTML = `${price.toLocaleString()} ₽/${period === 'monthly' ? 'мес' : 'год'}`;
     }
 
     async function confirmPurchase() {
-        if (!selectedAppId) return;
-        const period = document.querySelector('input[name="period"]:checked').value;
-        
+        if (!selectedApp) return;
+        const period = document.getElementById('period').value;
         try {
             const res = await fetch('/marketplace/api/purchase', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ app_id: selectedAppId, billing_period: period })
+                body: JSON.stringify({ app_id: selectedApp.id, billing_period: period })
             });
             const data = await res.json();
-            if (data.success) {
-                alert(`✅ ${data.message}`);
-                closeModal();
-                loadApps();
-            } else {
-                alert('❌ Ошибка при покупке: ' + (data.error || 'неизвестная ошибка'));
-            }
-        } catch(e) {
-            alert('❌ Ошибка при покупке');
-        }
-    }
-
-    function showMyApps() {
-        document.getElementById('appsContainer').style.display = 'none';
-        document.getElementById('myAppsContainer').style.display = 'block';
-        loadMyApps();
-    }
-
-    function showAllApps() {
-        document.getElementById('appsContainer').style.display = 'grid';
-        document.getElementById('myAppsContainer').style.display = 'none';
-        loadApps();
+            alert(data.message || (data.success ? '✅ Куплено!' : '❌ Ошибка'));
+            if (data.success) closeModal();
+        } catch(e) { alert('Ошибка: ' + e.message); }
     }
 
     function closeModal() {
-        document.getElementById('purchaseModal').style.display = 'none';
-        selectedAppId = null;
+        document.getElementById('modal').style.display = 'none';
+        selectedApp = null;
     }
 
-    // Фильтры
-    document.querySelectorAll('.category-btn').forEach(btn => {
+    document.getElementById('period').addEventListener('change', updatePrice);
+    document.getElementById('confirmBtn').onclick = confirmPurchase;
+    document.getElementById('search').addEventListener('input', e => { currentSearch = e.target.value; render(); });
+    document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentCategory = btn.dataset.category;
-            loadApps();
+            currentCat = btn.dataset.cat;
+            render();
         });
     });
 
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            currentSearch = this.value;
-            loadApps();
-        }, 500);
-    });
-
-    loadApps();</script>
+    render();
+</script>
 </body>
 </html>
-

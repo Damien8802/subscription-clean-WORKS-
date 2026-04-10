@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email-маркетинг | SaaSPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #0f0f23 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 30%, rgba(102,126,234,0.15) 0%, transparent 60%);
+            animation: float1 20s ease-in-out infinite;
+        }
+        
+        .animated-bg::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 80% 70%, rgba(118,75,162,0.1) 0%, transparent 60%);
+            animation: float2 25s ease-in-out infinite;
+        }
+        
+        @keyframes float1 { 0%,100% { transform: translate(-25%,-25%) scale(1); } 50% { transform: translate(-25%,-25%) scale(1.2); } }
+        @keyframes float2 { 0%,100% { transform: translate(-25%,-25%) scale(1.2); } 50% { transform: translate(-25%,-25%) scale(1); } }
+        
+        .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
+        
+        .page-header { margin-bottom: 40px; }
+        .page-title { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #a78bfa, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .page-subtitle { color: rgba(255,255,255,0.5); font-size: 16px; }
+        
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 28px;
+            transition: all 0.3s;
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #a78bfa;
+        }
+        
+        .form-control, .form-select {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        
+        .table-container { overflow-x: auto; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { text-align: left; padding: 16px 12px; color: rgba(255,255,255,0.6); font-weight: 500; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .table td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; }
+        .table tr:hover { background: rgba(255,255,255,0.03); }
+        
+        .badge-success { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 12px; border-radius: 30px; font-size: 12px; }
+        .badge-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 4px 12px; border-radius: 30px; font-size: 12px; }
+        
+        .back-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(102,126,234,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102,126,234,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .back-button:hover {
+            background: rgba(102,126,234,0.4);
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .page-title { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title"><i class="bi bi-envelope-paper me-3"></i>Email-маркетинг</h1>
+            <p class="page-subtitle">Создавайте и отправляйте email рассылки</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-title"><i class="bi bi-plus-circle"></i> Новая рассылка</div>
+            <div class="row g-3">
+                <div class="col-md-12"><input type="text" id="campaignName" class="form-control" placeholder="Название кампании"></div>
+                <div class="col-md-12"><input type="text" id="campaignSubject" class="form-control" placeholder="Тема письма"></div>
+                <div class="col-md-12"><textarea id="campaignContent" rows="6" class="form-control" placeholder="Содержание письма (HTML)"></textarea></div>
+                <div class="col-md-12"><input type="text" id="recipients" class="form-control" placeholder="Email получателей (через запятую)"></div>
+                <div class="col-md-12"><button class="btn btn-primary" onclick="createCampaign()">Создать рассылку</button></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title"><i class="bi bi-list-ul"></i> Мои рассылки</div>
+            <div class="table-container">
+                <table class="table">
+                    <thead><tr><th>Название</th><th>Тема</th><th>Статус</th><th>Получателей</th><th>Открытий</th><th>Действия</th></tr></thead>
+                    <tbody id="campaignsList"><tr><td colspan="6" class="text-center">Загрузка...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <button class="back-button" onclick="window.location.href='/dashboard-improved'"><i class="bi bi-arrow-left"></i> На главную</button>
+    
+    <script>
+        async function loadCampaigns() {
+            const res = await fetch('/api/email/campaigns');
+            const data = await res.json();
+            const campaigns = data.campaigns || [];
+            const tbody = document.getElementById('campaignsList');
+            if (campaigns.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center">Нет рассылок</td></tr>'; return; }
+            tbody.innerHTML = campaigns.map(c => `<tr><td>${c.name}</td><td>${c.subject}</td><td><span class="badge-${c.status === 'sent' ? 'success' : 'warning'}">${c.status === 'sent' ? 'Отправлено' : 'Черновик'}</span></td><td>${c.recipient_count}</td><td>${c.opened_count}/${c.recipient_count}</td><td><button class="btn btn-primary" onclick="sendCampaign('${c.id}')">Отправить</button></td></tr>`).join('');
+        }
+        
+        async function createCampaign() {
+            const name = document.getElementById('campaignName').value;
+            const subject = document.getElementById('campaignSubject').value;
+            const content = document.getElementById('campaignContent').value;
+            const recipientsStr = document.getElementById('recipients').value;
+            const recipients = recipientsStr.split(',').map(e => e.trim()).filter(e => e);
+            if (!name || !subject || !content || recipients.length === 0) { alert('Заполните все поля'); return; }
+            const res = await fetch('/api/email/campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, subject, content, recipients }) });
+            const data = await res.json();
+            alert(data.message);
+            document.getElementById('campaignName').value = '';
+            document.getElementById('campaignSubject').value = '';
+            document.getElementById('campaignContent').value = '';
+            document.getElementById('recipients').value = '';
+            loadCampaigns();
+        }
+        
+        async function sendCampaign(id) {
+            if (!confirm('Отправить рассылку?')) return;
+            const res = await fetch(`/api/email/campaign/${id}/send`, { method: 'POST' });
+            const data = await res.json();
+            alert(data.message);
+            loadCampaigns();
+        }
+        
+        loadCampaigns();
+    </script>
+</body>
+</html>
