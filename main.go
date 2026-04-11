@@ -730,6 +730,24 @@ crmArchive.Use(middleware.AuthMiddleware(cfg))
     r.GET("/api/vpn/stats", handlers.GetVPNStats)
     r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
 
+// ========== МИГРАЦИЯ (3 ФАЗЫ) ==========
+migrationAPI := r.Group("/api/migration")
+migrationAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    migrationAPI.POST("/project", handlers.CreateMigrationProject)
+    migrationAPI.GET("/projects", handlers.GetMigrationProjects)
+    migrationAPI.GET("/project/:id/status", handlers.GetMigrationStatus)
+    migrationAPI.POST("/project/:id/phase2", handlers.StartPhase2)
+    migrationAPI.POST("/project/:id/phase3", handlers.StartPhase3)
+    migrationAPI.POST("/project/:id/sync", handlers.SyncEntities)
+}
+
+// Страница миграции
+r.GET("/migration", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "migration.html", gin.H{
+        "title": "Миграция данных 3 фазы | SaaSPro",
+    })
+})
     // ========== STEALTH VPN (НЕВИДИМЫЙ VPN) ==========
     // Stealth VPN API - не конфликтует с существующими VPN роутами
     stealthVPN := r.Group("/api/vpn/stealth")
