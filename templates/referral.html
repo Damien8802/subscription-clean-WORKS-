@@ -35,7 +35,7 @@
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -92,6 +92,7 @@
             cursor: pointer;
             font-weight: 600;
         }
+        .btn-copy:hover { opacity: 0.9; transform: scale(1.02); }
         
         .bonus-info {
             background: #f0f3ff;
@@ -117,6 +118,7 @@
             cursor: pointer;
             font-weight: 600;
         }
+        .btn-withdraw:hover { opacity: 0.9; transform: scale(1.02); }
         
         .table-section {
             background: white;
@@ -147,6 +149,7 @@
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
+            display: inline-block;
         }
         .badge-pending {
             background: #ff9800;
@@ -154,6 +157,15 @@
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
+            display: inline-block;
+        }
+        .badge-completed {
+            background: #2196f3;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
         }
         
         .how-it-works {
@@ -192,6 +204,45 @@
             padding: 10px 20px;
             border-radius: 10px;
         }
+        .back-link:hover { background: rgba(255,255,255,0.3); }
+        
+        /* Кнопка назад */
+        .back-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 40px !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+            z-index: 9999;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+        }
+        .back-button:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            color: white;
+            box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+            text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .steps { grid-template-columns: 1fr; }
+            .back-button { padding: 10px 20px; font-size: 14px; bottom: 20px; right: 20px; }
+        }
+        
+        input, select { outline: none; }
+        input:focus, select:focus { border-color: #667eea; }
     </style>
 </head>
 <body>
@@ -203,30 +254,34 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value">5</div>
+                <div class="stat-value" id="invitedCount">0</div>
                 <div class="stat-label">Приглашено</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">3</div>
+                <div class="stat-value" id="activeCount">0</div>
                 <div class="stat-label">Активных</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">1 500 ₽</div>
+                <div class="stat-value" id="earnedAmount">0 ₽</div>
                 <div class="stat-label">Заработано</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="availableAmount">0 ₽</div>
+                <div class="stat-label">Доступно</div>
             </div>
         </div>
 
         <div class="referral-box">
             <h2>🔗 Ваша реферальная ссылка</h2>
             <div class="link-container">
-                <input type="text" class="referral-link" id="referralLink" value="https://saaspro.ru/ref/USER123" readonly>
+                <input type="text" class="referral-link" id="referralLink" value="Загрузка..." readonly>
                 <button class="btn-copy" onclick="copyLink()">Копировать</button>
             </div>
             
             <div class="bonus-info">
                 <span>Доступно для вывода:</span>
-                <span class="bonus-amount">1 200 ₽</span>
-                <button class="btn-withdraw" onclick="withdraw()">Вывести</button>
+                <span class="bonus-amount" id="availableBonus">0 ₽</span>
+                <button class="btn-withdraw" onclick="scrollToPayout()">Вывести</button>
             </div>
         </div>
 
@@ -241,27 +296,41 @@
                         <th>Бонус</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>15.03.2024</td>
-                        <td>alex@example.com</td>
-                        <td><span class="badge-active">Активен</span></td>
-                        <td>300 ₽</td>
-                    </tr>
-                    <tr>
-                        <td>10.03.2024</td>
-                        <td>maria@example.com</td>
-                        <td><span class="badge-active">Активен</span></td>
-                        <td>300 ₽</td>
-                    </tr>
-                    <tr>
-                        <td>05.03.2024</td>
-                        <td>ivan@example.com</td>
-                        <td><span class="badge-pending">Ожидает</span></td>
-                        <td>—</td>
-                    </tr>
+                <tbody id="friendsTableBody">
+                    <tr><td colspan="4" style="text-align: center;">Загрузка...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Секция вывода средств -->
+        <div class="referral-box" id="payoutSection">
+            <h2>💰 Вывод средств</h2>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 10px;">Сумма вывода (₽)</label>
+                    <input type="number" id="payoutAmount" class="referral-link" placeholder="Минимум 500 ₽" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 10px;">Способ вывода</label>
+                    <select id="payoutMethod" class="referral-link" style="width: 100%;">
+                        <option value="bank">Банковская карта</option>
+                        <option value="card">Банковский счёт</option>
+                        <option value="crypto">Криптовалюта USDT</option>
+                    </select>
+                </div>
+                <div style="flex: 1; display: flex; align-items: flex-end;">
+                    <button class="btn-copy" onclick="requestPayout()" style="width: 100%;">Запросить вывод</button>
+                </div>
+            </div>
+            <div id="payoutMessage" style="margin-top: 15px; display: none;"></div>
+        </div>
+
+        <!-- История выплат -->
+        <div class="referral-box">
+            <h2>📋 История выплат</h2>
+            <div id="payoutsList" style="margin-top: 15px;">
+                <p style="color: #666;">Загрузка...</p>
+            </div>
         </div>
 
         <div class="how-it-works">
@@ -288,7 +357,121 @@
         <a href="/dashboard-improved" class="back-link">← В дашборд</a>
     </div>
 
+    <!-- Кнопка назад -->
+    <a href="javascript:history.back()" class="back-button">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+
     <script>
+        const userId = 'aa5f14e6-30e1-476c-ac42-8c11ced838a4';
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`/api/referral/stats?user_id=${userId}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('invitedCount').textContent = data.stats.invited || 0;
+                    document.getElementById('activeCount').textContent = data.stats.active || 0;
+                    document.getElementById('earnedAmount').textContent = (data.stats.earned || 0).toLocaleString() + ' ₽';
+                    document.getElementById('availableAmount').textContent = (data.stats.available || 0).toLocaleString() + ' ₽';
+                    document.getElementById('availableBonus').textContent = (data.stats.available || 0).toLocaleString() + ' ₽';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadFriends() {
+            try {
+                const response = await fetch(`/api/referral/friends?user_id=${userId}`);
+                const data = await response.json();
+                const tbody = document.getElementById('friendsTableBody');
+                if (data.success && data.friends && data.friends.length > 0) {
+                    tbody.innerHTML = data.friends.map(f => `
+                        <tr>
+                            <td>${f.date}</td>
+                            <td>${f.email}</td>
+                            <td><span class="badge-${f.status === 'active' ? 'active' : 'pending'}">${f.status === 'active' ? 'Активен' : 'Ожидает'}</span></td>
+                            <td>${f.bonus > 0 ? f.bonus + ' ₽' : '—'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Пока нет приглашённых друзей</td></tr>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadReferralLink() {
+            try {
+                const response = await fetch(`/api/partner/link`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('referralLink').value = data.link;
+                }
+            } catch(e) {
+                document.getElementById('referralLink').value = 'https://saaspro.ru/ref/USER123';
+            }
+        }
+
+        async function loadPayouts() {
+            try {
+                const response = await fetch(`/api/partner/payouts`);
+                const data = await response.json();
+                const container = document.getElementById('payoutsList');
+                if (data.success && data.payouts && data.payouts.length > 0) {
+                    container.innerHTML = `
+                        <table style="width:100%; border-collapse: collapse;">
+                            <tr style="background:#f0f3ff;">
+                                <th style="padding:10px; text-align:left;">Дата</th>
+                                <th style="padding:10px; text-align:left;">Сумма</th>
+                                <th style="padding:10px; text-align:left;">Способ</th>
+                                <th style="padding:10px; text-align:left;">Статус</th>
+                            </tr>
+                            ${data.payouts.map(p => `
+                                <tr style="border-bottom:1px solid #eee;">
+                                    <td style="padding:10px;">${p.created_at}</td>
+                                    <td style="padding:10px;">${p.amount} ₽</td>
+                                    <td style="padding:10px;">${p.method === 'bank' ? 'Банковская карта' : p.method === 'card' ? 'Банковский счёт' : 'Криптовалюта'}</td>
+                                    <td style="padding:10px;">
+                                        <span class="badge-${p.status === 'completed' ? 'completed' : p.status === 'pending' ? 'pending' : 'pending'}">
+                                            ${p.status === 'completed' ? '✅ Выполнен' : p.status === 'pending' ? '⏳ В обработке' : '❌ Отклонён'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    `;
+                } else {
+                    container.innerHTML = '<p style="color: #666;">Пока нет выплат</p>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function requestPayout() {
+            const amount = document.getElementById('payoutAmount').value;
+            const method = document.getElementById('payoutMethod').value;
+            
+            if (!amount || amount < 500) {
+                alert('Минимальная сумма вывода: 500 ₽');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/partner/payout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: parseFloat(amount), method: method, details: {} })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('payoutAmount').value = '';
+                    loadPayouts();
+                    loadStats();
+                } else {
+                    alert(data.error);
+                }
+            } catch(e) { alert('Ошибка при запросе вывода'); }
+        }
+
         function copyLink() {
             const link = document.getElementById('referralLink');
             link.select();
@@ -296,85 +479,16 @@
             alert('✅ Ссылка скопирована!');
         }
 
-        function withdraw() {
-            if (confirm('Вывести 1 200 ₽ на карту?')) {
-                alert('✅ Заявка создана. Средства поступят в течение 3 дней.');
-            }
+        function scrollToPayout() {
+            document.getElementById('payoutSection').scrollIntoView({ behavior: 'smooth' });
         }
+
+        // Загрузка всех данных
+        loadStats();
+        loadFriends();
+        loadReferralLink();
+        loadPayouts();
     </script>
-<script>
-    const userId = 'test-user-123';
-
-    async function loadStats() {
-        const response = await fetch(`/api/referral/stats?user_id=${userId}`);
-        const data = await response.json();
-        if (data.success) {
-            document.querySelector('.stat-value:nth-child(1)').textContent = data.stats.invited;
-            document.querySelector('.stat-value:nth-child(2)').textContent = data.stats.active;
-            document.querySelector('.stat-value:nth-child(3)').textContent = data.stats.earned + ' ₽';
-            document.querySelector('.bonus-amount').textContent = data.stats.available + ' ₽';
-        }
-    }
-
-    async function loadFriends() {
-        const response = await fetch(`/api/referral/friends?user_id=${userId}`);
-        const data = await response.json();
-        // Здесь обновление таблицы
-    }
-
-    loadStats();
-    loadFriends();
-</script>
-
-<style>
-</style>
-
-<!-- Овальная кнопка назад -->
-<a href="javascript:history.back()" class="back-button" title="Назад">
-    <i class="fas fa-arrow-left"></i> Назад
-</a>
-
-<style>
-.back-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 12px 28px;
-    border-radius: 40px !important;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    transition: all 0.3s;
-    z-index: 9999;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    border: none;
-    width: auto;
-    height: auto;
-}
-.back-button:hover {
-    transform: translateY(-3px);
-    background: linear-gradient(135deg, #764ba2, #667eea);
-    color: white;
-    box-shadow: 0 8px 25px rgba(102,126,234,0.4);
-    text-decoration: none;
-}
-@media (max-width: 768px) {
-    .back-button {
-        padding: 10px 20px;
-        font-size: 14px;
-        bottom: 20px;
-        right: 20px;
-    }
-}
-</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </body>
 </html>
-
-
-

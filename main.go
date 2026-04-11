@@ -528,6 +528,82 @@ bankAPI.Use(middleware.AuthMiddleware(cfg))
     bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
 }
 
+// ========== WHATSAPP BUSINESS API ==========
+whatsappAPI := r.Group("/api/whatsapp")
+whatsappAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    whatsappAPI.POST("/connect", handlers.ConnectWhatsApp)
+    whatsappAPI.POST("/send", handlers.SendWhatsAppMessage)
+    whatsappAPI.GET("/templates", handlers.GetWhatsAppTemplates)
+    whatsappAPI.POST("/templates", handlers.CreateWhatsAppTemplate)
+    whatsappAPI.POST("/broadcast", handlers.CreateWhatsAppBroadcast)
+    whatsappAPI.POST("/broadcast/:id/send", handlers.SendWhatsAppBroadcast)
+}
+
+
+// ========== РЕЗЕРВНОЕ КОПИРОВАНИЕ ==========
+backupAPI := r.Group("/api/backup")
+backupAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    backupAPI.GET("/settings", handlers.GetBackupSettings)
+    backupAPI.PUT("/settings", handlers.UpdateBackupSettings)
+    backupAPI.POST("/create", handlers.CreateFullBackup)
+    backupAPI.GET("/history", handlers.GetBackupHistory)
+    backupAPI.GET("/download/:id", handlers.DownloadBackup)
+    backupAPI.DELETE("/delete/:id", handlers.DeleteBackup)
+}
+
+
+// ========== AI ЧАТ-БОТ ДЛЯ САЙТА ==========
+chatbotAPI := r.Group("/api/chatbot")
+chatbotAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    chatbotAPI.GET("/settings", handlers.GetChatbotSettings)
+    chatbotAPI.PUT("/settings", handlers.UpdateChatbotSettings)
+    chatbotAPI.GET("/conversations", handlers.GetChatbotConversations)
+    chatbotAPI.GET("/messages/:id", handlers.GetChatbotMessages)
+    chatbotAPI.GET("/leads", handlers.GetChatbotLeads)
+    chatbotAPI.POST("/lead", handlers.CreateChatbotLead)
+}
+
+// Публичные эндпоинты для виджета
+r.POST("/api/chatbot/message", handlers.SendChatbotMessage)
+r.GET("/chatbot-widget", handlers.ChatbotWidget)
+
+// Страница управления чат-ботом
+r.GET("/chatbot", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "chatbot.html", gin.H{
+        "title": "AI Чат-бот | SaaSPro",
+    })
+})
+
+// ========== ПАРТНЁРСКАЯ ПРОГРАММА ==========
+partnerAPI := r.Group("/api/partner")
+partnerAPI.Use(middleware.AuthMiddleware(cfg))
+{
+    partnerAPI.GET("/stats", handlers.GetReferralStatsHandler)
+    partnerAPI.GET("/friends", handlers.GetReferralFriendsHandler)
+    partnerAPI.GET("/link", handlers.GetReferralLink)
+    partnerAPI.POST("/payout", handlers.RequestPayout)
+    partnerAPI.GET("/payouts", handlers.GetPayoutHistory)
+}
+// Страница бэкапов
+r.GET("/backup", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "backup.html", gin.H{
+        "title": "Резервное копирование | SaaSPro",
+    })
+})
+// Webhook для WhatsApp (публичный)
+r.POST("/webhook/whatsapp", handlers.WhatsAppWebhook)
+r.GET("/webhook/whatsapp", handlers.WhatsAppWebhook)
+
+// Страница WhatsApp
+r.GET("/whatsapp", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "whatsapp.html", gin.H{
+        "title": "WhatsApp Business | SaaSPro",
+    })
+})
+
 // Страница банк-клиента
 r.GET("/bank", func(c *gin.Context) {
     c.HTML(http.StatusOK, "bank_integration.html", gin.H{
