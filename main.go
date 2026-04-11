@@ -660,7 +660,7 @@ marketplace.Use(middleware.AuthMiddleware(cfg))
     marketplace.GET("/api/my-purchases", handlers.GetMyPurchases)
 }
 
-// ========== МАРКЕТПЛЕЙСЫ ==========
+// ========== API МАРКЕТПЛЕЙСОВ (Ozon, WB, Яндекс) ==========
 marketplaceAPI := r.Group("/api/marketplace")
 marketplaceAPI.Use(middleware.AuthMiddleware(cfg))
 {
@@ -669,15 +669,20 @@ marketplaceAPI.Use(middleware.AuthMiddleware(cfg))
     marketplaceAPI.POST("/sync/:id", handlers.SyncMarketplaceOrders)
     marketplaceAPI.GET("/orders", handlers.GetMarketplaceOrders)
     marketplaceAPI.POST("/stock", handlers.UpdateMarketplaceStock)
+    marketplaceAPI.GET("/products/:id", handlers.GetMarketplaceProducts)
+    marketplaceAPI.POST("/prices", handlers.UpdateMarketplacePrices)
+    marketplaceAPI.GET("/analytics/:id", handlers.GetMarketplaceAnalytics)
+    marketplaceAPI.DELETE("/disconnect/:id", handlers.DisconnectMarketplace)
 }
 
-// Страница маркетплейсов (уже есть)
-// r.GET("/marketplace", ...) - уже существует// Страница маркетплейсов
+// Страница маркетплейсов
 r.GET("/marketplace-integrations", func(c *gin.Context) {
     c.HTML(http.StatusOK, "marketplace_integrations.html", gin.H{
         "title": "Интеграция с маркетплейсами | SaaSPro",
     })
 })
+
+
 // API для архивации из CRM
 crmArchive := r.Group("/api/crm")
 crmArchive.Use(middleware.AuthMiddleware(cfg))
@@ -1237,6 +1242,13 @@ r.GET("/analytics-center", func(c *gin.Context) {
         "title": "Analytics Center | SaaSPro",
     })
 })
+// Страница "Мои приложения"
+r.GET("/my-apps", handlers.GetMyApps)
+r.GET("/my-apps/settings", handlers.AppSettingsPage)
+
+// API для маркетплейса
+r.GET("/api/marketplace/my-apps", handlers.GetMyAppsAPI)
+r.PUT("/api/marketplace/apps/:id/settings", handlers.UpdateAppSettings)
 	r.Run(port)
 }
 

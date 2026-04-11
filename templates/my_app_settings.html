@@ -1,0 +1,362 @@
+{{define "my_app_settings.html"}}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #0f0f23 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+        .settings-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #a78bfa;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+        }
+        .form-control, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+        }
+        .form-control:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .switch-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .switch-title { font-weight: 600; margin-bottom: 4px; }
+        .switch-desc { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: 0.3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background: linear-gradient(135deg, #667eea, #764ba2); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .btn-save {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 14px 32px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-test {
+            background: transparent;
+            border: 1px solid rgba(102,126,234,0.5);
+            padding: 14px 32px;
+            border-radius: 40px;
+            color: #a78bfa;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .badge-success {
+            background: rgba(16,185,129,0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .page-header {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff, #a78bfa, #667eea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 12px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            border-radius: 40px;
+        }
+        .tab.active {
+            background: rgba(102,126,234,0.2);
+            color: #a78bfa;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid #10b981;
+            padding: 16px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .container { padding: 20px 16px; }
+            .page-title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">⚙️ {{.App.Name}}</h1>
+                <p style="color: rgba(255,255,255,0.5);">Управление настройками и конфигурацией приложения</p>
+            </div>
+            <div>
+                <span class="badge-success">✅ Активно до {{.App.ExpiresAt}}</span>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('general')">📋 Основные</button>
+            <button class="tab" onclick="showTab('modules')">🔧 Модули</button>
+            <button class="tab" onclick="showTab('api')">🔑 API Доступы</button>
+            <button class="tab" onclick="showTab('limits')">📊 Лимиты</button>
+        </div>
+
+        <div id="tab-general" class="tab-content active">
+            <div class="settings-card">
+                <div class="card-title"><i class="bi bi-sliders2"></i> Основные настройки</div>
+                <div class="form-group">
+                    <label class="form-label">Название приложения</label>
+                    <input type="text" id="app-name" class="form-control" value="{{.App.Name}}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Режим работы</label>
+                    <select id="app-mode" class="form-select">
+                        <option value="development">🛠️ Разработка</option>
+                        <option value="production">🚀 Продакшен</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Уровень логирования</label>
+                    <select id="log-level" class="form-select">
+                        <option value="debug">🐛 DEBUG</option>
+                        <option value="info">ℹ️ INFO</option>
+                        <option value="error">❌ ERROR</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-modules" class="tab-content">
+            <div class="settings-card">
+                <div class="card-title"><i class="bi bi-puzzle"></i> Модули и функции</div>
+                <div class="switch-group">
+                    <div class="switch-label"><span class="switch-title">📊 CRM система</span><span class="switch-desc">Управление клиентами</span></div>
+                    <label class="switch"><input type="checkbox" id="module-crm" checked><span class="slider"></span></label>
+                </div>
+                <div class="switch-group">
+                    <div class="switch-label"><span class="switch-title">🔒 VPN сервис</span><span class="switch-desc">Stealth VPN</span></div>
+                    <label class="switch"><input type="checkbox" id="module-vpn" checked><span class="slider"></span></label>
+                </div>
+                <div class="switch-group">
+                    <div class="switch-label"><span class="switch-title">🧠 AI ассистент</span><span class="switch-desc">YandexGPT</span></div>
+                    <label class="switch"><input type="checkbox" id="module-ai" checked><span class="slider"></span></label>
+                </div>
+                <div class="switch-group">
+                    <div class="switch-label"><span class="switch-title">📦 Маркетплейс</span><span class="switch-desc">Магазин приложений</span></div>
+                    <label class="switch"><input type="checkbox" id="module-marketplace" checked><span class="slider"></span></label>
+                </div>
+                <div class="switch-group">
+                    <div class="switch-label"><span class="switch-title">📱 Telegram бот</span><span class="switch-desc">Требует настройки</span></div>
+                    <label class="switch"><input type="checkbox" id="module-telegram"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-api" class="tab-content">
+            <div class="settings-card">
+                <div class="card-title"><i class="bi bi-key"></i> API Доступы</div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="api-key" class="form-control" readonly value="sk_live_xxxxxxxxxxxxx">
+                        <button class="btn-test" onclick="regenerateAPIKey()">🔄 Сгенерировать</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Webhook URL</label>
+                    <input type="text" id="webhook-url" class="form-control" placeholder="https://your-domain.com/webhook">
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-limits" class="tab-content">
+            <div class="settings-card">
+                <div class="card-title"><i class="bi bi-speedometer2"></i> Лимиты и квоты</div>
+                <div class="form-group">
+                    <label class="form-label">Максимум пользователей</label>
+                    <input type="number" id="max-users" class="form-control" value="1000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API запросов в день</label>
+                    <input type="number" id="api-limit" class="form-control" value="10000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Хранилище (GB)</label>
+                    <input type="number" id="storage-limit" class="form-control" value="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 justify-content-end mt-4">
+            <button class="btn-save" onclick="saveAllSettings()">💾 Сохранить настройки</button>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function saveAllSettings() {
+            const settings = {
+                app_name: document.getElementById('app-name').value,
+                mode: document.getElementById('app-mode').value,
+                log_level: document.getElementById('log-level').value,
+                modules: {
+                    crm: document.getElementById('module-crm').checked,
+                    vpn: document.getElementById('module-vpn').checked,
+                    ai: document.getElementById('module-ai').checked,
+                    marketplace: document.getElementById('module-marketplace').checked,
+                    telegram: document.getElementById('module-telegram').checked,
+                },
+                api: {
+                    webhook_url: document.getElementById('webhook-url').value,
+                },
+                limits: {
+                    max_users: parseInt(document.getElementById('max-users').value),
+                    api_limit: parseInt(document.getElementById('api-limit').value),
+                    storage_gb: parseInt(document.getElementById('storage-limit').value),
+                }
+            };
+            
+            localStorage.setItem('app_settings', JSON.stringify(settings));
+            showToast('✅ Настройки сохранены!');
+        }
+
+        function regenerateAPIKey() {
+            const newKey = 'sk_' + Math.random().toString(36).substring(2, 15);
+            document.getElementById('api-key').value = newKey;
+            showToast('🔑 Новый API ключ сгенерирован!');
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `✅ ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('app_settings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('app-name').value = settings.app_name;
+                document.getElementById('app-mode').value = settings.mode;
+                document.getElementById('log-level').value = settings.log_level;
+                document.getElementById('module-crm').checked = settings.modules.crm;
+                document.getElementById('module-vpn').checked = settings.modules.vpn;
+                document.getElementById('module-ai').checked = settings.modules.ai;
+                document.getElementById('module-marketplace').checked = settings.modules.marketplace;
+                document.getElementById('module-telegram').checked = settings.modules.telegram;
+                document.getElementById('webhook-url').value = settings.api.webhook_url;
+                document.getElementById('max-users').value = settings.limits.max_users;
+                document.getElementById('api-limit').value = settings.limits.api_limit;
+                document.getElementById('storage-limit').value = settings.limits.storage_gb;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadSettings);
+    </script>
+</body>
+</html>
+{{end}}

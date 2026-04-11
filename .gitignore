@@ -8,6 +8,8 @@
 *.out
 main.exe
 subscription-system.exe
+saaspro.exe
+my-app
 
 # Go workspace
 go.work
@@ -21,19 +23,26 @@ go.work.sum
 *~
 .DS_Store
 
-# Environment files
+# Environment files (СЕКРЕТЫ!)
 .env
 .env.local
 .env.*.local
+secrets*.json
+secrets-backup*.json
 
 # Logs
 *.log
 logs/
-*.log
 
-# Backups
+# Backups (НЕ нужны в репозитории)
 *.backup
 *.bak
+*.backup2
+*.working.backup
+*.CORRUPTED
+*.TEMP
+BACKUP_*
+old_backups_*
 backups/
 
 # Exports
@@ -43,10 +52,20 @@ exports/
 *.xml
 *.json
 
-# Temp files
+# Temp files (ВРЕМЕННЫЕ - НЕ НУЖНЫ)
 tmp/
 temp/
 *.tmp
+*.temp
+temp_*
+project_files.txt
+project_structure.txt
+file_list.txt
+temp_response.html
+test.json
+request.json
+orders/
+_archive/
 
 # OS
 Thumbs.db
@@ -64,6 +83,11 @@ certs/
 *.crt
 *.key
 
+# WireGuard keys (СЕКРЕТЫ!)
+wireguard/clients/*.key
+wireguard/clients/*.conf
+wireguard/clients/database.txt
+
 # Frontend build
 frontend/dist/
 frontend/node_modules/
@@ -73,7 +97,3 @@ static/dist/
 *.cover
 *.coverprofile
 coverage.html
-
-# Logs
-*.log
-logs/

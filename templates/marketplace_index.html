@@ -16,7 +16,6 @@
             color: #ffffff;
         }
         
-        /* Анимированный фон */
         .animated-bg {
             position: fixed;
             top: 0;
@@ -50,12 +49,10 @@
         
         .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px; }
         
-        /* Хедер */
         .page-header { margin-bottom: 40px; }
         .page-title { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #a78bfa, #667eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
         .page-subtitle { color: rgba(255,255,255,0.5); font-size: 16px; }
         
-        /* Карточки */
         .card {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(20px);
@@ -81,7 +78,6 @@
             color: #a78bfa;
         }
         
-        /* Кнопки */
         .btn {
             padding: 12px 24px;
             border-radius: 40px;
@@ -101,7 +97,6 @@
             box-shadow: 0 10px 30px rgba(102,126,234,0.4);
         }
         
-        /* Категории */
         .filters { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
         .filter-btn { 
             background: rgba(255,255,255,0.1); 
@@ -130,7 +125,6 @@
         .search::placeholder { color: rgba(255,255,255,0.5); }
         .search:focus { outline: none; border-color: #667eea; }
         
-        /* Сетка приложений */
         .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
         
         .app-card { 
@@ -175,7 +169,6 @@
         }
         .btn-buy:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(16,185,129,0.3); }
         
-        /* Модальное окно */
         .modal { 
             display: none; 
             position: fixed; 
@@ -209,7 +202,6 @@
             color: white;
         }
         
-        /* Кнопка назад */
         .back-button-oval { 
             position: fixed; 
             bottom: 30px; 
@@ -229,11 +221,17 @@
         }
         .back-button-oval:hover { background: rgba(102,126,234,0.4); transform: scale(1.05); }
         
+        /* Кнопка в шапке */
+        .header-buttons { display: flex; gap: 15px; margin-bottom: 30px; justify-content: flex-end; }
+        .btn-header { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 40px; color: white; cursor: pointer; transition: all 0.3s; }
+        .btn-header:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        
         @media (max-width: 768px) {
             .apps-grid { grid-template-columns: 1fr; }
             .page-title { font-size: 28px; }
             .filters { gap: 8px; }
             .filter-btn { padding: 6px 16px; font-size: 12px; }
+            .header-buttons { justify-content: center; }
         }
     </style>
 </head>
@@ -241,6 +239,15 @@
 <div class="animated-bg"></div>
 
 <div class="container">
+    <div class="header-buttons">
+        <button class="btn-header" onclick="location.href='/my-apps'">
+            <i class="bi bi-shopping-bag"></i> Мои приложения
+        </button>
+        <button class="btn-header" onclick="location.href='/dashboard-improved'">
+            <i class="bi bi-speedometer2"></i> Главный дашборд
+        </button>
+    </div>
+
     <div class="page-header">
         <h1 class="page-title"><i class="bi bi-shop"></i> Маркетплейс SaaSPro</h1>
         <p class="page-subtitle">Расширьте возможности вашей платформы с помощью приложений и интеграций</p>
@@ -278,19 +285,19 @@
 </button>
 
 <script>
-  const apps = [
-    { id: "1", name: "Ozon + Wildberries", desc: "Управление заказами, остатками, ценами на Ozon и Wildberries", cat: "integration", price: 6900, price_yearly: 69000, icon: "📦", featured: true },
-    { id: "2", name: "Яндекс.Маркет", desc: "Интеграция с Яндекс.Маркет: управление ценами, остатками, заказами", cat: "integration", price: 2990, price_yearly: 29900, icon: "💙", featured: true },
-    { id: "3", name: "1С:Бухгалтерия + ERP", desc: "Двусторонняя синхронизация с 1С:Бухгалтерия 3.0 и 1С:ERP", cat: "integration", price: 4900, price_yearly: 49000, icon: "🏦", featured: false },
-    { id: "4", name: "HeadHunter Рекрутинг", desc: "Автоматический импорт резюме, публикация вакансий, аналитика рынка труда", cat: "integration", price: 5900, price_yearly: 59000, icon: "👥", featured: false },
-    { id: "5", name: "Telegram Бизнес Пак", desc: "Корпоративный Telegram: рассылки, уведомления, чат-боты, аналитика", cat: "integration", price: 2900, price_yearly: 29000, icon: "📱", featured: false },
-    { id: "6", name: "YandexGPT для бизнеса", desc: "AI-ассистенты, генерация контента, анализ документов на YandexGPT", cat: "ai_agent", price: 9900, price_yearly: 99000, icon: "🧠", featured: true },
-    { id: "7", name: "Sales CRM Pro", desc: "Готовая CRM для отдела продаж: воронки, сделки, аналитика", cat: "template", price: 2900, price_yearly: 29000, icon: "📈", featured: false },
-    { id: "8", name: "ЮKassa Платежи", desc: "Приём платежей через ЮKassa: все способы оплаты в одном решении", cat: "integration", price: 0, price_yearly: 0, icon: "💵", featured: false },
-    { id: "9", name: "AI Копирайтер Pro", desc: "Генерация текстов, постов, статей с помощью нейросети", cat: "ai_agent", price: 2900, price_yearly: 29000, icon: "✍️", featured: false },
-    { id: "10", name: "Виджет Поддержки", desc: "Чат-виджет для сайта с интеграцией в CRM", cat: "service", price: 1900, price_yearly: 19000, icon: "💬", featured: false },
-    { id: "11", name: "Отчётность для ФНС", desc: "Автоматическое формирование и отправка отчётов в налоговую", cat: "service", price: 4900, price_yearly: 49000, icon: "📋", featured: false }
-];
+    const apps = [
+        { id: "1", name: "Ozon + Wildberries", desc: "Управление заказами, остатками, ценами на Ozon и Wildberries", cat: "integration", price: 6900, price_yearly: 69000, icon: "📦", featured: true },
+        { id: "2", name: "Яндекс.Маркет", desc: "Интеграция с Яндекс.Маркет: управление ценами, остатками, заказами", cat: "integration", price: 2990, price_yearly: 29900, icon: "💙", featured: true },
+        { id: "3", name: "1С:Бухгалтерия + ERP", desc: "Двусторонняя синхронизация с 1С:Бухгалтерия 3.0 и 1С:ERP", cat: "integration", price: 4900, price_yearly: 49000, icon: "🏦", featured: false },
+        { id: "4", name: "HeadHunter Рекрутинг", desc: "Автоматический импорт резюме, публикация вакансий, аналитика рынка труда", cat: "integration", price: 5900, price_yearly: 59000, icon: "👥", featured: false },
+        { id: "5", name: "Telegram Бизнес Пак", desc: "Корпоративный Telegram: рассылки, уведомления, чат-боты, аналитика", cat: "integration", price: 2900, price_yearly: 29000, icon: "📱", featured: false },
+        { id: "6", name: "YandexGPT для бизнеса", desc: "AI-ассистенты, генерация контента, анализ документов на YandexGPT", cat: "ai_agent", price: 9900, price_yearly: 99000, icon: "🧠", featured: true },
+        { id: "7", name: "Sales CRM Pro", desc: "Готовая CRM для отдела продаж: воронки, сделки, аналитика", cat: "template", price: 2900, price_yearly: 29000, icon: "📈", featured: false },
+        { id: "8", name: "ЮKassa Платежи", desc: "Приём платежей через ЮKassa: все способы оплаты в одном решении", cat: "integration", price: 0, price_yearly: 0, icon: "💵", featured: false },
+        { id: "9", name: "AI Копирайтер Pro", desc: "Генерация текстов, постов, статей с помощью нейросети", cat: "ai_agent", price: 2900, price_yearly: 29000, icon: "✍️", featured: false },
+        { id: "10", name: "Виджет Поддержки", desc: "Чат-виджет для сайта с интеграцией в CRM", cat: "service", price: 1900, price_yearly: 19000, icon: "💬", featured: false },
+        { id: "11", name: "Отчётность для ФНС", desc: "Автоматическое формирование и отправка отчётов в налоговую", cat: "service", price: 4900, price_yearly: 49000, icon: "📋", featured: false }
+    ];
 
     let currentCat = 'all';
     let currentSearch = '';
@@ -345,9 +352,18 @@
                 body: JSON.stringify({ app_id: selectedApp.id, billing_period: period })
             });
             const data = await res.json();
-            alert(data.message || (data.success ? '✅ Куплено!' : '❌ Ошибка'));
-            if (data.success) closeModal();
-        } catch(e) { alert('Ошибка: ' + e.message); }
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                closeModal();
+                // ПЕРЕХОД НА СТРАНИЦУ МОИХ ПРИЛОЖЕНИЙ
+                window.location.href = '/my-apps';
+            } else {
+                alert('❌ Ошибка при покупке: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch(e) {
+            console.error(e);
+            alert('❌ Ошибка при покупке: ' + e.message);
+        }
     }
 
     function closeModal() {

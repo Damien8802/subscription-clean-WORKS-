@@ -289,3 +289,161 @@ func simulateMarketplaceOrders(marketplace string) []simMarketplaceOrder {
         },
     }
 }
+
+// GetMarketplaceProducts - получение товаров из маркетплейса
+func GetMarketplaceProducts(c *gin.Context) {
+    companyID := c.GetString("company_id")
+    if companyID == "" {
+        companyID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
+
+    integrationID := c.Param("id")
+    
+    // Получаем настройки интеграции
+    var marketplace, apiKey, clientID, clientSecret, sellerID string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT marketplace, api_key, client_id, client_secret, seller_id
+        FROM marketplace_integrations
+        WHERE id = $1 AND company_id = $2 AND is_active = true
+    `, integrationID, companyID).Scan(&marketplace, &apiKey, &clientID, &clientSecret, &sellerID)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Integration not found"})
+        return
+    }
+
+    // Имитация получения товаров из API маркетплейса
+    products := simulateMarketplaceProducts(marketplace)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":  true,
+        "products": products,
+        "count":    len(products),
+    })
+}
+
+// UpdateMarketplacePrices - обновление цен в маркетплейсе
+func UpdateMarketplacePrices(c *gin.Context) {
+    companyID := c.GetString("company_id")
+    if companyID == "" {
+        companyID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
+
+    var req struct {
+        IntegrationID string `json:"integration_id" binding:"required"`
+        Products      []struct {
+            ProductID string  `json:"product_id"`
+            Price     float64 `json:"price"`
+            OldPrice  float64 `json:"old_price"`
+        } `json:"products" binding:"required"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // Получаем настройки интеграции
+    var marketplace, apiKey string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT marketplace, api_key FROM marketplace_integrations
+        WHERE id = $1 AND company_id = $2 AND is_active = true
+    `, req.IntegrationID, companyID).Scan(&marketplace, &apiKey)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Integration not found"})
+        return
+    }
+
+    // Обновляем цены (имитация)
+    updatedCount := len(req.Products)
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":       true,
+        "message":       fmt.Sprintf("Обновлено %d цен в %s", updatedCount, marketplace),
+        "updated_count": updatedCount,
+    })
+}
+
+// GetMarketplaceAnalytics - аналитика продаж из маркетплейса
+func GetMarketplaceAnalytics(c *gin.Context) {
+    companyID := c.GetString("company_id")
+    if companyID == "" {
+        companyID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
+
+    integrationID := c.Param("id")
+    period := c.DefaultQuery("period", "month") // week, month, year
+
+    // Получаем настройки
+    var marketplace string
+    err := database.Pool.QueryRow(c.Request.Context(), `
+        SELECT marketplace FROM marketplace_integrations
+        WHERE id = $1 AND company_id = $2 AND is_active = true
+    `, integrationID, companyID).Scan(&marketplace)
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": "Integration not found"})
+        return
+    }
+
+    // Имитация аналитики
+    analytics := gin.H{
+        "marketplace": marketplace,
+        "period":      period,
+        "orders_count": 156,
+        "revenue":      1250000.00,
+        "avg_order":    8012.82,
+        "top_products": []gin.H{
+            {"name": "Товар 1", "sales": 45, "revenue": 225000},
+            {"name": "Товар 2", "sales": 32, "revenue": 160000},
+            {"name": "Товар 3", "sales": 28, "revenue": 140000},
+        },
+        "daily_stats": []gin.H{
+            {"date": "2026-04-01", "orders": 5, "revenue": 45000},
+            {"date": "2026-04-02", "orders": 7, "revenue": 63000},
+            {"date": "2026-04-03", "orders": 4, "revenue": 36000},
+        },
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success":    true,
+        "analytics":  analytics,
+    })
+}
+
+// DisconnectMarketplace - отключение маркетплейса
+func DisconnectMarketplace(c *gin.Context) {
+    companyID := c.GetString("company_id")
+    if companyID == "" {
+        companyID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
+
+    integrationID := c.Param("id")
+
+    _, err := database.Pool.Exec(c.Request.Context(), `
+        UPDATE marketplace_integrations 
+        SET is_active = false, updated_at = NOW()
+        WHERE id = $1 AND company_id = $2
+    `, integrationID, companyID)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to disconnect"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Маркетплейс отключён",
+    })
+}
+
+// simulateMarketplaceProducts - имитация товаров из маркетплейса
+func simulateMarketplaceProducts(marketplace string) []gin.H {
+    return []gin.H{
+        {"id": "1001", "name": "Смартфон X100", "sku": "PHONE-001", "price": 29990, "stock": 45, "category": "Электроника"},
+        {"id": "1002", "name": "Наушники Pro", "sku": "AUDIO-002", "price": 5990, "stock": 120, "category": "Аудио"},
+        {"id": "1003", "name": "Чехол для смартфона", "sku": "CASE-003", "price": 990, "stock": 200, "category": "Аксессуары"},
+        {"id": "1004", "name": "Зарядное устройство", "sku": "POWER-004", "price": 1990, "stock": 85, "category": "Электроника"},
+    }
+}

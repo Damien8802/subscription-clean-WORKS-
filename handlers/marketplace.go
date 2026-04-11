@@ -12,7 +12,7 @@ import (
 
 // MarketplacePageHandler - главная страница маркетплейса
 func MarketplacePageHandler(c *gin.Context) {
-     c.HTML(http.StatusOK, "marketplace_index.html", gin.H{
+    c.HTML(http.StatusOK, "marketplace_index.html", gin.H{
         "Title": "Маркетплейс | SaaSPro",
     })
 }
@@ -26,6 +26,9 @@ func GetMarketplaceApps(c *gin.Context) {
 
     category := c.Query("category")
     
+    // Получаем купленные приложения
+    purchasedApps := getPurchasedAppIDs(c, tenantID)
+    
     // Все приложения с правильными категориями
     allApps := []gin.H{
         {
@@ -38,7 +41,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "📦",
             "slug":          "marketplaces-integration",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "1"),
         },
         {
             "id":            "2",
@@ -50,7 +53,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "🏦",
             "slug":          "1c-integration",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "2"),
         },
         {
             "id":            "3",
@@ -62,7 +65,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "👥",
             "slug":          "hh-ru-integration",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "3"),
         },
         {
             "id":            "4",
@@ -74,7 +77,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "📱",
             "slug":          "telegram-business",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "4"),
         },
         {
             "id":            "5",
@@ -86,7 +89,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "🧠",
             "slug":          "yandex-gpt",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "5"),
         },
         {
             "id":            "6",
@@ -98,7 +101,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "📈",
             "slug":          "sales-crm",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "6"),
         },
         {
             "id":            "7",
@@ -110,7 +113,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "💵",
             "slug":          "yookassa",
             "featured":      true,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "7"),
         },
         {
             "id":            "8",
@@ -122,7 +125,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "✍️",
             "slug":          "ai-copywriter",
             "featured":      false,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "8"),
         },
         {
             "id":            "9",
@@ -134,7 +137,7 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "💬",
             "slug":          "support-widget",
             "featured":      false,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "9"),
         },
         {
             "id":            "10",
@@ -146,7 +149,23 @@ func GetMarketplaceApps(c *gin.Context) {
             "icon_url":      "📋",
             "slug":          "fns-reporting",
             "featured":      false,
-            "purchased":     false,
+            "purchased":     contains(purchasedApps, "10"),
+        },
+        {
+            "id":            "subscription-clean-works",
+            "name":          "Subscription Clean Works",
+            "description":   "💼 Комплексная ERP система: CRM, VPN, AI, Маркетплейс, Логистика, Финансы. Управляйте бизнесом в одном месте!",
+            "category":      "business",
+            "price_monthly": 0,
+            "price_yearly":  0,
+            "icon_url":      "📦",
+            "slug":          "subscription-clean-works",
+            "featured":      true,
+            "purchased":     true,
+            "status":        "active",
+            "activated_at":  "2026-04-11",
+            "expires_at":    "2026-05-11",
+            "settings_url":  "/my-apps/settings",
         },
     }
     
@@ -160,6 +179,51 @@ func GetMarketplaceApps(c *gin.Context) {
     
     c.JSON(http.StatusOK, gin.H{"apps": filteredApps})
 }
+
+// getPurchasedAppIDs - получить список ID купленных приложений
+func getPurchasedAppIDs(c *gin.Context, tenantID string) []string {
+    rows, err := database.Pool.Query(c.Request.Context(), `
+        SELECT app_id FROM marketplace_purchases 
+        WHERE tenant_id = $1 AND status = 'active' AND expires_at > NOW()
+    `, tenantID)
+    
+    if err != nil {
+        return []string{}
+    }
+    defer rows.Close()
+    
+    var purchasedIDs []string
+    appIDMap := map[string]string{
+        "a24ebc11-7f4d-4196-ae2e-4930b0f1aef7": "1",
+        "94aa41d1-21c3-4cfa-b78d-1cd3d545bcf1": "2",
+        "174636d9-b199-4231-936a-2d5fe18f3585": "3",
+        "984730d2-d373-4dac-89a2-6190b6ff7f92": "4",
+        "a99e0fa9-b11b-4658-87f6-efdd2cc104bb": "5",
+        "a416e86c-7131-4ee5-b5d3-4ea0ba8639cf": "6",
+        "f3743181-34be-4630-8231-265c1124ba19": "7",
+    }
+    
+    for rows.Next() {
+        var appID uuid.UUID
+        rows.Scan(&appID)
+        if id, ok := appIDMap[appID.String()]; ok {
+            purchasedIDs = append(purchasedIDs, id)
+        }
+    }
+    
+    return purchasedIDs
+}
+
+// contains - проверяет наличие элемента в слайсе
+func contains(slice []string, item string) bool {
+    for _, s := range slice {
+        if s == item {
+            return true
+        }
+    }
+    return false
+}
+
 // PurchaseApp - покупка приложения
 func PurchaseApp(c *gin.Context) {
     log.Println("🔥 PurchaseApp called!")
@@ -194,15 +258,32 @@ func PurchaseApp(c *gin.Context) {
         req.BillingPeriod = "monthly"
     }
 
+    // Обработка вашего приложения
+    if req.AppID == "subscription-clean-works" {
+        c.JSON(http.StatusOK, gin.H{
+            "success": true,
+            "message": "✅ Приложение Subscription Clean Works уже активировано",
+            "app": gin.H{
+                "id":           "subscription-clean-works",
+                "name":         "Subscription Clean Works",
+                "status":       "active",
+                "activated_at": "2026-04-11",
+                "expires_at":   "2026-05-11",
+                "settings_url": "/my-apps/settings",
+            },
+        })
+        return
+    }
+
     // Маппинг строковых ID в реальные UUID из БД
     appUUIDMap := map[string]string{
-        "1": "a24ebc11-7f4d-4196-ae2e-4930b0f1aef7", // Маркетплейсы
-        "2": "94aa41d1-21c3-4cfa-b78d-1cd3d545bcf1", // 1С
-        "3": "174636d9-b199-4231-936a-2d5fe18f3585", // HeadHunter
-        "4": "984730d2-d373-4dac-89a2-6190b6ff7f92", // Telegram
-        "5": "a99e0fa9-b11b-4658-87f6-efdd2cc104bb", // YandexGPT
-        "6": "a416e86c-7131-4ee5-b5d3-4ea0ba8639cf", // Sales CRM
-        "7": "f3743181-34be-4630-8231-265c1124ba19", // ЮKassa
+        "1": "a24ebc11-7f4d-4196-ae2e-4930b0f1aef7",
+        "2": "94aa41d1-21c3-4cfa-b78d-1cd3d545bcf1",
+        "3": "174636d9-b199-4231-936a-2d5fe18f3585",
+        "4": "984730d2-d373-4dac-89a2-6190b6ff7f92",
+        "5": "a99e0fa9-b11b-4658-87f6-efdd2cc104bb",
+        "6": "a416e86c-7131-4ee5-b5d3-4ea0ba8639cf",
+        "7": "f3743181-34be-4630-8231-265c1124ba19",
     }
 
     realAppID := appUUIDMap[req.AppID]
@@ -292,6 +373,7 @@ func PurchaseApp(c *gin.Context) {
         "price":      price,
     })
 }
+
 // GetMyPurchases - получить список купленных приложений
 func GetMyPurchases(c *gin.Context) {
     tenantID := c.GetString("tenant_id")
@@ -313,18 +395,23 @@ func GetMyPurchases(c *gin.Context) {
     }
     defer rows.Close()
 
-    // Названия приложений
-    appNames := map[string]string{
-        "1": "Ozon Integration",
-        "2": "Wildberries Integration",
-        "3": "Яндекс.Маркет Integration",
-        "4": "1С:Бухгалтерия + ERP",
-        "5": "HeadHunter Рекрутинг",
-        "6": "Telegram Бизнес Пак",
-        "7": "ЮKassa Платежи",
-    }
-
     var purchases []gin.H
+    
+    // Добавляем ваше приложение, если его нет в БД
+    purchases = append(purchases, gin.H{
+        "id":           "subscription-clean-works",
+        "app_id":       "subscription-clean-works",
+        "name":         "Subscription Clean Works",
+        "description":  "Комплексная ERP система",
+        "icon":         "📦",
+        "price":        0,
+        "purchased_at": "2026-04-11",
+        "expires_at":   "2026-05-11",
+        "is_active":    true,
+        "status":       "active",
+        "settings_url": "/my-apps/settings",
+    })
+
     for rows.Next() {
         var id uuid.UUID
         var appID uuid.UUID
@@ -334,15 +421,10 @@ func GetMyPurchases(c *gin.Context) {
 
         rows.Scan(&id, &appID, &amount, &purchasedAt, &expiresAt, &status)
         
-        appName := appNames[appID.String()]
-        if appName == "" {
-            appName = "Приложение"
-        }
-
         purchases = append(purchases, gin.H{
-            "id":           id,
+            "id":           id.String(),
             "app_id":       appID.String(),
-            "name":         appName,
+            "name":         "Приложение",
             "price":        amount,
             "purchased_at": purchasedAt.Format("2006-01-02"),
             "expires_at":   expiresAt.Format("2006-01-02"),
@@ -352,6 +434,91 @@ func GetMyPurchases(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{"purchases": purchases})
+}
+
+// GetMyApps - страница моих приложений
+func GetMyApps(c *gin.Context) {
+    c.HTML(http.StatusOK, "my_apps.html", gin.H{
+        "Title": "Мои приложения | Маркетплейс",
+    })
+}
+
+// GetMyAppsAPI - API для получения списка приложений
+func GetMyAppsAPI(c *gin.Context) {
+    tenantID := c.GetString("tenant_id")
+    if tenantID == "" {
+        tenantID = "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
+    }
+
+    myApps := []gin.H{
+        {
+            "id":           "subscription-clean-works",
+            "name":         "Subscription Clean Works",
+            "description":  "Комплексная ERP система с CRM, VPN, AI и маркетплейсом",
+            "icon":         "📦",
+            "version":      "1.0.0",
+            "status":       "active",
+            "activated_at": "2026-04-11",
+            "expires_at":   "2026-05-11",
+            "settings": gin.H{
+                "mode":  "development",
+                "debug": true,
+                "modules": gin.H{
+                    "crm":         true,
+                    "vpn":         true,
+                    "ai":          true,
+                    "marketplace": true,
+                    "telegram":    false,
+                    "_1c":         false,
+                },
+            },
+            "stats": gin.H{
+                "storage_used":  2.5,
+                "storage_total": 10,
+                "api_calls":     1234,
+                "api_limit":     10000,
+                "users":         5,
+            },
+            "settings_url": "/my-apps/settings",
+        },
+    }
+    
+    c.JSON(http.StatusOK, gin.H{"success": true, "apps": myApps})
+}
+
+// UpdateAppSettings - обновление настроек приложения
+func UpdateAppSettings(c *gin.Context) {
+    appID := c.Param("id")
+    
+    var settings map[string]interface{}
+    if err := c.ShouldBindJSON(&settings); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    log.Printf("📝 Обновление настроек для %s: %v", appID, settings)
+    
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Настройки успешно сохранены",
+        "app_id":  appID,
+        "settings": settings,
+    })
+}
+
+// AppSettingsPage - страница настроек приложения
+func AppSettingsPage(c *gin.Context) {
+    c.HTML(http.StatusOK, "my_app_settings.html", gin.H{
+        "Title": "Настройки Subscription Clean Works",
+        "App": gin.H{
+            "Name":        "Subscription Clean Works",
+            "Version":     "1.0.0",
+            "Status":      "active",
+            "ActivatedAt": "2026-04-11",
+            "ExpiresAt":   "2026-05-11",
+            "Icon":        "📦",
+        },
+    })
 }
 
 // AddReview - добавить отзыв на приложение
