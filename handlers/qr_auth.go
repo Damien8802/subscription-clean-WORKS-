@@ -445,3 +445,4 @@ func getUserID(c *gin.Context) uuid.UUID {
 func sendWebPush(endpoint, title, body string, data map[string]interface{}) {
     log.Printf("📱 Отправка push уведомления на %s: %s - %s", endpoint, title, body)
 }
+
