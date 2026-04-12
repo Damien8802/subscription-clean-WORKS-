@@ -240,7 +240,8 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
         public.GET("/pricing", handlers.PricingPageHandler)
         public.GET("/partner", handlers.PartnerHandler)
         public.GET("/fusion-api", handlers.FusionAPIPortalHandler)
-    }
+
+ // ========== СКРЫТЫЙ ВХОД ДЛЯ РАЗРАБОТЧИКОВ ==========
     log.Println("✅ Шаблоны загружены из файловой системы")
 
 
@@ -276,6 +277,9 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.GET("/api/qr/status", handlers.QRStatusWebSocket)
     r.POST("/api/qr/scan", handlers.ScanQRCode)
     r.POST("/api/qr/approve", handlers.ApproveQRLogin)
+
+
+    r.GET("/logout", handlers.LogoutHandler)
 
     // Телефонная авторизация
     r.POST("/api/auth/send-code", handlers.SendPhoneCode)
@@ -868,7 +872,7 @@ admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
 
     // Дашборды
     dashboards := r.Group("/")
-    dashboards.Use(middleware.AuthMiddleware(cfg))
+       dashboards.Use(middleware.AuthMiddleware(cfg))
     {
         dashboards.GET("/dashboard-improved", handlers.DashboardImprovedHandler)
         dashboards.GET("/realtime-dashboard", handlers.RealtimeDashboardHandler)
@@ -1058,7 +1062,7 @@ r.GET("/cloud", middleware.AuthMiddleware(cfg), handlers.NebulaCloudPage)
 
 // ========== FUSIONAPI - Брендовый API продукт с AI ==========
 fusionAPI := r.Group("/api/fusion")
-// fusionAPI.Use(middleware.AuthMiddleware(cfg))
+   fusionAPI.Use(middleware.AuthMiddleware(cfg))
 {
     // API ключи
     fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
@@ -1286,6 +1290,8 @@ r.GET("/my-apps/settings", handlers.AppSettingsPage)
 r.GET("/api/marketplace/my-apps", handlers.GetMyAppsAPI)
 r.PUT("/api/marketplace/apps/:id/settings", handlers.UpdateAppSettings)
 	r.Run(port)
+}
+
 }
 
 }  // <-- ЭТО ЗАКРЫВАЕТ ФУНКЦИЮ main!

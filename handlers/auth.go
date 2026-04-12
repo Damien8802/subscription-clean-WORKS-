@@ -17,7 +17,6 @@ import (
     "subscription-system/models"
     "subscription-system/utils"
 )
-
 // InitAuthHandler инициализирует обработчики авторизации
 func InitAuthHandler(cfg *config.Config) {
     log.Println("✅ Auth handler initialized")
@@ -167,11 +166,13 @@ func LoginHandler(c *gin.Context) {
         refreshExpiry = 24 * time.Hour
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID.String(), user.Email, user.Role, accessExpiry, refreshExpiry)
+    accessToken, refreshToken, err := utils.GenerateTokensWithExpiry(user.ID.String(), user.Name, user.Email, user.Role, accessExpiry, refreshExpiry)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
     }
+
+c.SetCookie("token", accessToken, int(accessExpiry.Seconds()), "/", "", false, true)
 
     // Сохраняем refresh token
     _, err = database.Pool.Exec(c.Request.Context(),
@@ -290,7 +291,7 @@ func RegisterHandler(c *gin.Context) {
         }()
     }
 
-    accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Role)
+   accessToken, refreshToken, err := utils.GenerateTokens(user.ID.String(), user.Name, user.Email, user.Role)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
         return
@@ -445,3 +446,4 @@ func ResendVerificationHandler(c *gin.Context) {
         "message": "Verification code sent",
     })
 }
+

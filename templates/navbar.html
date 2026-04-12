@@ -1,3 +1,4 @@
+{{define "navbar"}}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container">
         <a class="navbar-brand" href="/">
@@ -24,7 +25,7 @@
                         <li><a class="dropdown-item" href="/teamsphere">✨ TeamSphere (Bitrix24 Alt)</a></li>
                     </ul>
                 </li>
-                
+
                 <!-- Склад Dropdown -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -36,7 +37,7 @@
                         <li><a class="dropdown-item" href="/inventory/orders">📋 Orders</a></li>
                     </ul>
                 </li>
-                
+
                 <!-- Финансы Dropdown -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -48,7 +49,7 @@
                         <li><a class="dropdown-item" href="/journal-entries">📝 Journal</a></li>
                     </ul>
                 </li>
-                
+
                 <!-- Закупки Dropdown -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -60,7 +61,7 @@
                         <li><a class="dropdown-item" href="/goods-receipts">✅ Goods Receipts</a></li>
                     </ul>
                 </li>
-                
+
                 <!-- Интеграции Dropdown -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -75,89 +76,91 @@
                         <li><a class="dropdown-item" href="/api/bitrix/settings">⚙️ Bitrix24 Settings</a></li>
                     </ul>
                 </li>
-                
+
                 <!-- Отчеты -->
                 <li class="nav-item"><a class="nav-link" href="/analytics"><i class="fas fa-chart-line"></i> Analytics</a></li>
                 <li class="nav-item"><a class="nav-link" href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                
+
                 <!-- Админка -->
                 <li class="nav-item"><a class="nav-link" href="/admin"><i class="fas fa-crown"></i> Admin</a></li>
-                
+
                 <!-- API Docs -->
                 <li class="nav-item"><a class="nav-link" href="/swagger/index.html"><i class="fas fa-book"></i> API</a></li>
 
-<!-- ========== БАНК-КЛИЕНТ ========== -->
-<li class="nav-item">
-    <a class="nav-link" href="/bank">
-        <i class="fas fa-university"></i> Банк-клиент
-    </a>
-</li>
+                <!-- Банк-клиент -->
+                <li class="nav-item"><a class="nav-link" href="/bank"><i class="fas fa-university"></i> Банк-клиент</a></li>
+                <li class="nav-item"><a class="nav-link" href="/payroll"><i class="fas fa-calculator"></i> Зарплата</a></li>
+                <li class="nav-item"><a class="nav-link" href="/email-marketing"><i class="fas fa-envelope"></i> Рассылки</a></li>
+                <li class="nav-item"><a class="nav-link" href="/marketplace"><i class="fas fa-store"></i> Маркетплейсы</a></li>
+                <li class="nav-item"><a class="nav-link" href="/whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a></li>
+                <li class="nav-item"><a class="nav-link" href="/backup"><i class="fas fa-database"></i> Бэкапы</a></li>
+                <li class="nav-item"><a class="nav-link" href="/ai"><i class="bi bi-robot"></i> AI Мега-Чат</a></li>
+                <li class="nav-item"><a class="nav-link" href="/my-apps"><i class="fas fa-shopping-bag"></i> Мои приложения</a></li>
 
-<li class="nav-item">
-    <a class="nav-link" href="/payroll">
-        <i class="fas fa-calculator"></i> Зарплата
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="nav-link" href="/email-marketing">
-        <i class="fas fa-envelope"></i> Рассылки
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="nav-link" href="/marketplace">
-        <i class="fas fa-store"></i> Маркетплейсы
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="nav-link" href="/whatsapp">
-        <i class="fab fa-whatsapp"></i> WhatsApp
-    </a>
-</li>
-
-<li class="nav-item">
-    <a class="nav-link" href="/backup">
-        <i class="fas fa-database"></i> Бэкапы
-    </a>
-</li>
-
-<a href="/ai" class="nav-link">
-    <i class="bi bi-robot"></i> AI Мега-Чат
-</a>
-
-
-<li class="nav-item">
-    <a class="nav-link" href="/my-apps">
-        <i class="fas fa-shopping-bag"></i> Мои приложения
-    </a>
-</li>
-                
-                <!-- ========== FUSIONAPI ========== -->
+                <!-- FusionAPI -->
                 <li class="nav-item">
-                    <a class="nav-link" href="/fusion-portal" style="
-                        background: linear-gradient(135deg, #667eea20, #764ba220);
-                        border-radius: 20px;
-                        margin-left: 5px;
-                        border: 1px solid rgba(102,126,234,0.3);
-                        transition: all 0.3s ease;
-                    " onmouseover="this.style.background='linear-gradient(135deg, #667eea40, #764ba240)'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='linear-gradient(135deg, #667eea20, #764ba220)'; this.style.transform='scale(1)'">
-                        <i class="fas fa-bolt" style="color: #a78bfa;"></i> 
-                        <span style="background: linear-gradient(135deg, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">
-                            FusionAPI
-                        </span>
+                    <a class="nav-link" href="/fusion-portal" style="background: linear-gradient(135deg, #667eea20, #764ba220); border-radius: 20px; margin-left: 5px; border: 1px solid rgba(102,126,234,0.3); transition: all 0.3s ease;" onmouseover="this.style.background='linear-gradient(135deg, #667eea40, #764ba240)'; this.style.transform='scale(1.02)'" onmouseout="this.style.background='linear-gradient(135deg, #667eea20, #764ba220)'; this.style.transform='scale(1)'">
+                        <i class="fas fa-bolt" style="color: #a78bfa;"></i>
+                        <span style="background: linear-gradient(135deg, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 600;">FusionAPI</span>
                     </a>
                 </li>
             </ul>
 
+            <!-- ПРАВАЯ ЧАСТЬ - User Menu -->
+            <ul class="navbar-nav" id="userMenuNav">
+                <!-- Сюда будет вставлено меню через JS -->
+            </ul>
+        </div>
+    </div>
+</nav>
 
-            
-            <!-- User Menu -->
-            <ul class="navbar-nav">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ========== ГЛОБАЛЬНЫЙ ПЕРЕХВАТЧИК FETCH ==========
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        const token = localStorage.getItem('token');
+        
+        // Добавляем токен в заголовки для API запросов
+        if (token && args[0] && (args[0].includes('/api/') || args[0].includes('/api'))) {
+            const options = args[1] || {};
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = 'Bearer ' + token;
+            options.headers['Content-Type'] = options.headers['Content-Type'] || 'application/json';
+            args[1] = options;
+        }
+        
+        // Выполняем запрос и обрабатываем 401
+        return originalFetch.apply(this, args).then(response => {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_name');
+                localStorage.removeItem('is_Разработчик');
+                window.location.href = '/login';
+                return Promise.reject('Unauthorized');
+            }
+            return response;
+        });
+    };
+})();
+    
+    // ========== ОТОБРАЖЕНИЕ МЕНЮ ПОЛЬЗОВАТЕЛЯ ==========
+    function renderUserMenu() {
+        const token = localStorage.getItem('token');
+        const userName = localStorage.getItem('user_name') || 'Аккаунт';
+        const isРазработчик = localStorage.getItem('is_Разработчик') === 'true';
+        const menuContainer = document.getElementById('userMenuNav');
+        
+        if (!menuContainer) return;
+        
+        if (token) {
+            menuContainer.innerHTML = `
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle"></i> Account
+                        <i class="fas fa-user-circle"></i> ${userName} ${isРазработчик ? '<span class="badge bg-success ms-1" style="font-size: 10px;">Dev</span>' : ''}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="/profile">👤 Profile</a></li>
@@ -166,18 +169,32 @@
                         <li><a class="dropdown-item" href="/my-keys">🔑 API Keys</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="/fusion-portal" style="background: linear-gradient(135deg, #667eea10, #764ba210);">
-                            <i class="fas fa-bolt" style="color: #a78bfa;"></i> 
-                            <strong style="background: linear-gradient(135deg, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                                FusionAPI Portal
-                            </strong>
+                            <i class="fas fa-bolt" style="color: #a78bfa;"></i>
+                            <strong style="background: linear-gradient(135deg, #a78bfa, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">FusionAPI Portal</strong>
                         </a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout">🚪 Logout</a></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()">🚪 Logout</a></li>
                     </ul>
                 </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+            `;
+        } else {
+            menuContainer.innerHTML = `
+                <li class="nav-item"><a class="nav-link" href="/login"><i class="fas fa-sign-in-alt"></i> Вход</a></li>
+                <li class="nav-item"><a class="nav-link" href="/register"><i class="fas fa-user-plus"></i> Регистрация</a></li>
+            `;
+        }
+    }
+    
+    // Функция выхода
+    window.logout = function() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('is_Разработчик');
+        window.location.href = '/';
+    };
+    
+    // Вызываем при загрузке страницы
+    document.addEventListener('DOMContentLoaded', renderUserMenu);
+</script>
+{{end}}

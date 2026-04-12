@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доступ ограничен | SaaSPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #0f0f23 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+        .lock-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+        .lock-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 32px; margin-bottom: 16px; }
+        p { color: rgba(255,255,255,0.7); margin-bottom: 30px; line-height: 1.6; }
+        .price {
+            font-size: 48px;
+            font-weight: 800;
+            color: #a78bfa;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(102,126,234,0.5);
+            color: #a78bfa;
+        }
+        .btn-outline:hover { background: rgba(102,126,234,0.1); }
+        .features {
+            text-align: left;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .features li i { color: #10b981; }
+    </style>
+</head>
+<body>
+<div class="lock-container">
+    <div class="lock-icon">🔒</div>
+    <h1>Доступ ограничен</h1>
+    <p>Для использования модуля <strong>{{.service_name}}</strong> необходимо оформить подписку.</p>
+    
+    <div class="price" id="priceDisplay">Загрузка...</div>
+    
+    <div class="features">
+        <ul style="list-style: none;">
+            <li><i class="bi bi-check-circle-fill"></i> Полный доступ ко всем функциям</li>
+            <li><i class="bi bi-check-circle-fill"></i> Приоритетная поддержка</li>
+            <li><i class="bi bi-check-circle-fill"></i> Регулярные обновления</li>
+            <li><i class="bi bi-check-circle-fill"></i> Безопасное хранение данных</li>
+        </ul>
+    </div>
+    
+    <div>
+        <a href="/pricing" class="btn btn-primary">📦 Выбрать тариф</a>
+        <a href="/dashboard-improved" class="btn btn-outline">← Вернуться на главную</a>
+    </div>
+    
+    <div style="margin-top: 30px; font-size: 12px; color: rgba(255,255,255,0.4);">
+        <i class="bi bi-shield-check"></i> Безопасная оплата
+    </div>
+</div>
+
+<script>
+    const serviceCode = '{{.service_code}}';
+    const prices = {
+        'crm': 9900, '1c': 9900, 'teamsphere': 9900, 'inventory': 5900,
+        'hr': 4900, 'vpn': 490, 'cloud': 150, 'logistics': 3900,
+        'whatsapp': 2900, 'ai': 9900
+    };
+    const price = prices[serviceCode] || 0;
+    document.getElementById('priceDisplay').innerHTML = `${price.toLocaleString()} ₽/мес`;
+</script>
+</body>
+</html>

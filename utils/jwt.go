@@ -12,24 +12,62 @@ var cfg = config.Load()
 
 type Claims struct {
     UserID   string `json:"user_id"`
+    UserName string `json:"user_name"`
     Email    string `json:"email"`
     Role     string `json:"role"`
     TenantID string `json:"tenant_id"`
     jwt.RegisteredClaims
 }
 
-// GenerateTokens создаёт access и refresh токены (стандартные сроки)
-func GenerateTokens(userID, role string) (string, string, error) {
-    return GenerateTokensWithExpiry(userID, "", role, cfg.JWTAccessExpiry, cfg.JWTRefreshExpiry)
+// GenerateTokens создаёт access и refresh токены
+func GenerateTokens(userID, userName, email, role string) (string, string, error) {
+    // Access token
+    accessClaims := Claims{
+        UserID:   userID,
+        UserName: userName,
+        Email:    email,
+        Role:     role,
+        TenantID: "11111111-1111-1111-1111-111111111111",
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
+        },
+    }
+    accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+    accessString, err := accessToken.SignedString([]byte(cfg.JWTSecret))
+    if err != nil {
+        return "", "", err
+    }
+
+    // Refresh token
+    refreshClaims := Claims{
+        UserID:   userID,
+        UserName: userName,
+        Email:    email,
+        Role:     role,
+        TenantID: "11111111-1111-1111-1111-111111111111",
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTRefreshExpiry)),
+            IssuedAt:  jwt.NewNumericDate(time.Now()),
+        },
+    }
+    refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+    refreshString, err := refreshToken.SignedString([]byte(cfg.JWTRefreshSecret))
+    if err != nil {
+        return "", "", err
+    }
+
+    return accessString, refreshString, nil
 }
 
 // GenerateTokensWithExpiry создаёт токены с указанными сроками
-func GenerateTokensWithExpiry(userID, email, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
+func GenerateTokensWithExpiry(userID, userName, email, role string, accessExpiry, refreshExpiry time.Duration) (string, string, error) {
     // Access token
     accessClaims := Claims{
-        UserID: userID,
-        Email:  email,
-        Role:   role,
+        UserID:   userID,
+        UserName: userName,
+        Email:    email,
+        Role:     role,
         TenantID: "11111111-1111-1111-1111-111111111111",
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpiry)),
@@ -44,9 +82,10 @@ func GenerateTokensWithExpiry(userID, email, role string, accessExpiry, refreshE
 
     // Refresh token
     refreshClaims := Claims{
-        UserID: userID,
-        Email:  email,
-        Role:   role,
+        UserID:   userID,
+        UserName: userName,
+        Email:    email,
+        Role:     role,
         TenantID: "11111111-1111-1111-1111-111111111111",
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpiry)),
@@ -95,13 +134,15 @@ func RefreshToken(refreshToken string) (string, error) {
     }
 
     userID, _ := claims["user_id"].(string)
+    userName, _ := claims["user_name"].(string)
     email, _ := claims["email"].(string)
     role, _ := claims["role"].(string)
 
     accessClaims := Claims{
-        UserID: userID,
-        Email:  email,
-        Role:   role,
+        UserID:   userID,
+        UserName: userName,
+        Email:    email,
+        Role:     role,
         TenantID: "11111111-1111-1111-1111-111111111111",
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(time.Now().Add(cfg.JWTAccessExpiry)),

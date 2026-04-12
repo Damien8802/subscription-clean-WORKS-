@@ -76,17 +76,22 @@
         }
         
         .hero {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
+            display: flex;
+            justify-content: center;
             align-items: center;
+            max-width: 1200px;
+            margin: 60px auto;
+            padding: 0 20px;
+            gap: 60px;
+        }
+        .hero-content {
+            flex: 1;
+            text-align: left;
         }
         .hero-content h1 {
             font-size: 48px;
             margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .hero-content p {
             font-size: 18px;
@@ -94,26 +99,34 @@
             line-height: 1.6;
         }
         .hero-image {
-            background: rgba(255,255,255,0.1);
+            flex: 1;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
+            border-radius: 32px;
+            padding: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            height: 300px;
+            border: 1px solid rgba(255,255,255,0.4);
+            height: 320px;
+            box-shadow: 0 25px 40px -12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: transform 0.3s ease;
+        }
+        .hero-image:hover {
+            transform: translateY(-8px);
+            background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 100%);
         }
         .hero-image img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
         }
         
         .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+            gap: 24px;
             max-width: 1200px;
             margin: 60px auto;
             padding: 0 20px;
@@ -121,7 +134,7 @@
         .stat-card {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 24px;
             padding: 30px 20px;
             text-align: center;
             transition: all 0.3s;
@@ -509,7 +522,8 @@
         @media (max-width: 1000px) {
             .pricing-row { grid-template-columns: 1fr; }
             .pricing-grid { grid-template-columns: repeat(2, 1fr); }
-            .hero { grid-template-columns: 1fr; text-align: center; }
+            .hero { flex-direction: column; text-align: center; }
+            .hero-content { text-align: center; }
             .footer-grid { grid-template-columns: 1fr 1fr; }
             .features-grid { grid-template-columns: 1fr; }
         }
@@ -520,10 +534,92 @@
             .nav-links { justify-content: center; }
             .hero h1 { font-size: 36px; }
         }
+
+.user-menu {
+    position: relative;
+    display: inline-block;
+}
+.user-menu-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+.user-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 45px;
+    background: white;
+    min-width: 220px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+.user-menu-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.2s;
+    font-size: 14px;
+}
+.user-menu-dropdown a:hover {
+    background: #f5f5f5;
+}
+.user-menu-dropdown hr {
+    margin: 0;
+    border-color: #eee;
+}
+.logout-btn {
+    color: #dc3545 !important;
+}
+.user-info {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+.user-email {
+    font-size: 12px;
+    color: #666;
+    word-break: break-all;
+}
+.user-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+.storage-info {
+    font-size: 11px;
+    color: #999;
+    margin-top: 8px;
+}
+.storage-bar {
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.storage-used {
+    width: 32%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 2px;
+}
     </style>
 </head>
 <body>
-    <!-- НАВИГАЦИЯ -->
     <nav class="navbar">
         <div class="logo">✨ SaaSPro</div>
         <div class="nav-links">
@@ -537,13 +633,9 @@
             <a href="/pricing">Тарифы</a>
             <a href="/partner">Партнеры</a>
         </div>
-        <div class="auth-buttons">
-            <a href="/login" class="login">Вход</a>
-            <a href="/register" class="register">Регистрация</a>
-        </div>
+       <div class="auth-buttons" id="authButtons"></div>
     </nav>
 
-    <!-- ГЕРОЙ С ФОТО -->
     <div class="hero">
         <div class="hero-content">
             <h1>Управляйте подписками легко</h1>
@@ -554,7 +646,6 @@
         </div>
     </div>
 
-    <!-- СТАТИСТИКА -->
     <div class="stats">
         <div class="stat-card"><div class="stat-number">10+</div><div class="stat-label">Активных пользователей</div></div>
         <div class="stat-card"><div class="stat-number">500+</div><div class="stat-label">Обработано платежей</div></div>
@@ -562,9 +653,7 @@
         <div class="stat-card"><div class="stat-number">24/7</div><div class="stat-label">Поддержка</div></div>
     </div>
 
-    <!-- БЕЛЫЙ КОНТЕЙНЕР -->
     <div class="content-wrapper">
-        <!-- ЧЕМ МЫ ЗАНИМАЕМСЯ -->
         <div class="features">
             <h2>⚡ Чем занимается SaaSPro</h2>
             <p>Мы создаём экосистему для автоматизации вашего бизнеса</p>
@@ -578,7 +667,6 @@
             </div>
         </div>
 
-        <!-- ПОЧЕМУ МЫ ЛУЧШЕ -->
         <div class="features" style="margin-top: 40px;">
             <h2>🏆 Почему SaaSPro лучше конкурентов</h2>
             <p>Мы создали платформу, которая решает реальные задачи бизнеса</p>
@@ -592,7 +680,6 @@
             </div>
         </div>
 
-        <!-- ПРОДУКТЫ -->
         <div class="products-section">
             <div class="products-header"><h2>🚀 Наши продукты</h2><p>Готовые решения для вашего бизнеса</p></div>
             <div class="products-grid">
@@ -601,7 +688,6 @@
             </div>
         </div>
 
-        <!-- ТАРИФЫ И AI ЧАТ -->
         <div class="pricing-section">
             <div class="pricing-header"><h2>💰 Выберите свой тариф</h2><p>Гибкие планы для любого бизнеса</p></div>
             <div class="pricing-row">
@@ -611,16 +697,12 @@
                     <div class="pricing-card"><h3>Предприятие</h3><div class="price">₽9 990 <small>/мес</small></div><ul class="features-list"><li>Неограниченно пользователей</li><li>Полная аналитика + AI</li><li>24/7 персональная поддержка</li><li>Все интеграции</li><li>White-label решение</li></ul><button class="btn" onclick="location.href='/contact'">Связаться</button></div>
                 </div>
                 
-                <!-- AI КОНСУЛЬТАНТ -->
                 <div class="ai-chat-side">
                     <div class="chat-header"><h3>🤖 AI Консультант</h3><span class="online-badge">Online 24/7</span></div>
                     <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Расскажите, какой проект хотите заказать — я соберу все детали и передам разработчику</p>
                     <div class="chat-container">
                         <div class="messages" id="messages"></div>
-                        <div id="typingIndicator" class="typing" style="display: none;">
-                            AI печатает
-                            <div class="typing-dots"><span></span><span></span><span></span></div>
-                        </div>
+                        <div id="typingIndicator" class="typing" style="display: none;">AI печатает<div class="typing-dots"><span></span><span></span><span></span></div></div>
                         <div class="input-area">
                             <input type="text" id="messageInput" placeholder="Введите сообщение...">
                             <button onclick="sendMessage()">Отправить</button>
@@ -631,7 +713,6 @@
         </div>
     </div>
 
-    <!-- ФУТЕР -->
     <div class="footer">
         <div class="footer-grid">
             <div class="footer-col"><h4>SaaSPro</h4><p>Платформа для управления подписками нового поколения. Эффективно, безопасно, масштабируемо.</p></div>
@@ -643,35 +724,53 @@
     </div>
 
     <script>
-        // ========== AI Консультант с эффектом печатания и автоскроллом ==========
+        // ========== АВТОМАТИЧЕСКИЙ РЕЛОГИН ==========
+        async function refreshToken() {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) return false;
+            try {
+                const res = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('refresh_token', data.refresh_token);
+                    if (data.user) {
+                        localStorage.setItem('user_email', data.user.email);
+                        localStorage.setItem('user_name', data.user.name);
+                        localStorage.setItem('is_Разработчик', data.user.role === 'Разработчик');
+                    }
+                    return true;
+                }
+            } catch(e) { console.log('refresh error', e); }
+            return false;
+        }
+
+        // ========== AI Консультант ==========
         let sessionId = localStorage.getItem('consultantSessionId') || '';
         let messagesDiv = document.getElementById('messages');
         let typingDiv = document.getElementById('typingIndicator');
         let isTyping = false;
         
-        // Функция прокрутки вниз
         function scrollToBottom() {
-            if (messagesDiv) {
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
+            if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
         
         async function typeMessage(text, element) {
             return new Promise((resolve) => {
                 let i = 0;
                 element.textContent = '';
-                
                 function type() {
                     if (i < text.length) {
                         element.textContent += text.charAt(i);
                         i++;
                         scrollToBottom();
                         setTimeout(type, 20 + Math.random() * 15);
-                    } else {
-                        resolve();
-                    }
+                    } else { resolve(); }
                 }
-                
                 type();
             });
         }
@@ -679,7 +778,6 @@
         function addMessage(text, isUser) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            
             if (!isUser) {
                 msgDiv.textContent = '';
                 messagesDiv.appendChild(msgDiv);
@@ -693,24 +791,16 @@
             }
         }
         
-        function showTyping() {
-            typingDiv.style.display = 'block';
-            scrollToBottom();
-        }
-        
-        function hideTyping() {
-            typingDiv.style.display = 'none';
-        }
+        function showTyping() { typingDiv.style.display = 'block'; scrollToBottom(); }
+        function hideTyping() { typingDiv.style.display = 'none'; }
         
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             if (!message || isTyping) return;
-            
             addMessage(message, true);
             input.value = '';
             showTyping();
-            
             try {
                 const response = await fetch('/api/ai/consultant', {
                     method: 'POST',
@@ -718,125 +808,73 @@
                     body: JSON.stringify({ session_id: sessionId, message: message })
                 });
                 const data = await response.json();
-                
                 if (data.session_id) {
                     sessionId = data.session_id;
                     localStorage.setItem('consultantSessionId', sessionId);
                 }
-                
                 hideTyping();
-                
                 const msgPromise = addMessage('', false);
-                if (msgPromise) {
-                    await typeMessage(data.message, msgPromise.element);
-                }
-                
+                if (msgPromise) await typeMessage(data.message, msgPromise.element);
                 if (data.completed) {
                     setTimeout(() => {
                         if (confirm('Хотите оформить ещё одну заявку?')) {
                             localStorage.removeItem('consultantSessionId');
                             sessionId = '';
                             const resetMsg = addMessage('', false);
-                            if (resetMsg) {
-                                typeMessage('Здравствуйте! Я помогу вам оформить заявку. Расскажите, что хотите создать?', resetMsg.element);
-                            }
+                            if (resetMsg) typeMessage('Здравствуйте! Я помогу вам оформить заявку. Расскажите, что хотите создать?', resetMsg.element);
                         }
                     }, 1000);
                 }
             } catch (error) {
                 hideTyping();
                 const errorMsg = addMessage('', false);
-                if (errorMsg) {
-                    typeMessage('Извините, произошла ошибка. Попробуйте позже.', errorMsg.element);
-                }
+                if (errorMsg) typeMessage('Извините, произошла ошибка. Попробуйте позже.', errorMsg.element);
             }
         }
         
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-        
-        // Наблюдатель за изменениями для автоскролла
-        const observer = new MutationObserver(function(mutations) {
-            scrollToBottom();
-        });
-        if (messagesDiv) {
-            observer.observe(messagesDiv, { childList: true, subtree: true });
-        }
+        document.getElementById('messageInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        const observer = new MutationObserver(() => scrollToBottom());
+        if (messagesDiv) observer.observe(messagesDiv, { childList: true, subtree: true });
         
         if (!sessionId) {
             setTimeout(() => {
                 const welcomeMsg = addMessage('', false);
-                if (welcomeMsg) {
-                    typeMessage('Здравствуйте! Я помогу вам оформить заявку на индивидуальную разработку. Расскажите, что именно вы хотите создать?', welcomeMsg.element);
-                }
+                if (welcomeMsg) typeMessage('Здравствуйте! Я помогу вам оформить заявку на индивидуальную разработку. Расскажите, что именно вы хотите создать?', welcomeMsg.element);
             }, 500);
         } else {
             setTimeout(() => {
                 const continueMsg = addMessage('', false);
-                if (continueMsg) {
-                    typeMessage('Продолжим оформление заявки? Напишите ваш ответ.', continueMsg.element);
-                }
+                if (continueMsg) typeMessage('Продолжим оформление заявки? Напишите ваш ответ.', continueMsg.element);
             }, 500);
         }
     </script>
-<!-- PWA регистрация -->
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => {
-            console.log('Service Worker registered:', reg);
-        })
-        .catch(err => {
-            console.error('Service Worker registration failed:', err);
-        });
+        .then(reg => console.log('Service Worker registered:', reg))
+        .catch(err => console.error('Service Worker registration failed:', err));
 }
-
-// Запрос разрешения на push-уведомления
 async function subscribeToPush() {
-    if (!('PushManager' in window)) {
-        console.log('Push messaging is not supported');
-        return;
-    }
-    
+    if (!('PushManager' in window)) return;
     try {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
         });
-        
-        await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(subscription)
-        });
-        
+        await fetch('/api/push/subscribe', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(subscription) });
         console.log('Push subscription successful');
-    } catch (err) {
-        console.error('Push subscription failed:', err);
-    }
+    } catch (err) { console.error('Push subscription failed:', err); }
 }
-
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/\-/g, '+')
-        .replace(/_/g, '/');
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
 }
-
-// Предлагаем подписаться при заходе на сайт
-setTimeout(() => {
-    if (confirm('Хотите получать push-уведомления?')) {
-        subscribeToPush();
-    }
-}, 5000);
+setTimeout(() => { if (confirm('Хотите получать push-уведомления?')) subscribeToPush(); }, 5000);
 </script>
 <style>
 .back-button {
@@ -863,10 +901,69 @@ setTimeout(() => {
     color: white;
 }
 </style>
-<a href="javascript:history.back()" class="back-button" title="Go Back">
+<a href="javascript:history.back()" class="back-button" title="Назад">
     <i class="fas fa-arrow-left fa-lg"></i>
 </a>
+
+<script>
+    // ========== МЕНЮ ПОЛЬЗОВАТЕЛЯ С РЕЛОГИНОМ ==========
+    async function renderUserMenu() {
+        const container = document.getElementById('authButtons');
+        if (!container) return;
+        let token = localStorage.getItem('token');
+        // если токена нет, пробуем обновить через refresh_token
+        if (!token) {
+            const ok = await refreshToken();
+            if (ok) token = localStorage.getItem('token');
+        }
+        const userEmail = localStorage.getItem('user_email') || '';
+        const userName = localStorage.getItem('user_name') || userEmail.split('@')[0] || 'Пользователь';
+        const isРазработчик = localStorage.getItem('is_Разработчик') === 'true';
+        if (token) {
+            container.innerHTML = `
+                <div class="user-menu">
+                    <button class="user-menu-btn" id="userMenuBtn">
+                        <i class="fas fa-user-circle"></i> ${userName} ${isРазработчик ? '<span style="background: #10b981; padding: 2px 8px; border-radius: 20px; font-size: 10px;">Разработчик</span>' : ''}
+                        <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+                    </button>
+                    <div class="user-menu-dropdown" id="userMenuDropdown">
+                        <div class="user-info">
+                            <div class="user-name">${userName}</div>
+                            <div class="user-email">${userEmail}</div>
+                            <div class="storage-info">📁 Занято 2.58 ГБ из 8 ГБ<div class="storage-bar"><div class="storage-used"></div></div></div>
+                        </div>
+                        <a href="/profile"><i class="fas fa-user"></i> Личные данные</a>
+                        <a href="/settings"><i class="fas fa-lock"></i> Пароль и безопасность</a>
+                        <a href="/my-subscriptions"><i class="fas fa-credit-card"></i> Мои подписки</a>
+                        <a href="/cloud"><i class="fas fa-cloud"></i> Облачное хранилище</a>
+                        <hr>
+                        <a href="#" class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> ВЫЙТИ</a>
+                        <a href="/register"><i class="fas fa-user-plus"></i> Добавить аккаунт</a>
+                    </div>
+                </div>
+            `;
+            const btn = document.getElementById('userMenuBtn');
+            const dropdown = document.getElementById('userMenuDropdown');
+            if (btn && dropdown) {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'; });
+                document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+                dropdown.addEventListener('click', (e) => e.stopPropagation());
+            }
+        } else {
+            container.innerHTML = `<a href="/login" class="login">Вход</a><a href="/register" class="register">Регистрация</a>`;
+        }
+    }
+    
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('is_Разработчик');
+        window.location.href = '/';
+    }
+    
+    renderUserMenu();
+</script>
 </body>
 </html>
-
-

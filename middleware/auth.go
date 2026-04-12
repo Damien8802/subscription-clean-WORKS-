@@ -14,14 +14,15 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
     return func(c *gin.Context) {
         path := c.Request.URL.Path
         method := c.Request.Method
-        
+
         // Получаем заголовок разработчика
         devHeader := c.GetHeader("X-Developer-Access")
-        
-        // ========== РЕЖИМ РАЗРАБОТЧИКА (ПРОВЕРКА ПЕРВОЙ) ==========
+
+        // ========== РЕЖИМ РАЗРАБОТЧИКА (ЗАГОЛОВОК) ==========
         if devHeader == "fusion-dev-2024" {
             userID := "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
-            c.Set("userID", userID)
+            c.Set("user_id", userID)
+            c.Set("user_name", "Разработчик")
             c.Set("role", "admin")
             c.Set("tenant_id", "11111111-1111-1111-1111-111111111111")
             log.Printf("[DEV] 🔧 Режим разработчика: %s %s (заголовок принят)", method, path)
@@ -56,6 +57,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             "/api/crm/ai/ask":           true,
             "/api/ai/ask":               true,
             "/fusion-portal":            true,
+            "/dev/login":                true,
         }
 
         if publicRoutes[path] {
@@ -63,55 +65,58 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             return
         }
 
-        // ========== РЕЖИМ РАЗРАБОТКИ (SKIP_AUTH) ==========
-        if cfg.SkipAuth {
-            userID := "aa5f14e6-30e1-476c-ac42-8c11ced838a4"
-            c.Set("userID", userID)
-            c.Set("role", "admin")
-            c.Set("tenant_id", "11111111-1111-1111-1111-111111111111")
-            log.Printf("[AUTH] 🟢 Режим разработки: %s %s", method, path)
-            c.Next()
-            return
-        }
-
-        // ========== ПРОДАКШЕН РЕЖИМ ==========
-        if c.GetHeader("X-Skip-Auth") == "true" {
-            c.Next()
-            return
-        }
-
+        // ========== ПРОВЕРКА JWT ТОКЕНА ==========
         authHeader := c.GetHeader("Authorization")
-        if authHeader == "" {
-            c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+        tokenString := ""
+
+        if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+            tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+        }
+
+if tokenString == "" {
+    cookie, err := c.Cookie("token")
+    if err == nil && cookie != "" {
+        tokenString = cookie
+    }
+}
+
+        if tokenString == "" {
+            // Пробуем взять токен из cookie
+            cookie, err := c.Cookie("token")
+            if err == nil && cookie != "" {
+                tokenString = cookie
+            }
+        }
+
+        if tokenString == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{
                 "error": "authorization header required",
                 "code":  "UNAUTHORIZED",
             })
+            c.Abort()
             return
         }
 
-        parts := strings.SplitN(authHeader, " ", 2)
-        if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-            c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-                "error": "invalid authorization header format. Use 'Bearer <token>'",
-                "code":  "INVALID_AUTH_FORMAT",
-            })
-            return
-        }
-
-        tokenString := parts[1]
+        // Верифицируем JWT токен
         claims, err := utils.ValidateToken(tokenString)
         if err != nil {
-            c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-                "error": "invalid or expired access token",
+            c.JSON(http.StatusUnauthorized, gin.H{
+                "error": "invalid or expired token",
                 "code":  "INVALID_TOKEN",
             })
+            c.Abort()
             return
         }
 
-        c.Set("userID", claims.UserID)
+        // Устанавливаем данные пользователя
+        c.Set("user_id", claims.UserID)
+        c.Set("user_name", claims.UserName)
+        c.Set("user_email", claims.Email)
         c.Set("role", claims.Role)
         c.Set("tenant_id", claims.TenantID)
-        log.Printf("[AUTH] 🟢 Успешная авторизация: %s %s, user=%s", method, path, claims.UserID)
+
+        log.Printf("[AUTH] ✅ Авторизован: %s (%s), путь: %s %s", claims.UserName, claims.Email, method, path)
+
         c.Next()
     }
 }
@@ -120,12 +125,6 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
     return func(c *gin.Context) {
         path := c.Request.URL.Path
         method := c.Request.Method
-
-        if cfg.SkipAuth {
-            log.Printf("[ADMIN] 🟢 Режим разработки: доступ разрешен для %s %s", method, path)
-            c.Next()
-            return
-        }
 
         role, exists := c.Get("role")
         if !exists {

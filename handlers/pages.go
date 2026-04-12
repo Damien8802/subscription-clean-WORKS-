@@ -5,48 +5,131 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    "subscription-system/database"
 )
 
 // ==================== ОСНОВНЫЕ СТРАНИЦЫ ====================
 func HomeHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "index.html", gin.H{
-        "Title":   "SaaSPro - Управление подписками",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "SaaSPro - Управление подписками",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
-
 func DashboardHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "dashboard.html", gin.H{
-        "Title":   "Дашборд - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Дашборд - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func AdminHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "admin.html", gin.H{
-        "Title":   "Админ-панель - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Админ-панель - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
-// AnalyticsHandler УДАЛЁН ОТСЮДА — он теперь в analytics.go
-
 func PaymentHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "payment.html", gin.H{
-        "Title":   "Платежи - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Платежи - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func PricingHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "pricing.html", gin.H{
-        "Title":   "Тарифы - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Тарифы - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
@@ -77,129 +160,403 @@ func ForgotPasswordHandler(c *gin.Context) {
 
 // ==================== СИСТЕМНЫЕ СТРАНИЦЫ ====================
 func SettingsHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "settings.html", gin.H{
-        "Title":   "Настройки - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Настройки - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func UsersHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "users.html", gin.H{
-        "Title":   "Пользователи - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Пользователи - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func MySubscriptionsHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "my-subscriptions.html", gin.H{
-        "Title":   "Мои подписки - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Мои подписки - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 // ==================== ПАРТНЕРЫ И КОНТАКТЫ ====================
 func PartnerHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "partner.html", gin.H{
-        "Title":   "Партнерская программа - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Партнерская программа - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func ContactHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "contact.html", gin.H{
-        "Title":   "Контакты - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Контакты - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func ReferralHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "referral.html", gin.H{
-        "Title":   "Реферальная программа - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Реферальная программа - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 // ==================== БЕЗОПАСНОСТЬ ====================
 func SecurityHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "security.html", gin.H{
-        "Title":   "Безопасность - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Безопасность - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func SecurityHubHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "security-hub.html", gin.H{
-        "Title":   "Центр безопасности - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Центр безопасности - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func SecurityPanelHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "security-panel.html", gin.H{
-        "Title":   "Панель безопасности - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Панель безопасности - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 // ==================== ДОПОЛНИТЕЛЬНЫЕ СТРАНИЦЫ ====================
 func AboutHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "about.html", gin.H{
-        "Title":   "О нас - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "О нас - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func InfoHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "info.html", gin.H{
-        "Title":   "Информация - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Информация - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func IntegrationsHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "integrations.html", gin.H{
-        "Title":   "Интеграции - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Интеграции - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func MonetizationHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "monetization.html", gin.H{
-        "Title":   "Монетизация - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Монетизация - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
 
 func SubscriptionsHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "subscriptions.html", gin.H{
-        "Title":   "Подписки - SaaSPro",
-        "Version": "3.0",
-        "Time":    time.Now().Format("2006-01-02 15:04:05"),
+        "Title":           "Подписки - SaaSPro",
+        "Version":         "3.0",
+        "Time":            time.Now().Format("2006-01-02 15:04:05"),
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
-}// IntegrationsPageHandler - страница интеграций
+}
+
+// IntegrationsPageHandler - страница интеграций
 func IntegrationsPageHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "integrations.html", gin.H{
-        "title": "Integrations - SaaSPro ERP",
-        "active": "integrations",
+        "title":            "Integrations - SaaSPro ERP",
+        "active":           "integrations",
+        "IsAuthenticated":  isAuthenticated,
+        "UserName":         userName,
+        "IsDeveloper":      isDeveloper,
     })
 }
 
 // PricingPageHandler отображает страницу тарифов
 func PricingPageHandler(c *gin.Context) {
+    userID := c.GetString("user_id")
+    userName := c.GetString("user_name")
+    isAuthenticated := userID != ""
+    isDeveloper := false
+
+    if isAuthenticated {
+        database.Pool.QueryRow(c.Request.Context(),
+            "SELECT is_developer FROM users WHERE id = $1", userID).Scan(&isDeveloper)
+    }
+
+    if userName == "" && isAuthenticated {
+        userName = "Пользователь"
+    }
+
     c.HTML(http.StatusOK, "pricing.html", gin.H{
-        "Title": "Тарифы - SaaSPro",
+        "Title":           "Тарифы - SaaSPro",
+        "IsAuthenticated": isAuthenticated,
+        "UserName":        userName,
+        "IsDeveloper":     isDeveloper,
     })
 }
