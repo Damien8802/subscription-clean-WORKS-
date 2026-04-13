@@ -123,18 +123,23 @@ func getPaginationParams(c *gin.Context) (page, pageSize int) {
     return page, pageSize
 }
 
-// getUserIDFromContext извлекает ID пользователя из контекста
 func getUserIDFromContext(c *gin.Context) string {
-    userID, exists := c.Get("userID")
+    // Пробуем оба варианта ключа
+    userID, exists := c.Get("user_id")  // ← измени userID на user_id
     if !exists {
-        return ""
+        userID, exists = c.Get("userID")  // ← запасной вариант
+        if !exists {
+            return ""
+        }
     }
     if idStr, ok := userID.(string); ok {
         return idStr
     }
+    if idUUID, ok := userID.(uuid.UUID); ok {
+        return idUUID.String()
+    }
     return ""
 }
-
 // getRoleFromContext извлекает роль пользователя из контекста
 func getRoleFromContext(c *gin.Context) string {
     role, exists := c.Get("role")

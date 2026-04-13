@@ -13,7 +13,6 @@ import (
     "net"
     "strconv"
 
-
     "github.com/gin-gonic/gin"
     "github.com/joho/godotenv"
     swaggerFiles "github.com/swaggo/files"
@@ -25,11 +24,7 @@ import (
     "subscription-system/middleware"
     "subscription-system/services"
     _ "subscription-system/docs"
-
 )
-
-// //go:embed templates/*.html templates/hr/*.html
-// var templateFS embed.FS
 
 type ServiceOrder struct {
     Name        string `json:"name"`
@@ -87,6 +82,7 @@ func main() {
             days INTEGER NOT NULL,
             speed VARCHAR(50),
             devices INTEGER DEFAULT 1,
+            tenant_id UUID,
             created_at TIMESTAMP DEFAULT NOW()
         )
     `)
@@ -96,19 +92,19 @@ func main() {
         log.Println("✅ Таблица vpn_plans готова")
     }
     
-   _, err = database.Pool.Exec(ctx, `
-    INSERT INTO vpn_plans (name, price, days, speed, devices, tenant_id) 
-    VALUES ($1, $2, $3, $4, $5, $6),
-           ($7, $8, $9, $10, $11, $12),
-           ($13, $14, $15, $16, $17, $18),
-           ($19, $20, $21, $22, $23, $24)
-    ON CONFLICT (id) DO NOTHING
-`,
-    "Пробный", 0, 3, "10 Mbps", 1, "11111111-1111-1111-1111-111111111111",
-    "Старт", 299, 30, "50 Mbps", 2, "11111111-1111-1111-1111-111111111111",
-    "Про", 999, 90, "100 Mbps", 5, "11111111-1111-1111-1111-111111111111",
-    "Премиум", 2999, 365, "1 Gbps", 10, "11111111-1111-1111-1111-111111111111",
-)
+    _, err = database.Pool.Exec(ctx, `
+        INSERT INTO vpn_plans (name, price, days, speed, devices, tenant_id) 
+        VALUES ($1, $2, $3, $4, $5, $6),
+               ($7, $8, $9, $10, $11, $12),
+               ($13, $14, $15, $16, $17, $18),
+               ($19, $20, $21, $22, $23, $24)
+        ON CONFLICT (id) DO NOTHING
+    `,
+        "Пробный", 0, 3, "10 Mbps", 1, "11111111-1111-1111-1111-111111111111",
+        "Старт", 299, 30, "50 Mbps", 2, "11111111-1111-1111-1111-111111111111",
+        "Про", 999, 90, "100 Mbps", 5, "11111111-1111-1111-1111-111111111111",
+        "Премиум", 2999, 365, "1 Gbps", 10, "11111111-1111-1111-1111-111111111111",
+    )
     if err != nil {
         log.Printf("⚠️ Ошибка вставки тарифов: %v", err)
     } else {
@@ -142,19 +138,14 @@ func main() {
 
     r := gin.New()
 
-// ========== МЕГА-БЕЗОПАСНОСТЬ ==========
-r.Use(middleware.MegaSecurityMiddleware())
-// ========================================
+    // ========== МЕГА-БЕЗОПАСНОСТЬ ==========
+    r.Use(middleware.MegaSecurityMiddleware())
+    // ========================================
 
-r.Use(middleware.AuditMiddleware())          // Аудит действий
-r.Use(middleware.Fail2BanMiddleware())       // Блокировка IP
-r.Use(middleware.ForcePasswordChangeMiddleware()) // Принудительная смена пароля
+    r.Use(middleware.AuditMiddleware())          // Аудит действий
+    r.Use(middleware.Fail2BanMiddleware())       // Блокировка IP
+    r.Use(middleware.ForcePasswordChangeMiddleware()) // Принудительная смена пароля
 
-// Для админских маршрутов добавляем 2FA
-admin := r.Group("/admin")
-admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handlers.AdminRequire2FA())
-{
-    admin.GET("/", handlers.AdminDashboardHandler)
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
     r.Use(middleware.Logger())
@@ -162,14 +153,12 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.Use(middleware.SetupCORS(cfg))
     r.Use(middleware.TenantMiddleware(database.Pool))
 
-
-
     rateLimiter := middleware.NewRateLimiter(30, time.Minute)
     r.Use(middleware.SecurityMonitor())
     authLimiter := middleware.NewRateLimiter(3, time.Minute)
 
     // ========== ЗАГРУЗКА ШАБЛОНОВ ==========
-        // Загружаем шаблоны из файловой системы
+    // Загружаем шаблоны из файловой системы
     tmpl, err := template.New("").Funcs(template.FuncMap{
         "jsonParse": func(s json.RawMessage) []interface{} {
             var arr []interface{}
@@ -230,7 +219,8 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     }
 
     r.SetHTMLTemplate(tmpl)
-// Публичные маршруты
+
+    // Публичные маршруты
     public := r.Group("/")
     {
         public.GET("/", handlers.HomeHandler)
@@ -241,22 +231,15 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
         public.GET("/partner", handlers.PartnerHandler)
         public.GET("/fusion-api", handlers.FusionAPIPortalHandler)
 
+        log.Println("✅ Шаблоны загружены из файловой системы")
 
-
- // ========== СКРЫТЫЙ ВХОД ДЛЯ РАЗРАБОТЧИКОВ ==========
-    log.Println("✅ Шаблоны загружены из файловой системы")
-
-
-   // ========== БЛОГ ==========
+        // ========== БЛОГ ==========
         r.GET("/blog", func(c *gin.Context) {
             c.HTML(200, "blog.html", gin.H{
                 "title": "Блог | SaaSPro - новости и статьи",
             })
         })
-
-
-    // Загружаем шаблоны из файловой системы
-    
+    }
 
     // ========== СТАТИКА, РЕДИРЕКТЫ ==========
     r.Static("/static", cfg.StaticPath)
@@ -286,7 +269,6 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.GET("/api/qr/status", handlers.QRStatusWebSocket)
     r.POST("/api/qr/scan", handlers.ScanQRCode)
     r.POST("/api/qr/approve", handlers.ApproveQRLogin)
-
 
     r.GET("/logout", handlers.LogoutHandler)
 
@@ -366,19 +348,21 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
 
     r.GET("/api/admin/create-vpn-tables", handlers.CreateVPNTables)
 
-   r.GET("/api/backup", handlers.CreateBackup)
-   r.POST("/api/restore", handlers.RestoreBackup)
+    r.GET("/api/backup", handlers.CreateBackup)
+    r.POST("/api/restore", handlers.RestoreBackup)
+    
     // Страница поставщиков
     r.GET("/suppliers", func(c *gin.Context) {
         c.HTML(http.StatusOK, "suppliers.html", gin.H{
             "title": "Поставщики | SaaSPro",
         })
     })
-   r.GET("/inventory/products", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "inventory_products.html", gin.H{
-        "title": "Товары - SaaSPro",
+    
+    r.GET("/inventory/products", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "inventory_products.html", gin.H{
+            "title": "Товары - SaaSPro",
+        })
     })
-})
 
     // Страница закупок
     r.GET("/purchases", func(c *gin.Context) {
@@ -462,264 +446,258 @@ admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), handl
     r.GET("/api/bitrix/tasks", handlers.GetBitrixTasks)
     r.POST("/api/bitrix/webhook", handlers.BitrixWebhookHandler)
 
- // TeamSphere - Bitrix24 Alternative
-   r.GET("/teamsphere", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "teamsphere_welcome.html", gin.H{
-        "title": "TeamSphere | Добро пожаловать",
+    // TeamSphere - Bitrix24 Alternative
+    r.GET("/teamsphere", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "teamsphere_welcome.html", gin.H{
+            "title": "TeamSphere | Добро пожаловать",
+        })
     })
-})
 
-r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
+    r.GET("/teamsphere/dashboard", handlers.TeamSphereDashboard)
     r.GET("/integrations", handlers.IntegrationsHandler)
-   // Projects page
-   r.GET("/projects", handlers.ProjectsPageHandler)
-
-
-// HR маршруты
-hr := r.Group("/hr")
-
-{
-    hr.GET("/", handlers.HRDashboardHandler)
-    hr.GET("/api/employees", handlers.GetEmployeesHandler)
-    hr.POST("/api/employees", handlers.AddEmployeeHandler)
-    hr.PUT("/api/employees/:id", handlers.UpdateEmployeeHandler)
-    hr.DELETE("/api/employees/:id", handlers.DeleteEmployeeHandler)
-    hr.GET("/api/vacations", handlers.GetVacationRequestsHandler)
-    hr.POST("/api/vacations", handlers.AddVacationRequestHandler)
-    hr.POST("/api/vacations/:id/approve", handlers.ApproveRequestHandler)
-    hr.POST("/api/vacations/:id/reject", handlers.RejectRequestHandler)
-    hr.GET("/api/candidates", handlers.GetCandidatesHandler)
-    hr.POST("/api/candidates", handlers.AddCandidateHandler)
-    hr.PUT("/api/candidates/:id/status", handlers.UpdateCandidateStatusHandler)
-    hr.DELETE("/api/candidates/:id", handlers.DeleteCandidateHandler)
-    hr.GET("/api/statistics", handlers.GetStatisticsHandler)
-    hr.POST("/api/candidates/:id/analyze", handlers.AnalyzeCandidateHandler)
-    hr.POST("/api/ai/chat", handlers.AIChatHandler)
-    hr.GET("/api/training/suggestions", handlers.SuggestTrainingHandler)
-    hr.GET("/api/turnover/predict", handlers.PredictTurnoverHandler)
-    hr.POST("/api/orders/generate", handlers.GenerateOrderHandler)
-    hr.GET("/api/departments", handlers.GetDepartmentsHandler)
-}
-
-// ========== АРХИВ ==========
-archiveGroup := r.Group("/archive")
-archiveGroup.Use(middleware.AuthMiddleware(cfg))
-
-archiveGroup.DELETE("/api/trash/:id", handlers.DeleteFromTrashPermanently)
-archiveGroup.DELETE("/api/trash/clear", handlers.ClearTrashBin)
-{
-    archiveGroup.GET("/", handlers.ArchivePageHandler)
-    archiveGroup.GET("/api/stats", handlers.GetArchiveStats)
-    archiveGroup.GET("/api/items", handlers.GetArchiveItems)
-    archiveGroup.POST("/api/restore/:type/:id", handlers.RestoreFromArchive)
-    archiveGroup.POST("/api/upgrade", handlers.UpgradeArchiveQuota)
-
-// В блоке archiveGroup добавь:
-archiveGroup.GET("/api/notifications", handlers.GetNotifications)
-archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
-// Дополнительные маршруты
-    archiveGroup.GET("/api/auto-settings", handlers.GetAutoArchiveSettings)
-    archiveGroup.POST("/api/auto-settings", handlers.UpdateAutoArchiveSettings)
-    archiveGroup.POST("/api/run-auto-archive", handlers.RunAutoArchive)
-    archiveGroup.GET("/api/trash", handlers.GetTrashItems)
-    archiveGroup.POST("/api/trash/:type/:id", handlers.MoveToTrash)
-    archiveGroup.POST("/api/trash/restore/:id", handlers.RestoreFromTrash)
-    archiveGroup.GET("/api/logs", handlers.GetArchiveLogs)
-    archiveGroup.GET("/api/export", handlers.ExportArchiveToExcel)
-
-archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
-}
-
- // Банк-клиент
-bankAPI := r.Group("/api/bank")
-bankAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    bankAPI.GET("/accounts", handlers.GetBankAccounts)
-    bankAPI.POST("/connect", handlers.ConnectBankAccount)
-    bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
-    bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
-    bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
-}
-
-// ========== WHATSAPP BUSINESS API ==========
-whatsappAPI := r.Group("/api/whatsapp")
-whatsappAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    // Подключение и статус
-    whatsappAPI.POST("/connect", handlers.ConnectWhatsApp)
-    whatsappAPI.GET("/status", handlers.GetWhatsAppStatus)
-    whatsappAPI.POST("/disconnect", handlers.DisconnectWhatsApp)
     
-    // Отправка сообщений
-    whatsappAPI.POST("/send", handlers.SendWhatsAppMessage)
-    whatsappAPI.GET("/messages", handlers.GetWhatsAppMessages)
-    whatsappAPI.GET("/messages/stats", handlers.GetWhatsAppMessageStats)
+    // Projects page
+    r.GET("/projects", handlers.ProjectsPageHandler)
+
+    // HR маршруты
+    hr := r.Group("/hr")
+    {
+        hr.GET("/", handlers.HRDashboardHandler)
+        hr.GET("/api/employees", handlers.GetEmployeesHandler)
+        hr.POST("/api/employees", handlers.AddEmployeeHandler)
+        hr.PUT("/api/employees/:id", handlers.UpdateEmployeeHandler)
+        hr.DELETE("/api/employees/:id", handlers.DeleteEmployeeHandler)
+        hr.GET("/api/vacations", handlers.GetVacationRequestsHandler)
+        hr.POST("/api/vacations", handlers.AddVacationRequestHandler)
+        hr.POST("/api/vacations/:id/approve", handlers.ApproveRequestHandler)
+        hr.POST("/api/vacations/:id/reject", handlers.RejectRequestHandler)
+        hr.GET("/api/candidates", handlers.GetCandidatesHandler)
+        hr.POST("/api/candidates", handlers.AddCandidateHandler)
+        hr.PUT("/api/candidates/:id/status", handlers.UpdateCandidateStatusHandler)
+        hr.DELETE("/api/candidates/:id", handlers.DeleteCandidateHandler)
+        hr.GET("/api/statistics", handlers.GetStatisticsHandler)
+        hr.POST("/api/candidates/:id/analyze", handlers.AnalyzeCandidateHandler)
+        hr.POST("/api/ai/chat", handlers.AIChatHandler)
+        hr.GET("/api/training/suggestions", handlers.SuggestTrainingHandler)
+        hr.GET("/api/turnover/predict", handlers.PredictTurnoverHandler)
+        hr.POST("/api/orders/generate", handlers.GenerateOrderHandler)
+        hr.GET("/api/departments", handlers.GetDepartmentsHandler)
+    }
+
+    // ========== АРХИВ ==========
+    archiveGroup := r.Group("/archive")
+    archiveGroup.Use(middleware.AuthMiddleware(cfg))
+    {
+        archiveGroup.GET("/", handlers.ArchivePageHandler)
+        archiveGroup.GET("/api/stats", handlers.GetArchiveStats)
+        archiveGroup.GET("/api/items", handlers.GetArchiveItems)
+        archiveGroup.POST("/api/restore/:type/:id", handlers.RestoreFromArchive)
+        archiveGroup.POST("/api/upgrade", handlers.UpgradeArchiveQuota)
+        archiveGroup.GET("/api/notifications", handlers.GetNotifications)
+        archiveGroup.POST("/api/notifications/:id/read", handlers.MarkNotificationRead)
+        archiveGroup.GET("/api/auto-settings", handlers.GetAutoArchiveSettings)
+        archiveGroup.POST("/api/auto-settings", handlers.UpdateAutoArchiveSettings)
+        archiveGroup.POST("/api/run-auto-archive", handlers.RunAutoArchive)
+        archiveGroup.GET("/api/trash", handlers.GetTrashItems)
+        archiveGroup.POST("/api/trash/:type/:id", handlers.MoveToTrash)
+        archiveGroup.POST("/api/trash/restore/:id", handlers.RestoreFromTrash)
+        archiveGroup.GET("/api/logs", handlers.GetArchiveLogs)
+        archiveGroup.GET("/api/export", handlers.ExportArchiveToExcel)
+        archiveGroup.GET("/api/plan", handlers.GetCurrentPlan)
+        archiveGroup.DELETE("/api/trash/:id", handlers.DeleteFromTrashPermanently)
+        archiveGroup.DELETE("/api/trash/clear", handlers.ClearTrashBin)
+    }
+
+    // Банк-клиент
+    bankAPI := r.Group("/api/bank")
+    bankAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        bankAPI.GET("/accounts", handlers.GetBankAccounts)
+        bankAPI.POST("/connect", handlers.ConnectBankAccount)
+        bankAPI.POST("/sync/:id", handlers.SyncBankStatements)
+        bankAPI.POST("/match/:id", handlers.MatchTransactionsByAccount)
+        bankAPI.GET("/statements", handlers.GetBankStatementsByAccount)
+    }
+
+    // ========== WHATSAPP BUSINESS API ==========
+    whatsappAPI := r.Group("/api/whatsapp")
+    whatsappAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        // Подключение и статус
+        whatsappAPI.POST("/connect", handlers.ConnectWhatsApp)
+        whatsappAPI.GET("/status", handlers.GetWhatsAppStatus)
+        whatsappAPI.POST("/disconnect", handlers.DisconnectWhatsApp)
+        
+        // Отправка сообщений
+        whatsappAPI.POST("/send", handlers.SendWhatsAppMessage)
+        whatsappAPI.GET("/messages", handlers.GetWhatsAppMessages)
+        whatsappAPI.GET("/messages/stats", handlers.GetWhatsAppMessageStats)
+        
+        // Шаблоны
+        whatsappAPI.GET("/templates", handlers.GetWhatsAppTemplates)
+        whatsappAPI.POST("/templates", handlers.CreateWhatsAppTemplate)
+        whatsappAPI.PUT("/templates/:id", handlers.UpdateWhatsAppTemplate)
+        whatsappAPI.DELETE("/templates/:id", handlers.DeleteWhatsAppTemplate)
+        
+        // Рассылки
+        whatsappAPI.POST("/broadcast", handlers.CreateWhatsAppBroadcast)
+        whatsappAPI.GET("/broadcasts", handlers.GetWhatsAppBroadcasts)
+        whatsappAPI.POST("/broadcast/:id/send", handlers.SendWhatsAppBroadcast)
+        whatsappAPI.DELETE("/broadcasts/:id", handlers.DeleteWhatsAppBroadcast)
+        
+        // Контакты и статистика
+        whatsappAPI.GET("/contacts", handlers.GetWhatsAppContacts)
+        whatsappAPI.GET("/stats", handlers.GetWhatsAppStats)
+    }
+
+    // Webhook для WhatsApp (публичный, без авторизации)
+    r.POST("/webhook/whatsapp", handlers.WhatsAppWebhook)
+    r.GET("/webhook/whatsapp", handlers.WhatsAppWebhook)
+
+    // Страница WhatsApp
+    r.GET("/whatsapp", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "whatsapp.html", gin.H{
+            "title": "WhatsApp Business | SaaSPro",
+        })
+    })
+
+    // ========== РЕЗЕРВНОЕ КОПИРОВАНИЕ ==========
+    backupAPI := r.Group("/api/backup")
+    backupAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        backupAPI.GET("/settings", handlers.GetBackupSettings)
+        backupAPI.PUT("/settings", handlers.UpdateBackupSettings)
+        backupAPI.POST("/create", handlers.CreateFullBackup)
+        backupAPI.GET("/history", handlers.GetBackupHistory)
+        backupAPI.GET("/download/:id", handlers.DownloadBackup)
+        backupAPI.DELETE("/delete/:id", handlers.DeleteBackup)
+    }
+
+    // ========== AI ЧАТ-БОТ ДЛЯ САЙТА ==========
+    chatbotAPI := r.Group("/api/chatbot")
+    chatbotAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        chatbotAPI.GET("/settings", handlers.GetChatbotSettings)
+        chatbotAPI.PUT("/settings", handlers.UpdateChatbotSettings)
+        chatbotAPI.GET("/conversations", handlers.GetChatbotConversations)
+        chatbotAPI.GET("/messages/:id", handlers.GetChatbotMessages)
+        chatbotAPI.GET("/leads", handlers.GetChatbotLeads)
+        chatbotAPI.POST("/lead", handlers.CreateChatbotLead)
+    }
+
+    // Публичные эндпоинты для виджета
+    r.POST("/api/chatbot/message", handlers.SendChatbotMessage)
+    r.GET("/chatbot-widget", handlers.ChatbotWidget)
+
+    // Страница управления чат-ботом (ТОЛЬКО ДЛЯ АДМИНОВ И РАЗРАБОТЧИКОВ)
+    r.GET("/chatbot", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
+        c.HTML(http.StatusOK, "chatbot.html", gin.H{
+            "title": "AI Чат-бот (Dev Mode) | SaaSPro",
+        })
+    })
     
-    // Шаблоны
-    whatsappAPI.GET("/templates", handlers.GetWhatsAppTemplates)
-    whatsappAPI.POST("/templates", handlers.CreateWhatsAppTemplate)
-    whatsappAPI.PUT("/templates/:id", handlers.UpdateWhatsAppTemplate)
-    whatsappAPI.DELETE("/templates/:id", handlers.DeleteWhatsAppTemplate)
+    // ========== ПАРТНЁРСКАЯ ПРОГРАММА ==========
+    partnerAPI := r.Group("/api/partner")
+    partnerAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        partnerAPI.GET("/stats", handlers.GetReferralStatsHandler)
+        partnerAPI.GET("/friends", handlers.GetReferralFriendsHandler)
+        partnerAPI.GET("/link", handlers.GetReferralLink)
+        partnerAPI.POST("/payout", handlers.RequestPayout)
+        partnerAPI.GET("/payouts", handlers.GetPayoutHistory)
+    }
     
-    // Рассылки
-    whatsappAPI.POST("/broadcast", handlers.CreateWhatsAppBroadcast)
-    whatsappAPI.GET("/broadcasts", handlers.GetWhatsAppBroadcasts)
-    whatsappAPI.POST("/broadcast/:id/send", handlers.SendWhatsAppBroadcast)
-    whatsappAPI.DELETE("/broadcasts/:id", handlers.DeleteWhatsAppBroadcast)
+    // Страница бэкапов
+    r.GET("/backup", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "backup.html", gin.H{
+            "title": "Резервное копирование | SaaSPro",
+        })
+    })
+
+    // Страница банк-клиента
+    r.GET("/bank", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "bank_integration.html", gin.H{
+            "title": "Банк-клиент | SaaSPro",
+        })
+    })
+
+    // ========== РАСЧЁТ ЗАРПЛАТЫ ==========
+    payrollAPI := r.Group("/api/payroll")
+    payrollAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        payrollAPI.GET("/employees", handlers.GetEmployeesForPayroll)
+        payrollAPI.POST("/calculate", handlers.CalculatePayroll)
+        payrollAPI.GET("/history", handlers.GetPayrollHistory)
+        payrollAPI.POST("/pay", handlers.ProcessPayrollPayment)
+        payrollAPI.POST("/tax-report", handlers.GenerateTaxReport)
+    }
+
+    // Страница расчёта зарплаты
+    r.GET("/payroll", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "payroll.html", gin.H{
+            "title": "Расчёт зарплаты | SaaSPro",
+        })
+    })
+
+    // ========== EMAIL-МАРКЕТИНГ ==========
+    emailAPI := r.Group("/api/email")
+    emailAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        emailAPI.POST("/campaign", handlers.CreateEmailCampaign)
+        emailAPI.GET("/campaigns", handlers.GetEmailCampaigns)
+        emailAPI.POST("/campaign/:id/send", handlers.SendEmailCampaign)
+        emailAPI.GET("/templates", handlers.GetEmailTemplates)
+        emailAPI.POST("/templates", handlers.CreateEmailTemplate)
+    }
+
+    // Страница email-маркетинга
+    r.GET("/email-marketing", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "email_marketing.html", gin.H{
+            "title": "Email-маркетинг | SaaSPro",
+        })
+    })
+
+    // ========== МАРКЕТПЛЕЙС ==========
+    marketplace := r.Group("/marketplace")
+    marketplace.Use(middleware.AuthMiddleware(cfg))
+    {
+        marketplace.GET("/", handlers.MarketplacePageHandler)
+        marketplace.GET("/api/apps", handlers.GetMarketplaceApps)
+        marketplace.GET("/api/apps/:slug", handlers.GetMarketplaceApp)
+        marketplace.POST("/api/purchase", handlers.PurchaseApp)
+        marketplace.POST("/api/review", handlers.AddReview)
+        marketplace.GET("/api/my-purchases", handlers.GetMyPurchases)
+    }
+
+    // ========== API МАРКЕТПЛЕЙСОВ (Ozon, WB, Яндекс) ==========
+    marketplaceAPI := r.Group("/api/marketplace")
+    marketplaceAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        marketplaceAPI.POST("/connect", handlers.ConnectMarketplace)
+        marketplaceAPI.GET("/integrations", handlers.GetMarketplaceIntegrationsList)
+        marketplaceAPI.POST("/sync/:id", handlers.SyncMarketplaceOrders)
+        marketplaceAPI.GET("/orders", handlers.GetMarketplaceOrders)
+        marketplaceAPI.POST("/stock", handlers.UpdateMarketplaceStock)
+        marketplaceAPI.GET("/products/:id", handlers.GetMarketplaceProducts)
+        marketplaceAPI.POST("/prices", handlers.UpdateMarketplacePrices)
+        marketplaceAPI.GET("/analytics/:id", handlers.GetMarketplaceAnalytics)
+        marketplaceAPI.DELETE("/disconnect/:id", handlers.DisconnectMarketplace)
+    }
+
+    // Страница маркетплейсов
+    r.GET("/marketplace-integrations", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "marketplace_integrations.html", gin.H{
+            "title": "Интеграция с маркетплейсами | SaaSPro",
+        })
+    })
+
+    // API для архивации из CRM
+    crmArchive := r.Group("/api/crm")
+    crmArchive.Use(middleware.AuthMiddleware(cfg))
+    {
+        crmArchive.POST("/customers/:id/archive", handlers.ArchiveCustomer)
+    }
     
-    // Контакты и статистика
-    whatsappAPI.GET("/contacts", handlers.GetWhatsAppContacts)
-    whatsappAPI.GET("/stats", handlers.GetWhatsAppStats)
-}
-
-// Webhook для WhatsApp (публичный, без авторизации)
-r.POST("/webhook/whatsapp", handlers.WhatsAppWebhook)
-r.GET("/webhook/whatsapp", handlers.WhatsAppWebhook)
-
-// Страница WhatsApp
-r.GET("/whatsapp", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "whatsapp.html", gin.H{
-        "title": "WhatsApp Business | SaaSPro",
-    })
-})
-
-// ========== РЕЗЕРВНОЕ КОПИРОВАНИЕ ==========
-backupAPI := r.Group("/api/backup")
-backupAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    backupAPI.GET("/settings", handlers.GetBackupSettings)
-    backupAPI.PUT("/settings", handlers.UpdateBackupSettings)
-    backupAPI.POST("/create", handlers.CreateFullBackup)
-    backupAPI.GET("/history", handlers.GetBackupHistory)
-    backupAPI.GET("/download/:id", handlers.DownloadBackup)
-    backupAPI.DELETE("/delete/:id", handlers.DeleteBackup)
-}
-
-
-// ========== AI ЧАТ-БОТ ДЛЯ САЙТА ==========
-chatbotAPI := r.Group("/api/chatbot")
-chatbotAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    chatbotAPI.GET("/settings", handlers.GetChatbotSettings)
-    chatbotAPI.PUT("/settings", handlers.UpdateChatbotSettings)
-    chatbotAPI.GET("/conversations", handlers.GetChatbotConversations)
-    chatbotAPI.GET("/messages/:id", handlers.GetChatbotMessages)
-    chatbotAPI.GET("/leads", handlers.GetChatbotLeads)
-    chatbotAPI.POST("/lead", handlers.CreateChatbotLead)
-}
-
-// Публичные эндпоинты для виджета
-r.POST("/api/chatbot/message", handlers.SendChatbotMessage)
-r.GET("/chatbot-widget", handlers.ChatbotWidget)
-
-// Страница управления чат-ботом (ТОЛЬКО ДЛЯ АДМИНОВ И РАЗРАБОТЧИКОВ)
-r.GET("/chatbot", middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg), func(c *gin.Context) {
-    c.HTML(http.StatusOK, "chatbot.html", gin.H{
-        "title": "AI Чат-бот (Dev Mode) | SaaSPro",
-    })
-})
-// ========== ПАРТНЁРСКАЯ ПРОГРАММА ==========
-partnerAPI := r.Group("/api/partner")
-partnerAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    partnerAPI.GET("/stats", handlers.GetReferralStatsHandler)
-    partnerAPI.GET("/friends", handlers.GetReferralFriendsHandler)
-    partnerAPI.GET("/link", handlers.GetReferralLink)
-    partnerAPI.POST("/payout", handlers.RequestPayout)
-    partnerAPI.GET("/payouts", handlers.GetPayoutHistory)
-}
-// Страница бэкапов
-r.GET("/backup", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "backup.html", gin.H{
-        "title": "Резервное копирование | SaaSPro",
-    })
-})
-
-// Страница банк-клиента
-r.GET("/bank", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "bank_integration.html", gin.H{
-        "title": "Банк-клиент | SaaSPro",
-    })
-})
-
-// ========== РАСЧЁТ ЗАРПЛАТЫ ==========
-payrollAPI := r.Group("/api/payroll")
-payrollAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    payrollAPI.GET("/employees", handlers.GetEmployeesForPayroll)
-    payrollAPI.POST("/calculate", handlers.CalculatePayroll)
-    payrollAPI.GET("/history", handlers.GetPayrollHistory)
-    payrollAPI.POST("/pay", handlers.ProcessPayrollPayment)
-    payrollAPI.POST("/tax-report", handlers.GenerateTaxReport)
-}
-
-// Страница расчёта зарплаты
-r.GET("/payroll", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "payroll.html", gin.H{
-        "title": "Расчёт зарплаты | SaaSPro",
-    })
-})
-
-// ========== EMAIL-МАРКЕТИНГ ==========
-emailAPI := r.Group("/api/email")
-emailAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    emailAPI.POST("/campaign", handlers.CreateEmailCampaign)
-    emailAPI.GET("/campaigns", handlers.GetEmailCampaigns)
-    emailAPI.POST("/campaign/:id/send", handlers.SendEmailCampaign)
-    emailAPI.GET("/templates", handlers.GetEmailTemplates)
-    emailAPI.POST("/templates", handlers.CreateEmailTemplate)
-}
-
-// Страница email-маркетинга
-r.GET("/email-marketing", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "email_marketing.html", gin.H{
-        "title": "Email-маркетинг | SaaSPro",
-    })
-})
-
-
-// ========== МАРКЕТПЛЕЙС ==========
-marketplace := r.Group("/marketplace")
-marketplace.Use(middleware.AuthMiddleware(cfg))
-{
-    marketplace.GET("/", handlers.MarketplacePageHandler)
-    marketplace.GET("/api/apps", handlers.GetMarketplaceApps)
-    marketplace.GET("/api/apps/:slug", handlers.GetMarketplaceApp)
-    marketplace.POST("/api/purchase", handlers.PurchaseApp)
-    marketplace.POST("/api/review", handlers.AddReview)
-    marketplace.GET("/api/my-purchases", handlers.GetMyPurchases)
-}
-
-// ========== API МАРКЕТПЛЕЙСОВ (Ozon, WB, Яндекс) ==========
-marketplaceAPI := r.Group("/api/marketplace")
-marketplaceAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    marketplaceAPI.POST("/connect", handlers.ConnectMarketplace)
-    marketplaceAPI.GET("/integrations", handlers.GetMarketplaceIntegrationsList)
-    marketplaceAPI.POST("/sync/:id", handlers.SyncMarketplaceOrders)
-    marketplaceAPI.GET("/orders", handlers.GetMarketplaceOrders)
-    marketplaceAPI.POST("/stock", handlers.UpdateMarketplaceStock)
-    marketplaceAPI.GET("/products/:id", handlers.GetMarketplaceProducts)
-    marketplaceAPI.POST("/prices", handlers.UpdateMarketplacePrices)
-    marketplaceAPI.GET("/analytics/:id", handlers.GetMarketplaceAnalytics)
-    marketplaceAPI.DELETE("/disconnect/:id", handlers.DisconnectMarketplace)
-}
-
-// Страница маркетплейсов
-r.GET("/marketplace-integrations", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "marketplace_integrations.html", gin.H{
-        "title": "Интеграция с маркетплейсами | SaaSPro",
-    })
-})
-
-
-// API для архивации из CRM
-crmArchive := r.Group("/api/crm")
-crmArchive.Use(middleware.AuthMiddleware(cfg))
-{
-    crmArchive.POST("/customers/:id/archive", handlers.ArchiveCustomer)
-}
     // ========== PWA И PUSH УВЕДОМЛЕНИЯ ==========
     r.GET("/service-worker.js", func(c *gin.Context) { c.File("./static/service-worker.js") })
     r.GET("/manifest.json", func(c *gin.Context) { c.File("./static/manifest.json") })
@@ -743,24 +721,25 @@ crmArchive.Use(middleware.AuthMiddleware(cfg))
     r.GET("/api/vpn/stats", handlers.GetVPNStats)
     r.POST("/api/vpn/renew/:client", handlers.RenewVPNKey)
 
-// ========== МИГРАЦИЯ (3 ФАЗЫ) ==========
-migrationAPI := r.Group("/api/migration")
-migrationAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    migrationAPI.POST("/project", handlers.CreateMigrationProject)
-    migrationAPI.GET("/projects", handlers.GetMigrationProjects)
-    migrationAPI.GET("/project/:id/status", handlers.GetMigrationStatus)
-    migrationAPI.POST("/project/:id/phase2", handlers.StartPhase2)
-    migrationAPI.POST("/project/:id/phase3", handlers.StartPhase3)
-    migrationAPI.POST("/project/:id/sync", handlers.SyncEntities)
-}
+    // ========== МИГРАЦИЯ (3 ФАЗЫ) ==========
+    migrationAPI := r.Group("/api/migration")
+    migrationAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        migrationAPI.POST("/project", handlers.CreateMigrationProject)
+        migrationAPI.GET("/projects", handlers.GetMigrationProjects)
+        migrationAPI.GET("/project/:id/status", handlers.GetMigrationStatus)
+        migrationAPI.POST("/project/:id/phase2", handlers.StartPhase2)
+        migrationAPI.POST("/project/:id/phase3", handlers.StartPhase3)
+        migrationAPI.POST("/project/:id/sync", handlers.SyncEntities)
+    }
 
-// Страница миграции
-r.GET("/migration", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "migration.html", gin.H{
-        "title": "Миграция данных 3 фазы | SaaSPro",
+    // Страница миграции
+    r.GET("/migration", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "migration.html", gin.H{
+            "title": "Миграция данных 3 фазы | SaaSPro",
+        })
     })
-})
+    
     // ========== STEALTH VPN (НЕВИДИМЫЙ VPN) ==========
     // Stealth VPN API - не конфликтует с существующими VPN роутами
     stealthVPN := r.Group("/api/vpn/stealth")
@@ -789,7 +768,6 @@ r.GET("/migration", func(c *gin.Context) {
         adminVPN.GET("/stats", handlers.AdminVPNHandler)
     }
 
- 
     r.POST("/api/service-order", serviceOrderHandler)
 
     // Страницы авторизации
@@ -856,32 +834,31 @@ r.GET("/migration", func(c *gin.Context) {
     }
 
     // Админские маршруты
-    admin := r.Group("/")
-    admin.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    adminGroup := r.Group("/")
+    adminGroup.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     {
-        admin.GET("/admin", handlers.AdminDashboardHandler)
-        admin.GET("/admin/users", handlers.AdminUsersHandler)
-        admin.GET("/admin/subscriptions", handlers.AdminSubscriptionsHandler)
-        admin.GET("/admin-fixed", handlers.AdminFixedHandler)
-        admin.GET("/gold-admin", handlers.GoldAdminHandler)
-        admin.GET("/database-admin", handlers.DatabaseAdminHandler)
-        admin.GET("/users", handlers.UsersHandler)
-        admin.GET("/subscriptions", handlers.SubscriptionsHandler)
-        admin.GET("/crm", handlers.CRMHandler)
-        admin.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
+        adminGroup.GET("/admin", handlers.AdminDashboardHandler)
+        adminGroup.GET("/admin/users", handlers.AdminUsersHandler)
+        adminGroup.GET("/admin/subscriptions", handlers.AdminSubscriptionsHandler)
+        adminGroup.GET("/admin-fixed", handlers.AdminFixedHandler)
+        adminGroup.GET("/gold-admin", handlers.GoldAdminHandler)
+        adminGroup.GET("/database-admin", handlers.DatabaseAdminHandler)
+        adminGroup.GET("/users", handlers.UsersHandler)
+        adminGroup.GET("/subscriptions", handlers.SubscriptionsHandler)
+        adminGroup.GET("/crm", handlers.CRMHandler)
+        adminGroup.GET("/admin/api-keys", handlers.AdminAPIKeysHandler)
 
-
-admin2FA := r.Group("/api/admin/2fa")
-admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
-{
-    admin2FA.POST("/enable", handlers.EnableAdmin2FA)
-    admin2FA.POST("/verify", handlers.VerifyAdmin2FA)
-}
+        admin2FA := r.Group("/api/admin/2fa")
+        admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+        {
+            admin2FA.POST("/enable", handlers.EnableAdmin2FA)
+            admin2FA.POST("/verify", handlers.VerifyAdmin2FA)
+        }
     }
 
     // Дашборды
     dashboards := r.Group("/")
-       dashboards.Use(middleware.AuthMiddleware(cfg))
+    dashboards.Use(middleware.AuthMiddleware(cfg))
     {
         dashboards.GET("/dashboard-improved", handlers.DashboardImprovedHandler)
         dashboards.GET("/realtime-dashboard", handlers.RealtimeDashboardHandler)
@@ -891,17 +868,14 @@ admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
         dashboards.GET("/dashboard-stats", handlers.DashboardStatsHandler)
     }
 
-   
-     // Платежи (публичные страницы, без авторизации)
+    // Платежи (публичные страницы, без авторизации)
     r.GET("/payment", handlers.PaymentHandler)
     r.GET("/bank_card_payment", handlers.BankCardPaymentHandler)
     r.GET("/payment-success", handlers.PaymentSuccessHandler)
     r.GET("/usdt-payment", handlers.USDTPaymentHandler)
     r.GET("/rub-payment", handlers.RUBPaymentHandler)
 
-
-
-      // ========== ЛОГИСТИКА ==========
+    // ========== ЛОГИСТИКА ==========
     // Страницы логистики (публичные или с авторизацией)
     logisticsGroup := r.Group("/logistics")
     logisticsGroup.Use(middleware.AuthMiddleware(cfg))
@@ -944,6 +918,8 @@ admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
     })
     api.Use(middleware.AuthMiddleware(cfg))
     {
+        api.GET("/notifications/settings", handlers.GetNotificationSettings)
+        api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
         api.GET("/health", handlers.HealthHandler)
         api.GET("/crm/health", handlers.CRMHealthHandler)
         api.GET("/system/stats", handlers.SystemStatsHandler)
@@ -974,12 +950,12 @@ admin2FA.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
         api.GET("/2fa/generate", handlers.GenerateTwoFASecret)
         api.POST("/2fa/verify", handlers.VerifyTwoFACode)
         api.POST("/2fa/disable", handlers.DisableTwoFA)
-api.GET("/2fa/backup-codes", handlers.GetBackupCodes)
-api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
-api.GET("/2fa/settings", handlers.Get2FASettings)
-api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
-api.POST("/2fa/trust-device", handlers.TrustDevice)
-api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
+        api.GET("/2fa/backup-codes", handlers.GetBackupCodes)
+        api.POST("/2fa/backup-codes", handlers.GenerateBackupCodes)
+        api.GET("/2fa/settings", handlers.Get2FASettings)
+        api.GET("/2fa/check-trust", handlers.CheckTrustedDevice)
+        api.POST("/2fa/trust-device", handlers.TrustDevice)
+        api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/crm/customers", handlers.GetCustomers)
         api.POST("/crm/customers", handlers.CreateCustomer)
         api.PUT("/crm/customers/:id", handlers.UpdateCustomer)
@@ -1011,19 +987,14 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.POST("/crm/activities", handlers.AddActivity)
         api.GET("/crm/activities/:type/:id", handlers.GetActivities)
         api.POST("/crm/ai/ask", handlers.AIAskHandler)
-
         api.POST("/transcription/upload", handlers.UploadAudio)
         api.GET("/transcriptions", handlers.GetTranscriptions)
         api.GET("/transcription/:id", handlers.GetTranscriptionByID)
-
-        api.GET("/notifications/settings", handlers.GetNotificationSettings)
-        api.PUT("/notifications/settings", handlers.UpdateNotificationSettings)
         api.GET("/crm/forecast", handlers.GetSalesForecast)
         api.GET("/crm/conversion", handlers.GetStageConversion)
         api.DELETE("/crm/activities/:id", handlers.DeleteActivity)
         api.PUT("/crm/tags/:id", handlers.UpdateTag)
         api.POST("/ai/consultant", handlers.AIConsultantHandler)
-
         api.GET("/analytics/ltv", handlers.GetLTVPredictions)
         api.GET("/analytics/ltv/:id", handlers.GetCustomerLTV)
         api.GET("/analytics/insights", handlers.GetInsights)
@@ -1031,85 +1002,88 @@ api.POST("/2fa/verify-backup", handlers.VerifyWithBackupCode)
         api.GET("/analytics/cohorts/run", handlers.RunCohortAnalysis)
     }
 
-      // ========== API KEYS MANAGEMENT ==========
+    // ========== API KEYS MANAGEMENT ==========
     apiKeysGroup := r.Group("/api/keys")
     apiKeysGroup.Use(middleware.AuthMiddleware(cfg))
     {
         apiKeysGroup.POST("/generate", handlers.GenerateAPIKey)
-        apiKeysGroup.GET("", handlers.GetAPIKeys)          // ← без Handler
+        apiKeysGroup.GET("", handlers.GetAPIKeys)
         apiKeysGroup.DELETE("/:id", handlers.RevokeAPIKey)
         apiKeysGroup.GET("/:id/stats", handlers.GetAPIKeyStats)
         apiKeysGroup.GET("/:id/daily-stats", handlers.GetAPIKeyDailyStats)
     }
-    secureAPI := r.Group("/api")
-    secureAPI.Use(middleware.AuthMiddleware(cfg))
+    
+       secureAPI := r.Group("/secure-api")
+    //secureAPI.Use(middleware.AuthMiddleware(cfg))
     {
         secureAPI.GET("/user/profile", handlers.GetUserProfile)
         secureAPI.GET("/user/ai-history", handlers.GetUserAIHistoryHandler)
 
-// ========== NEBULA CLOUD - ОБЛАЧНОЕ ХРАНИЛИЩЕ ==========
-cloudAPI := r.Group("/api/cloud")
-cloudAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    cloudAPI.GET("/files", handlers.GetCloudFiles)
-    cloudAPI.POST("/upload", handlers.UploadCloudFile)
-    cloudAPI.DELETE("/files/:id", handlers.DeleteCloudFile)
-    cloudAPI.GET("/files/:id/download", handlers.DownloadCloudFile)  
-    cloudAPI.POST("/files/:id/star", handlers.ToggleStarFile)        
-    cloudAPI.POST("/folder", handlers.CreateCloudFolder)
-    cloudAPI.GET("/stats", handlers.GetCloudStats)
-    cloudAPI.GET("/plans", handlers.GetCloudPlans)
-    cloudAPI.POST("/create", handlers.CreateCloudBucket) 
-    cloudAPI.POST("/upgrade", handlers.UpgradeCloudPlan)  
-}
+        // ========== NEBULA CLOUD - ОБЛАЧНОЕ ХРАНИЛИЩЕ ==========
+        cloudAPI := r.Group("/api/cloud")
+        cloudAPI.Use(middleware.AuthMiddleware(cfg))
+        {
+            cloudAPI.GET("/files", handlers.GetCloudFiles)
+            cloudAPI.POST("/upload", handlers.UploadCloudFile)
+            cloudAPI.DELETE("/files/:id", handlers.DeleteCloudFile)
+            cloudAPI.GET("/files/:id/download", handlers.DownloadCloudFile)  
+            cloudAPI.POST("/files/:id/star", handlers.ToggleStarFile)        
+            cloudAPI.POST("/folder", handlers.CreateCloudFolder)
+            cloudAPI.GET("/stats", handlers.GetCloudStats)
+            cloudAPI.GET("/plans", handlers.GetCloudPlans)
+            cloudAPI.POST("/create", handlers.CreateCloudBucket) 
+            cloudAPI.POST("/upgrade", handlers.UpgradeCloudPlan)  
 
 
-// Страница облачного хранилища
-r.GET("/cloud", middleware.AuthMiddleware(cfg), handlers.NebulaCloudPage)
+        }
+
+        // Страница облачного хранилища
+        r.GET("/cloud", middleware.AuthMiddleware(cfg), handlers.NebulaCloudPage)
     }
 
-// ========== FUSIONAPI - Брендовый API продукт с AI ==========
-fusionAPI := r.Group("/api/fusion")
-   fusionAPI.Use(middleware.AuthMiddleware(cfg))
-{
-    // API ключи
-    fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
-    fusionAPI.GET("/usage-stats", handlers.GetAPIUsageStats)
-    fusionAPI.POST("/regenerate-key", handlers.RegenerateAPIKey)
-    fusionAPI.GET("/plans", handlers.GetAPIPlans)
-    fusionAPI.POST("/upgrade-plan", handlers.APIPlanUpgradeRequest)
-    fusionAPI.GET("/docs", handlers.GetAPIDocumentation)
+    // ========== FUSIONAPI - Брендовый API продукт с AI ==========
+    fusionAPI := r.Group("/api/fusion")
+    fusionAPI.Use(middleware.AuthMiddleware(cfg))
+    {
+        // API ключи
+        fusionAPI.GET("/my-key", handlers.GetMyAPIKey)
+        fusionAPI.GET("/usage-stats", handlers.GetAPIUsageStats)
+        fusionAPI.POST("/regenerate-key", handlers.RegenerateAPIKey)
+        fusionAPI.GET("/plans", handlers.GetAPIPlans)
+        fusionAPI.POST("/upgrade-plan", handlers.APIPlanUpgradeRequest)
+        fusionAPI.GET("/docs", handlers.GetAPIDocumentation)
+        
+        // AI Агенты (новые функции для FusionAPI)
+        fusionAPI.GET("/agents", handlers.GetMyAgents)
+        fusionAPI.POST("/agents", handlers.CreateFusionAgent)
+        fusionAPI.PUT("/agents/:id", handlers.UpdateFusionAgent)
+        fusionAPI.DELETE("/agents/:id", handlers.DeleteFusionAgent)
+        fusionAPI.POST("/agents/:id/chat", handlers.ChatWithFusionAgent)
+        
+        // AI Аналитика
+        fusionAPI.GET("/analytics/ai", handlers.GetFusionAIAnalytics)
+    }
     
-    // AI Агенты (новые функции для FusionAPI)
-    fusionAPI.GET("/agents", handlers.GetMyAgents)
-    fusionAPI.POST("/agents", handlers.CreateFusionAgent)
-    fusionAPI.PUT("/agents/:id", handlers.UpdateFusionAgent)
-    fusionAPI.DELETE("/agents/:id", handlers.DeleteFusionAgent)
-    fusionAPI.POST("/agents/:id/chat", handlers.ChatWithFusionAgent)
-    
-    // AI Аналитика
-    fusionAPI.GET("/analytics/ai", handlers.GetFusionAIAnalytics)
-}
-// Страница портала FusionAPI
-r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
-// Страница портала FusionAPI
+    // Страница портала FusionAPI
+    r.GET("/fusion-portal", handlers.FusionAPIPortalHandler)
 
-// ========== AI AGENTS MANAGEMENT ==========
-aiAgents := r.Group("/api/ai/agents")
-aiAgents.Use(middleware.AuthMiddleware(cfg))
-{
-    aiAgents.GET("", handlers.GetAgents)
-    aiAgents.POST("", handlers.CreateAgent)
-    aiAgents.GET("/:id", handlers.GetAgentDetails)
-    aiAgents.PUT("/:id", handlers.UpdateAgent)
-    aiAgents.DELETE("/:id", handlers.DeleteAgent)
-    aiAgents.POST("/:id/clone", handlers.CloneAgent)
-    aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
-    aiAgents.POST("/:id/actions", handlers.AddAgentAction)
-    aiAgents.GET("/logs", handlers.GetAgentLogs)
-    aiAgents.GET("/stats", handlers.GetAgentStats)
-    aiAgents.GET("/export", handlers.ExportAgents)
-}
+    // ========== AI AGENTS MANAGEMENT ==========
+    aiAgents := r.Group("/api/ai/agents")
+    aiAgents.Use(middleware.AuthMiddleware(cfg))
+    {
+        aiAgents.GET("", handlers.GetAgents)
+        aiAgents.POST("", handlers.CreateAgent)
+        aiAgents.GET("/:id", handlers.GetAgentDetails)
+        aiAgents.PUT("/:id", handlers.UpdateAgent)
+        aiAgents.DELETE("/:id", handlers.DeleteAgent)
+        aiAgents.POST("/:id/clone", handlers.CloneAgent)
+        aiAgents.POST("/:id/toggle", handlers.ToggleAgentStatus)
+        aiAgents.POST("/:id/actions", handlers.AddAgentAction)
+        aiAgents.GET("/logs", handlers.GetAgentLogs)
+        aiAgents.GET("/stats", handlers.GetAgentStats)
+        aiAgents.GET("/export", handlers.ExportAgents)
+    }
+    
     r.GET("/notify", handlers.NotifyPageHandler)
 
     userKeys := r.Group("/api/user/keys")
@@ -1118,7 +1092,7 @@ aiAgents.Use(middleware.AuthMiddleware(cfg))
         userKeys.DELETE("/:id", handlers.RevokeAPIKeyHandler)
     }
 
-       // Публичное API с защитой через API ключи
+    // Публичное API с защитой через API ключи
     v1 := r.Group("/api/v1")
     v1.Use(middleware.APIKeyAuthMiddleware())
     {
@@ -1131,59 +1105,57 @@ aiAgents.Use(middleware.AuthMiddleware(cfg))
         v1.GET("/vpn/plans", handlers.GetStealthPlansHandler)
     }
 
-  adminAPI := r.Group("/api/admin")
-adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
-{
-    adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
-    adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
-    adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
-    adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
-    adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
-    adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
-    adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
-    adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
-    adminAPI.GET("/stats", handlers.AdminStatsHandler)
-    adminAPI.GET("/users", handlers.AdminUsersHandler)
-    adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
-    adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
-    adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
-    adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
-    adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
-    adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
-    adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
-    adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
+    adminAPI := r.Group("/api/admin")
+    adminAPI.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    {
+        adminAPI.PUT("/subscriptions/:id/cancel", handlers.AdminCancelSubscriptionHandler)
+        adminAPI.PUT("/subscriptions/:id/reactivate", handlers.AdminReactivateSubscriptionHandler)
+        adminAPI.GET("/plans", handlers.AdminGetPlansHandler)
+        adminAPI.POST("/plans", handlers.AdminCreatePlanHandler)
+        adminAPI.PUT("/plans/:id", handlers.AdminUpdatePlanHandler)
+        adminAPI.DELETE("/plans/:id", handlers.AdminDeletePlanHandler)
+        adminAPI.PUT("/api-keys/:id", handlers.AdminUpdateAPIKeyHandler)
+        adminAPI.DELETE("/api-keys/:id", handlers.AdminDeleteAPIKeyHandler)
+        adminAPI.GET("/stats", handlers.AdminStatsHandler)
+        adminAPI.GET("/users", handlers.AdminUsersHandler)
+        adminAPI.PUT("/users/:id/block", handlers.AdminToggleUserBlockHandler)
+        adminAPI.GET("/payments", handlers.AdminPaymentsHandler)
+        adminAPI.GET("/payment-stats", handlers.AdminPaymentStats)
+        adminAPI.GET("/security-logs", handlers.AdminSecurityLogs)
+        adminAPI.GET("/blocked-ips", handlers.AdminBlockedIPs)
+        adminAPI.POST("/users/toggle-block", handlers.AdminToggleUserBlock)
+        adminAPI.POST("/users/change-role", handlers.AdminChangeUserRole)
+        adminAPI.POST("/users/delete", handlers.AdminDeleteUser)
+        adminAPI.GET("/tenants", handlers.GetTenants)
+        adminAPI.POST("/tenants", handlers.CreateTenant)
+        adminAPI.PUT("/tenants/:id", handlers.UpdateTenant)
+        adminAPI.DELETE("/tenants/:id", handlers.DeleteTenant)
+        adminAPI.POST("/tenants/:id/switch", handlers.SwitchTenant)
+    }
+
+    // Админская страница для управления компаниями (отдельно)
+    adminTenants := r.Group("/admin/tenants")
+    adminTenants.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
+    {
+        adminTenants.GET("/", handlers.TenantAdminPage)
+    }
     
-    // ДОБАВЬ ЭТИ СТРОКИ:
-    adminAPI.GET("/tenants", handlers.GetTenants)
-    adminAPI.POST("/tenants", handlers.CreateTenant)
-    adminAPI.PUT("/tenants/:id", handlers.UpdateTenant)
-    adminAPI.DELETE("/tenants/:id", handlers.DeleteTenant)
-    adminAPI.POST("/tenants/:id/switch", handlers.SwitchTenant)
-}
-
-// Админская страница для управления компаниями (отдельно)
-adminTenants := r.Group("/admin/tenants")
-adminTenants.Use(middleware.AuthMiddleware(cfg), middleware.AdminMiddleware(cfg))
-{
-    adminTenants.GET("/", handlers.TenantAdminPage)
-}
-   // API Documentation with back button
-r.GET("/api-docs", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "api_with_back.html", gin.H{
-        "title": "API Documentation - TeamSphere",
+    // API Documentation with back button
+    r.GET("/api-docs", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "api_with_back.html", gin.H{
+            "title": "API Documentation - TeamSphere",
+        })
     })
-})
 
-// Original Swagger (без кнопки)
-r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+    // Original Swagger (без кнопки)
+    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-// Обработка запросов Chrome DevTools
-r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H{
-        "app-specific": true,
+    // Обработка запросов Chrome DevTools
+    r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) {
+        c.JSON(http.StatusOK, gin.H{
+            "app-specific": true,
+        })
     })
-})
-
 
     r.NoRoute(func(c *gin.Context) {
         c.HTML(http.StatusNotFound, "404.html", gin.H{
@@ -1241,126 +1213,124 @@ r.GET("/.well-known/appspecific/com.chrome.devtools.json", func(c *gin.Context) 
 
     log.Printf("🚀 Сервер запущен на порту %s", port)
     
-   // Запуск планировщиков
-handlers.StartSyncScheduler()
-handlers.StartBitrixSyncScheduler()
-handlers.StartTeamSphereScheduler() // Планировщик TeamSphere
+    // Запуск планировщиков
+    handlers.StartSyncScheduler()
+    handlers.StartBitrixSyncScheduler()
+    handlers.StartTeamSphereScheduler()
 
-// Favicon обработка
-r.GET("/favicon.ico", func(c *gin.Context) {
-    c.File("./static/favicon.ico")
-})  
-  r.GET("/team/team", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "team_page.html", gin.H{
-        "title": "Команда | TeamSphere",
+    // Favicon обработка
+    r.GET("/favicon.ico", func(c *gin.Context) {
+        c.File("./static/favicon.ico")
+    })  
+    
+    r.GET("/team/team", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "team_page.html", gin.H{
+            "title": "Команда | TeamSphere",
+        })
     })
-})
 
-  // Tasks page
+    // Tasks page
     r.GET("/tasks", func(c *gin.Context) {
         c.HTML(http.StatusOK, "tasks.html", gin.H{
             "title": "Задачи - TeamSphere",
         })
     })
     
-// Chat page
-r.GET("/chat", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "chat.html", gin.H{
-        "title": "Чат - TeamSphere",
+    // Chat page
+    r.GET("/chat", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "chat.html", gin.H{
+            "title": "Чат - TeamSphere",
+        })
     })
-})
-     // TeamSphere Calendar page
-r.GET("/team-calendar", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "calendar.html", gin.H{
-        "title": "Календарь - TeamSphere",
-    })
-})
     
-
-
-r.GET("/security-center", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "security_universal.html", gin.H{
-        "title": "Security Center | SaaSPro",
+    // TeamSphere Calendar page
+    r.GET("/team-calendar", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "calendar.html", gin.H{
+            "title": "Календарь - TeamSphere",
+        })
     })
-})
 
- // Универсальная аналитика - новый путь
-r.GET("/analytics-center", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
-        "title": "Analytics Center | SaaSPro",
+    r.GET("/security-center", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "security_universal.html", gin.H{
+            "title": "Security Center | SaaSPro",
+        })
     })
-})
-// Страница "Мои приложения"
-r.GET("/my-apps", handlers.GetMyApps)
-r.GET("/my-apps/settings", handlers.AppSettingsPage)
 
-// API для маркетплейса
-r.GET("/api/marketplace/my-apps", handlers.GetMyAppsAPI)
-r.PUT("/api/marketplace/apps/:id/settings", handlers.UpdateAppSettings)
-	r.Run(port)
+    // Универсальная аналитика - новый путь
+    r.GET("/analytics-center", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "analytics_universal.html", gin.H{
+            "title": "Analytics Center | SaaSPro",
+        })
+    })
+    
+    // Страница "Мои приложения"
+    r.GET("/my-apps", handlers.GetMyApps)
+    r.GET("/my-apps/settings", handlers.AppSettingsPage)
+
+    // API для маркетплейса
+    r.GET("/api/marketplace/my-apps", handlers.GetMyAppsAPI)
+    r.PUT("/api/marketplace/apps/:id/settings", handlers.UpdateAppSettings)
+    
+    r.Run(port)
 }
-
-}
-
-}  // <-- ЭТО ЗАКРЫВАЕТ ФУНКЦИЮ main!
 
 // ========== ВСЕ ФУНКЦИИ ПОСЛЕ main ==========
 
 // SOCKS5 прокси сервер
 func startSOCKS5Proxy(addr string) error {
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
+    listener, err := net.Listen("tcp", addr)
+    if err != nil {
+        return err
+    }
 
-	log.Printf("✅ SOCKS5 прокси запущен на %s", addr)
+    log.Printf("✅ SOCKS5 прокси запущен на %s", addr)
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Printf("SOCKS5 accept error: %v", err)
-			continue
-		}
-		go handleSocks5Connection(conn)
-	}
+    for {
+        conn, err := listener.Accept()
+        if err != nil {
+            log.Printf("SOCKS5 accept error: %v", err)
+            continue
+        }
+        go handleSocks5Connection(conn)
+    }
 }
 
 func handleSocks5Connection(client net.Conn) {
-	defer client.Close()
+    defer client.Close()
 
-	buf := make([]byte, 256)
-	_, err := client.Read(buf)
-	if err != nil {
-		return
-	}
+    buf := make([]byte, 256)
+    _, err := client.Read(buf)
+    if err != nil {
+        return
+    }
 
-	client.Write([]byte{0x05, 0x00})
+    client.Write([]byte{0x05, 0x00})
 
-	_, err = client.Read(buf)
-	if err != nil {
-		return
-	}
+    _, err = client.Read(buf)
+    if err != nil {
+        return
+    }
 
-	var host string
-	var port int
+    var host string
+    var port int
 
-	if buf[3] == 0x03 {
-		domainLen := int(buf[4])
-		host = string(buf[5 : 5+domainLen])
-		port = int(buf[5+domainLen])<<8 | int(buf[6+domainLen])
-	}
+    if buf[3] == 0x03 {
+        domainLen := int(buf[4])
+        host = string(buf[5 : 5+domainLen])
+        port = int(buf[5+domainLen])<<8 | int(buf[6+domainLen])
+    }
 
-	log.Printf("SOCKS5: %s -> %s:%d", client.RemoteAddr(), host, port)
+    log.Printf("SOCKS5: %s -> %s:%d", client.RemoteAddr(), host, port)
 
-	target, err := net.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
-	if err != nil {
-		client.Write([]byte{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
-		return
-	}
-	defer target.Close()
+    target, err := net.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)))
+    if err != nil {
+        client.Write([]byte{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+        return
+    }
+    defer target.Close()
 
-	client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+    client.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 
-	go func() { io.Copy(target, client) }()
-	io.Copy(client, target)
+    go func() { io.Copy(target, client) }()
+    io.Copy(client, target)
 }

